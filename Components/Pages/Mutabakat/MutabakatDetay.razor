@@ -1,0 +1,122 @@
+﻿@page "/mutabakatlar/detay/{id:int}"
+
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+@inject IMutabakatService MutabakatService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Mutabakat Detay</PageTitle>
+
+@if (mutabakat == null)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
+}
+else
+{
+    <RadzenCard class="p-4">
+        <RadzenText TextStyle="TextStyle.H4" class="mb-4">Mutabakat Detay</RadzenText>
+
+        <RadzenRow Gap="16px">
+            <RadzenColumn Size="12" SizeMD="6"><b>Dönem:</b> @mutabakat.MutabakatDonemi.ToString("dd.MM.yyyy")</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Tip:</b> @GetMutabakatTipiText(mutabakat.MutabakatTipi)</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Firma:</b> @mutabakat.Firma?.FirmaAdi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cari:</b> @mutabakat.Cari?.CariAdi</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Döviz:</b> @GetDovizText(mutabakat.MutabakatDovizKodu)</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Bakiye:</b> @mutabakat.MutabakatBakiye.ToString("N2")</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Bakiye Tipi:</b> @GetBakiyeTipiText(mutabakat.MutabakatBakiyeTipi)</RadzenColumn>
+            <RadzenColumn Size="12"><b>Açıklama:</b> @mutabakat.MutabakatAciklama</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Durum:</b> @GetMutabakatDurumText(mutabakat.MutabakatDurum)</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Gönderim Tarihi:</b> @(mutabakat.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Gönderim Durumu:</b> @GetGonderimDurumuText(mutabakat.MutabakatGonderimDurumu)</RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6"><b>Cevap Tarihi:</b> @(mutabakat.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cevap Mail:</b> @mutabakat.MutabakatCevapMail</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cevap Ad Soyad:</b> @mutabakat.MutabakatCevapAdSoyad</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cevap GSM:</b> @mutabakat.MutabakatCevapGsm</RadzenColumn>
+
+            <RadzenColumn Size="12"><b>Token:</b> @mutabakat.MutabakatToken</RadzenColumn>
+            <RadzenColumn Size="12"><b>Receive Storage Path:</b> @mutabakat.MutabakatReceiveStoragePath</RadzenColumn>
+
+            <RadzenColumn Size="12" class="mt-3">
+                <RadzenButton Text="Listeye Dön"
+                              Icon="arrow_back"
+                              ButtonStyle="ButtonStyle.Secondary"
+                              Click="@BackToList" />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private Mutabakat? mutabakat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        mutabakat = await MutabakatService.GetByIdAsync(id);
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/mutabakatlar");
+    }
+
+    private string GetMutabakatTipiText(int tip)
+    {
+        return tip switch
+        {
+            1 => "TL",
+            2 => "Döviz",
+            _ => "Tanımsız"
+        };
+    }
+
+    private string GetDovizText(int kod)
+    {
+        return kod switch
+        {
+            0 => "00 - TL",
+            1 => "01 - USD",
+            2 => "02 - EUR",
+            _ => "Tanımsız"
+        };
+    }
+
+    private string GetBakiyeTipiText(string bakiyeTipi)
+    {
+        return bakiyeTipi switch
+        {
+            "B" => "Borç",
+            "A" => "Alacak",
+            _ => "-"
+        };
+    }
+
+    private string GetGonderimDurumuText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Normal",
+            2 => "Hatırlatma",
+            _ => "-"
+        };
+    }
+
+    private string GetMutabakatDurumText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Mutabık",
+            2 => "Mutabık Değil",
+            3 => "Cevaplanmayan",
+            4 => "Okunmayan",
+            _ => "Tanımsız"
+        };
+    }
+}

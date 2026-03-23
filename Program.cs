@@ -22,6 +22,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IFirmaService, FirmaService>();
 builder.Services.AddScoped<ICariGrupService, CariGrupService>();
 builder.Services.AddScoped<ICariService, CariService>();
+builder.Services.AddScoped<IMutabakatService, MutabakatService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

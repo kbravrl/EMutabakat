@@ -1,0 +1,291 @@
+﻿@page "/mutabakatlar"
+
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+@inject IMutabakatService MutabakatService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Mutabakatlar</PageTitle>
+
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4">Mutabakat Listesi</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenButton Text="Yeni Mutabakat Ekle"
+                          Icon="add_circle"
+                          Click="@GoToCreatePage" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@mutabakatlar"
+                        TItem="Mutabakat"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Dönem">
+                    <Template Context="item">
+                        @item.MutabakatDonemi.ToString("dd.MM.yyyy")
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
+                    <Template Context="item">
+                        @item.Firma?.FirmaAdi
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
+                    <Template Context="item">
+                        @item.Cari?.CariAdi
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Tip">
+                    <Template Context="item">
+                        @GetMutabakatTipiText(item.MutabakatTipi)
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
+                    <Template Context="item">
+                        @GetDovizText(item.MutabakatDovizKodu)
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
+                    <Template Context="item">
+                        @item.MutabakatBakiye.ToString("N2") (@GetBakiyeTipiText(item.MutabakatBakiyeTipi))
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim">
+                    <Template Context="item">
+                        @GetGonderimDurumuText(item.MutabakatGonderimDurumu)
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
+                    <Template Context="item">
+                        <RadzenBadge Text="@GetMutabakatDurumText(item.MutabakatDurum)"
+                                     BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatDurum)" />
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim Tarihi">
+                    <Template Context="item">
+                        @(item.MutabakatGonderimTarihSaat.HasValue
+                            ? item.MutabakatGonderimTarihSaat.Value.ToString("dd.MM.yyyy HH:mm")
+                            : "-")
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="340px">
+                    <Template Context="item">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                            <RadzenButton Icon="mail"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Primary"
+                                          Click="@(() => SendMail(item.MutabakatId))" />
+
+                            <RadzenButton Icon="refresh"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Warning"
+                                          Click="@(() => SendReminder(item.MutabakatId))" />
+
+                            <RadzenButton Icon="visibility"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Info"
+                                          Click="@(() => GoToDetailsPage(item.MutabakatId))" />
+
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Click="@(() => DeleteMutabakat(item.MutabakatId))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<Mutabakat> mutabakatlar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMutabakatlarAsync();
+    }
+
+    private async Task LoadMutabakatlarAsync()
+    {
+        mutabakatlar = await MutabakatService.GetAllAsync();
+    }
+
+    private void GoToCreatePage()
+    {
+        NavigationManager.NavigateTo("/mutabakatlar/ekle");
+    }
+
+    private void GoToDetailsPage(int id)
+    {
+        NavigationManager.NavigateTo($"/mutabakatlar/detay/{id}");
+    }
+
+    private async Task SendMail(int id)
+    {
+        var result = await MutabakatService.SendMailAsync(id);
+
+        if (result)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Mutabakat maili gönderildi.");
+        }
+        else
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                "Mutabakat maili gönderilemedi.");
+        }
+
+        await LoadMutabakatlarAsync();
+    }
+
+    private async Task SendReminder(int id)
+    {
+        var result = await MutabakatService.SendReminderAsync(id);
+
+        if (result)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Hatırlatma maili gönderildi.");
+        }
+        else
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                "Hatırlatma maili gönderilemedi.");
+        }
+
+        await LoadMutabakatlarAsync();
+    }
+
+    private async Task DeleteMutabakat(int id)
+    {
+        var confirmed = await DialogService.Confirm(
+            "Bu mutabakat kaydını silmek istediğinize emin misiniz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            var result = await MutabakatService.DeleteAsync(id);
+
+            if (result)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Mutabakat kaydı silindi.");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Mutabakat kaydı silinemedi.");
+            }
+
+            await LoadMutabakatlarAsync();
+        }
+    }
+
+    private string GetMutabakatTipiText(int tip)
+    {
+        return tip switch
+        {
+            1 => "TL",
+            2 => "Döviz",
+            _ => "Tanımsız"
+        };
+    }
+
+    private string GetDovizText(int kod)
+    {
+        return kod switch
+        {
+            0 => "00 - TL",
+            1 => "01 - USD",
+            2 => "02 - EUR",
+            _ => "Tanımsız"
+        };
+    }
+
+    private string GetBakiyeTipiText(string bakiyeTipi)
+    {
+        return bakiyeTipi switch
+        {
+            "B" => "Borç",
+            "A" => "Alacak",
+            _ => "-"
+        };
+    }
+
+    private string GetGonderimDurumuText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Normal",
+            2 => "Hatırlatma",
+            _ => "-"
+        };
+    }
+
+    private string GetMutabakatDurumText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Mutabık",
+            2 => "Mutabık Değil",
+            3 => "Cevaplanmayan",
+            4 => "Okunmayan",
+            _ => "Tanımsız"
+        };
+    }
+
+    private BadgeStyle GetMutabakatBadgeStyle(int durum)
+    {
+        return durum switch
+        {
+            1 => BadgeStyle.Success,
+            2 => BadgeStyle.Danger,
+            3 => BadgeStyle.Warning,
+            4 => BadgeStyle.Secondary,
+            _ => BadgeStyle.Light
+        };
+    }
+}

@@ -26,14 +26,13 @@ namespace EMutabakat.Models
         public int MutabakatGonderimDurumu { get; set; }
 
         public DateTime? MutabakatCevapTarihSaat { get; set; }
-        public string MutabakatCevapMail { get; set; }
-        public string MutabakatCevapAdSoyad { get; set; }
-        public string MutabakatCevapGsm { get; set; }
+        public string? MutabakatCevapMail { get; set; }
+        public string? MutabakatCevapAdSoyad { get; set; }
+        public string? MutabakatCevapGsm { get; set; }
 
         public int MutabakatDurum { get; set; }
         public string MutabakatToken { get; set; }
-        public string MutabakatReceiveStoragePath { get; set; }
-
+        public string? MutabakatReceiveStoragePath { get; set; }
         public Firma Firma { get; set; }
         public Cari Cari { get; set; }
     }
