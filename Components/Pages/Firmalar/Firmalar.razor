@@ -34,16 +34,15 @@
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaYetkiliAdiSoyadi" Title="Yetkili" />
+                <RadzenDataGridColumn TItem="Firma" Title="Lokasyon">
+                    <Template Context="firma">
+                        @firma.FirmaIl / @firma.FirmaIlce
+                    </Template>
+                </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="Firma" Title="Durum">
                     <Template Context="firma">
-                        @if (firma.FirmaAktifPasif == 1)
-                        {
-                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
-                        }
-                        else
-                        {
-                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
-                        }
+                        @(firma.FirmaAktifPasif == 1 ? "Aktif" : "Pasif")
                     </Template>
                 </RadzenDataGridColumn>
 
@@ -70,6 +69,41 @@
                     </Template>
                 </RadzenDataGridColumn>
             </Columns>
+            <Template Context="firma">
+                <RadzenCard class="p-3">
+                    <RadzenRow>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <b>Vergi Dairesi:</b> @firma.FirmaVergiDairesi
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <b>Vergi No:</b> @firma.FirmaVergiNumarasi
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12">
+                            <b>Adres:</b> @firma.FirmaAdres
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3">
+                            <b>SMTP Host:</b> @firma.FirmaSmtpHost
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3">
+                            <b>SMTP Port:</b> @firma.FirmaSmtpPort
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3">
+                            <b>SMTP User:</b> @firma.FirmaSmtpUser
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="3">
+                            <b>SMTP Secure:</b> @firma.FirmaSmtpSecure
+                        </RadzenColumn>
+
+                    </RadzenRow>
+                </RadzenCard>
+            </Template>
         </RadzenDataGrid>
     </RadzenCard>
 </RadzenStack>
