@@ -1,0 +1,138 @@
+﻿@page "/firmalar"
+
+@inject IFirmaService FirmaService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Firmalar</PageTitle>
+
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4">Firma Listesi</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenButton Text="Yeni Firma Ekle"
+                          Icon="add_circle"
+                          Click="@GoToCreatePage" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@firmalar"
+                        TItem="Firma"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
+
+            <Columns>
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon" />
+                <RadzenDataGridColumn TItem="Firma" Title="Durum">
+                    <Template Context="firma">
+                        @if (firma.FirmaAktifPasif == 1)
+                        {
+                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                        }
+                        else
+                        {
+                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Firma" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                    <Template Context="firma">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                            <RadzenButton Icon="edit"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          Click="@(() => GoToEditPage(firma.FirmaId))" />
+
+                            <RadzenButton Icon="visibility"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Info"
+                                          Click="@(() => GoToDetailsPage(firma.FirmaId))" />
+
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<Firma> firmalar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFirmalarAsync();
+    }
+
+    private async Task LoadFirmalarAsync()
+    {
+        firmalar = await FirmaService.GetAllAsync();
+    }
+
+    private void GoToCreatePage()
+    {
+        NavigationManager.NavigateTo("/firmalar/ekle");
+    }
+
+    private void GoToEditPage(int id)
+    {
+        NavigationManager.NavigateTo($"/firmalar/duzenle/{id}");
+    }
+
+    private void GoToDetailsPage(int id)
+    {
+        NavigationManager.NavigateTo($"/firmalar/detay/{id}");
+    }
+
+    private async Task DeleteFirma(int id, string firmaAdi)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"'{firmaAdi}' kaydını silmek istediğinize emin misiniz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            var result = await FirmaService.DeleteAsync(id);
+
+            if (result)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Firma kaydı silindi.");
+
+                await LoadFirmalarAsync();
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Firma kaydı silinemedi.");
+            }
+        }
+    }
+}
