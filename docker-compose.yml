@@ -1,19 +1,4 @@
-version: '3.8'
-
 services:
-  app:
-    build: .
-    container_name: emutabakat_app
-    ports:
-      - "5000:8080"
-    depends_on:
-      - db
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=emutabakatdb;Username=postgres;Password=postgres
-    networks:
-      - emutabakat_network
-
   db:
     image: postgres:15
     container_name: emutabakat_db
@@ -26,6 +11,25 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - emutabakat_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d emutabakatdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: emutabakat_app
+    ports:
+      - "5000:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=emutabakatdb;Username=postgres;Password=postgres
     networks:
       - emutabakat_network
 
