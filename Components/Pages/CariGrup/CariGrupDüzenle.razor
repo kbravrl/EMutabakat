@@ -70,7 +70,7 @@ else
         if (result != null)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari grup kaydı güncellendi.");
-            NavigationManager.NavigateTo("/cari-grup");
+            NavigationManager.NavigateTo("/cari-gruplar");
         }
         else
         {
@@ -80,6 +80,6 @@ else
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/cari-grup");
+        NavigationManager.NavigateTo("/cari-gruplar");
     }
 }
