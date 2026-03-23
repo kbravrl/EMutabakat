@@ -1,0 +1,192 @@
+﻿@page "/cariler/ekle"
+
+@inject ICariService CariService
+@inject IFirmaService FirmaService
+@inject ICariGrupService CariGrupService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<PageTitle>Cari Ekle</PageTitle>
+
+<RadzenCard class="p-4">
+    <RadzenText TextStyle="TextStyle.H4" class="mb-3">Yeni Cari Ekle</RadzenText>
+
+    <EditForm Model="@cari" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <RadzenRow Gap="16px">
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Firma" Style="width:100%;">
+                    <RadzenDropDown Data="@firmalar"
+                                    TextProperty="FirmaAdi"
+                                    ValueProperty="FirmaId"
+                                    @bind-Value="cari.FirmaId"
+                                    Change="@OnFirmaChanged"
+                                    Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Cari Grup" Style="width:100%;">
+                    <RadzenDropDown Data="@filteredCariGruplar"
+                                    TextProperty="CariGrupAdi"
+                                    ValueProperty="CariGrupId"
+                                    @bind-Value="cari.CariGrupId"
+                                    Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Cari Adı" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariAdi" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Cari Unvan" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariUnvan" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12">
+                <RadzenFormField Text="Adres" Style="width:100%;">
+                    <RadzenTextArea @bind-Value="cari.CariAdres" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="İlçe" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariIlce" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="İl" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariIl" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Vergi Dairesi" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariVergiDairesi" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Vergi Numarası" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Web Adresi" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariWebAdresi" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Yetkili Adı Soyadı" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariYetkiliAdiSoyadi" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenFormField Text="Yetkili Telefon" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenFormField Text="Yetkili GSM" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenFormField Text="Yetkili Mail" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="cari.CariYetkiliMail" Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenDropDown Data="@dovizKodlari"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="cari.CariDovizKodu"
+                            Style="width:100%;" />
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Aktif / Pasif" Style="width:100%;">
+                    <RadzenDropDown Data="@durumlar"
+                                    @bind-Value="cari.CariAktifPasif"
+                                    Style="width:100%;" />
+                </RadzenFormField>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" class="mt-3">
+                    <RadzenButton Text="Kaydet" Icon="save" ButtonType="ButtonType.Submit" />
+                    <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
+                </RadzenStack>
+            </RadzenColumn>
+
+        </RadzenRow>
+    </EditForm>
+</RadzenCard>
+
+@code {
+    private Cari cari = new();
+    private List<Firma> firmalar = new();
+    private List<CariGrup> cariGruplar = new();
+    private List<CariGrup> filteredCariGruplar = new();
+
+    private class DovizSecenek
+    {
+        public int Value { get; set; }
+        public string Text { get; set; }
+    }
+
+    private List<DovizSecenek> dovizKodlari = new()
+    {
+        new() { Value = 0, Text = "00 - TL" },
+        new() { Value = 1, Text = "01 - USD" },
+        new() { Value = 2, Text = "02 - EUR" }
+    };
+    private List<int> durumlar = new() { 1, 0 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        firmalar = await FirmaService.GetAllAsync();
+        cariGruplar = await CariGrupService.GetAllAsync();
+    }
+
+    private void OnFirmaChanged(object value)
+    {
+        if (value is int firmaId)
+        {
+            filteredCariGruplar = cariGruplar
+                .Where(x => x.FirmaId == firmaId)
+                .ToList();
+
+            cari.CariGrupId = 0;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await CariService.AddAsync(cari);
+
+        NotificationService.Notify(
+            NotificationSeverity.Success,
+            "Başarılı",
+            "Cari kaydı eklendi.");
+
+        NavigationManager.NavigateTo("/cariler");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/cariler");
+    }
+}

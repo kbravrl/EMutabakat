@@ -1,0 +1,71 @@
+﻿@page "/cariler/detay/{id:int}"
+
+@inject ICariService CariService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Cari Detay</PageTitle>
+
+@if (cari == null)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
+}
+else
+{
+    <RadzenCard class="p-4">
+        <RadzenText TextStyle="TextStyle.H4" class="mb-4">Cari Detay</RadzenText>
+
+        <RadzenRow Gap="16px">
+            <RadzenColumn Size="12" SizeMD="6"><b>Cari Adı:</b> @cari.CariAdi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cari Unvan:</b> @cari.CariUnvan</RadzenColumn>
+            <RadzenColumn Size="12"><b>Adres:</b> @cari.CariAdres</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>İlçe:</b> @cari.CariIlce</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>İl:</b> @cari.CariIl</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Vergi Dairesi:</b> @cari.CariVergiDairesi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Vergi No:</b> @cari.CariVergiNumarasi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Web Adresi:</b> @cari.CariWebAdresi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Firma:</b> @cari.Firma?.FirmaAdi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cari Grup:</b> @cari.CariGrup?.CariGrupAdi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Yetkili:</b> @cari.CariYetkiliAdiSoyadi</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Yetkili Telefon:</b> @cari.CariYetkiliTelefon</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Yetkili GSM:</b> @cari.CariYetkiliGsm</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Yetkili Mail:</b> @cari.CariYetkiliMail</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <b>Döviz Kodu:</b>
+                @(cari.CariDovizKodu == 0 ? "00 - TL"
+                    : cari.CariDovizKodu == 1 ? "01 - USD"
+                    : cari.CariDovizKodu == 2 ? "02 - EUR"
+                    : "Tanımsız")
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Durum:</b> @(cari.CariAktifPasif == 1 ? "Aktif" : "Pasif")</RadzenColumn>
+
+            <RadzenColumn Size="12" class="mt-3">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="10px">
+                    <RadzenButton Text="Düzenle"
+                                  Icon="edit"
+                                  Click="@(() => NavigationManager.NavigateTo($"/cariler/duzenle/{cari.CariId}"))" />
+
+                    <RadzenButton Text="Listeye Dön"
+                                  Icon="arrow_back"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Click="@BackToList" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private Cari? cari;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cari = await CariService.GetByIdAsync(id);
+    }
+
+    private void BackToList()
+    {
+        NavigationManager.NavigateTo("/cariler");
+    }
+}

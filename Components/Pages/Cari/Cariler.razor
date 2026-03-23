@@ -1,0 +1,140 @@
+﻿@page "/cariler"
+
+@inject ICariService CariService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Cariler</PageTitle>
+
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4">Cari Listesi</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenButton Text="Yeni Cari Ekle"
+                          Icon="add_circle"
+                          Click="@GoToCreatePage" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@cariler"
+                        TItem="Cari"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
+            <Columns>
+                <RadzenDataGridColumn TItem="Cari" Property="CariAdi" Title="Cari Adı" />
+                <RadzenDataGridColumn TItem="Cari" Property="CariUnvan" Title="Unvan" />
+                <RadzenDataGridColumn TItem="Cari" Title="Firma">
+                    <Template Context="item">
+                        @item.Firma?.FirmaAdi
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Cari" Title="Cari Grup">
+                    <Template Context="item">
+                        @item.CariGrup?.CariGrupAdi
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Cari" Property="CariYetkiliMail" Title="Yetkili Mail" />
+
+                <RadzenDataGridColumn TItem="Cari" Title="Durum">
+                    <Template Context="item">
+                        @if (item.CariAktifPasif == 1)
+                        {
+                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                        }
+                        else
+                        {
+                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Cari" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                    <Template Context="item">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                            <RadzenButton Icon="edit"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          Click="@(() => GoToEditPage(item.CariId))" />
+
+                            <RadzenButton Icon="visibility"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Info"
+                                          Click="@(() => GoToDetailsPage(item.CariId))" />
+
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Click="@(() => DeleteCari(item.CariId, item.CariAdi))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<Cari> cariler = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCarilerAsync();
+    }
+
+    private async Task LoadCarilerAsync()
+    {
+        cariler = await CariService.GetAllAsync();
+    }
+
+    private void GoToCreatePage()
+    {
+        NavigationManager.NavigateTo("/cariler/ekle");
+    }
+
+    private void GoToEditPage(int id)
+    {
+        NavigationManager.NavigateTo($"/cariler/düzenle/{id}");
+    }
+
+    private void GoToDetailsPage(int id)
+    {
+        NavigationManager.NavigateTo($"/cariler/detay/{id}");
+    }
+
+    private async Task DeleteCari(int id, string cariAdi)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"'{cariAdi}' kaydını silmek istediğinize emin misiniz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            var result = await CariService.DeleteAsync(id);
+
+            if (result)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari kaydı silindi.");
+                await LoadCarilerAsync();
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari kaydı silinemedi.");
+            }
+        }
+    }
+}
