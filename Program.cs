@@ -24,6 +24,7 @@ builder.Services.AddScoped<ICariGrupService, CariGrupService>();
 builder.Services.AddScoped<ICariService, CariService>();
 builder.Services.AddScoped<IMutabakatService, MutabakatService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IKullaniciService, KullaniciService>();
 
 var app = builder.Build();
 

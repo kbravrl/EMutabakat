@@ -1,0 +1,146 @@
+﻿@page "/kullanicilar"
+
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+@inject IKullaniciService KullaniciService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Kullanıcılar</PageTitle>
+
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4">Kullanıcı Listesi</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenButton Text="Yeni Kullanıcı Ekle"
+                          Icon="add_circle"
+                          Click="@GoToCreatePage" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@kullanicilar"
+                        TItem="Kullanici"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
+            <Columns>
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciAdi" Title="Ad" />
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciSoyadi" Title="Soyad" />
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciMail" Title="Mail" />
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciGsm" Title="GSM" />
+
+                <RadzenDataGridColumn TItem="Kullanici" Title="Firma">
+                    <Template Context="item">
+                        @item.Firma?.FirmaAdi
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Kullanici" Title="Durum">
+                    <Template Context="item">
+                        @if (item.KullaniciAktifPasif == "1")
+                        {
+                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                        }
+                        else
+                        {
+                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Kullanici" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                    <Template Context="item">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                            <RadzenButton Icon="edit"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          Click="@(() => GoToEditPage(item.KullaniciId))" />
+
+                            <RadzenButton Icon="visibility"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Info"
+                                          Click="@(() => GoToDetailsPage(item.KullaniciId))" />
+
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Click="@(() => DeleteKullanici(item.KullaniciId, item.KullaniciAdi, item.KullaniciSoyadi))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<Kullanici> kullanicilar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadKullanicilarAsync();
+    }
+
+    private async Task LoadKullanicilarAsync()
+    {
+        kullanicilar = await KullaniciService.GetAllAsync();
+    }
+
+    private void GoToCreatePage()
+    {
+        NavigationManager.NavigateTo("/kullanicilar/ekle");
+    }
+
+    private void GoToEditPage(int id)
+    {
+        NavigationManager.NavigateTo($"/kullanicilar/duzenle/{id}");
+    }
+
+    private void GoToDetailsPage(int id)
+    {
+        NavigationManager.NavigateTo($"/kullanicilar/detay/{id}");
+    }
+
+    private async Task DeleteKullanici(int id, string ad, string soyad)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"'{ad} {soyad}' kaydını silmek istediğinize emin misiniz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            var result = await KullaniciService.DeleteAsync(id);
+
+            if (result)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Kullanıcı kaydı silindi.");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Kullanıcı kaydı silinemedi.");
+            }
+
+            await LoadKullanicilarAsync();
+        }
+    }
+}
