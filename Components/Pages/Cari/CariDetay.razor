@@ -1,4 +1,6 @@
-﻿@page "/cariler/detay/{id:int}"
+﻿@page "/currents/detail/{id:int}"
+
+@attribute [Authorize]
 
 @inject ICariService CariService
 @inject NavigationManager NavigationManager
@@ -66,6 +68,6 @@ else
 
     private void BackToList()
     {
-        NavigationManager.NavigateTo("/cariler");
+        NavigationManager.NavigateTo("/currents");
     }
 }

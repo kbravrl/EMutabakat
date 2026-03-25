@@ -1,4 +1,6 @@
-﻿@page "/cari-grup/ekle"
+﻿@page "/current-groups/add"
+
+@attribute [Authorize]
 
 @inject ICariGrupService CariGrupService
 @inject IFirmaService FirmaService
@@ -59,11 +61,11 @@
             "Başarılı",
             "Cari grup kaydı eklendi.");
 
-        NavigationManager.NavigateTo("/cari-gruplar");
+        NavigationManager.NavigateTo("/current-groups");
     }
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/cari-gruplar");
+        NavigationManager.NavigateTo("/current-groups");
     }
 }

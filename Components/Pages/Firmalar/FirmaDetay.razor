@@ -1,4 +1,6 @@
-﻿@page "/firmalar/detay/{id:int}"
+﻿@page "/companies/datail/{id:int}"
+
+@attribute [Authorize]
 
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
@@ -53,7 +55,7 @@ else
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="10px">
                     <RadzenButton Text="Düzenle"
                                   Icon="edit"
-                                  Click="@(() => NavigationManager.NavigateTo($"/firmalar/duzenle/{firma.FirmaId}"))" />
+                                  Click="@(() => NavigationManager.NavigateTo($"/companies/edit/{firma.FirmaId}"))" />
 
                     <RadzenButton Text="Listeye Dön"
                                   Icon="arrow_back"
@@ -77,6 +79,6 @@ else
 
     private void BackToList()
     {
-        NavigationManager.NavigateTo("/firmalar");
+        NavigationManager.NavigateTo("/companies");
     }
 }

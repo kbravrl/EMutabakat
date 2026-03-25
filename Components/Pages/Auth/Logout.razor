@@ -1,0 +1,21 @@
+﻿@page "/logout"
+
+@attribute [Authorize]
+
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Çıkış Yap</PageTitle>
+
+<p>Çıkış yapılıyor...</p>
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        var status = await JS.InvokeAsync<int>("EMutabakatAuth.postJsonStatus", "api/auth/logout", null);
+        var returnUrl = Uri.EscapeDataString(NavigationManager.Uri.Replace(NavigationManager.BaseUri, "/"));
+        NavigationManager.NavigateTo($"/login?returnUrl={returnUrl}", true);
+       
+    }
+}

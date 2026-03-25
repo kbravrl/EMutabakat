@@ -1,7 +1,7 @@
-﻿@page "/mutabakatlar/ekle"
+﻿@page "/reconciliations/add"
 
-@using EMutabakat.Models
-@using EMutabakat.Services.Interfaces
+@attribute [Authorize]
+
 @inject IMutabakatService MutabakatService
 @inject IFirmaService FirmaService
 @inject ICariService CariService
@@ -237,7 +237,7 @@
                 "Başarılı",
                 "Mutabakat kaydı eklendi.");
 
-            NavigationManager.NavigateTo("/mutabakatlar");
+            NavigationManager.NavigateTo("/reconciliations");
         }
         finally
         {
@@ -269,7 +269,7 @@
                     "Mutabakat kaydedildi fakat mail gönderilemedi.");
             }
 
-            NavigationManager.NavigateTo("/mutabakatlar");
+            NavigationManager.NavigateTo("/reconciliations");
         }
         finally
         {
@@ -279,6 +279,6 @@
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/mutabakatlar");
+        NavigationManager.NavigateTo("/reconciliations");
     }
 }

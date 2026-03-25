@@ -1,4 +1,6 @@
-﻿@page "/cari-gruplar"
+﻿@page "/current-groups"
+
+@attribute [Authorize]
 
 @inject ICariGrupService CariGrupService
 @inject NavigationManager NavigationManager
@@ -72,12 +74,12 @@
 
     private void GoToCreatePage()
     {
-        NavigationManager.NavigateTo("/cari-grup/ekle");
+        NavigationManager.NavigateTo("/current-groups/add");
     }
 
     private void GoToEditPage(int id)
     {
-        NavigationManager.NavigateTo($"/cari-grup/düzenle/{id}");
+        NavigationManager.NavigateTo($"/current-groups/edit/{id}");
     }
 
     private async Task DeleteCariGrup(int id, string cariGrupAdi)

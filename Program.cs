@@ -2,6 +2,7 @@ using EMutabakat.Components;
 using EMutabakat.Data;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 
@@ -25,6 +26,24 @@ builder.Services.AddScoped<ICariService, CariService>();
 builder.Services.AddScoped<IMutabakatService, MutabakatService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IKullaniciService, KullaniciService>();
+builder.Services.AddAuthorizationCore();
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+        options.LogoutPath = "/logout";
+        options.AccessDeniedPath = "/login";
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
+    });
+
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
@@ -44,6 +63,11 @@ for (int i = 0; i < 10; i++)
         Thread.Sleep(3000);
     }
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 if (!app.Environment.IsDevelopment())
 {

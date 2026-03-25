@@ -1,7 +1,7 @@
-﻿@page "/mutabakatlar"
+﻿@page "/reconciliations"
 
-@using EMutabakat.Models
-@using EMutabakat.Services.Interfaces
+@attribute [Authorize]
+
 @inject IMutabakatService MutabakatService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -138,12 +138,12 @@
 
     private void GoToCreatePage()
     {
-        NavigationManager.NavigateTo("/mutabakatlar/ekle");
+        NavigationManager.NavigateTo("/reconciliations/add");
     }
 
     private void GoToDetailsPage(int id)
     {
-        NavigationManager.NavigateTo($"/mutabakatlar/detay/{id}");
+        NavigationManager.NavigateTo($"/reconciliations/detail/{id}");
     }
 
     private async Task SendMail(int id)

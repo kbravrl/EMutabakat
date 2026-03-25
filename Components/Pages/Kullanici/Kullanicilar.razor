@@ -1,7 +1,7 @@
-﻿@page "/kullanicilar"
+﻿@page "/users"
 
-@using EMutabakat.Models
-@using EMutabakat.Services.Interfaces
+@attribute [Authorize]
+
 @inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -63,12 +63,6 @@
                                           Variant="Variant.Flat"
                                           Click="@(() => GoToEditPage(item.KullaniciId))" />
 
-                            <RadzenButton Icon="visibility"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Info"
-                                          Click="@(() => GoToDetailsPage(item.KullaniciId))" />
-
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
@@ -97,17 +91,12 @@
 
     private void GoToCreatePage()
     {
-        NavigationManager.NavigateTo("/kullanicilar/ekle");
+        NavigationManager.NavigateTo("/users/add");
     }
 
     private void GoToEditPage(int id)
     {
-        NavigationManager.NavigateTo($"/kullanicilar/duzenle/{id}");
-    }
-
-    private void GoToDetailsPage(int id)
-    {
-        NavigationManager.NavigateTo($"/kullanicilar/detay/{id}");
+        NavigationManager.NavigateTo($"/users/edit/{id}");
     }
 
     private async Task DeleteKullanici(int id, string ad, string soyad)

@@ -1,4 +1,6 @@
-﻿@page "/firmalar"
+﻿@page "/companies"
+
+@attribute [Authorize]
 
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
@@ -123,17 +125,17 @@
 
     private void GoToCreatePage()
     {
-        NavigationManager.NavigateTo("/firmalar/ekle");
+        NavigationManager.NavigateTo("/companies/add");
     }
 
     private void GoToEditPage(int id)
     {
-        NavigationManager.NavigateTo($"/firmalar/duzenle/{id}");
+        NavigationManager.NavigateTo($"/companies/edit/{id}");
     }
 
     private void GoToDetailsPage(int id)
     {
-        NavigationManager.NavigateTo($"/firmalar/detay/{id}");
+        NavigationManager.NavigateTo($"/companies/detail/{id}");
     }
 
     private async Task DeleteFirma(int id, string firmaAdi)

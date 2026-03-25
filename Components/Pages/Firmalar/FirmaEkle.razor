@@ -1,4 +1,6 @@
-﻿@page "/firmalar/ekle"
+﻿@page "/companies/add"
+
+@attribute [Authorize]
 
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
@@ -161,11 +163,11 @@
             "Başarılı",
             "Firma kaydı eklendi.");
 
-        NavigationManager.NavigateTo("/firmalar");
+        NavigationManager.NavigateTo("/companies");
     }
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/firmalar");
+        NavigationManager.NavigateTo("/companies");
     }
 }

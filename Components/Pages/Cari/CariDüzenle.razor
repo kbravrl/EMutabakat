@@ -1,4 +1,6 @@
-﻿@page "/cariler/düzenle/{id:int}"
+﻿@page "/currents/edit/{id:int}"
+
+@attribute [Authorize]
 
 @inject ICariService CariService
 @inject IFirmaService FirmaService
@@ -201,7 +203,7 @@ else
         if (result != null)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari kaydı güncellendi.");
-            NavigationManager.NavigateTo("/cariler");
+            NavigationManager.NavigateTo("/currents");
         }
         else
         {
@@ -211,6 +213,6 @@ else
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/cariler");
+        NavigationManager.NavigateTo("/currents");
     }
 }

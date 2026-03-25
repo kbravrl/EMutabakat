@@ -1,0 +1,107 @@
+﻿@page "/register"
+
+@attribute [AllowAnonymous]
+
+@inject IKullaniciService KullaniciService
+@inject IFirmaService FirmaService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject IJSRuntime JS
+
+<PageTitle>Kayıt Ol</PageTitle>
+
+<RadzenRow JustifyContent="JustifyContent.Center" class="mt-5">
+    <RadzenColumn Size="12" SizeMD="8" SizeLG="6">
+        <RadzenCard class="p-4">
+            <RadzenText TextStyle="TextStyle.H4" class="mb-3">Kayıt Ol</RadzenText>
+
+            <EditForm Model="@model" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <RadzenRow Gap="16px">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Firma" Style="width:100%;">
+                            <RadzenDropDown Data="@firmalar"
+                                            TextProperty="FirmaAdi"
+                                            ValueProperty="FirmaId"
+                                            @bind-Value="model.FirmaId"
+                                            Placeholder="Firma seçiniz"
+                                            Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Ad" Style="width:100%;">
+                            <RadzenTextBox @bind-Value="model.KullaniciAdi" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Soyad" Style="width:100%;">
+                            <RadzenTextBox @bind-Value="model.KullaniciSoyadi" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Mail" Style="width:100%;">
+                            <RadzenTextBox @bind-Value="model.KullaniciMail" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="GSM" Style="width:100%;">
+                            <RadzenTextBox @bind-Value="model.KullaniciGsm" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Şifre" Style="width:100%;">
+                            <RadzenPassword @bind-Value="model.Sifre" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenFormField Text="Şifre Tekrar" Style="width:100%;">
+                            <RadzenPassword @bind-Value="model.SifreTekrar" Style="width:100%;" />
+                        </RadzenFormField>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12">
+                        <RadzenButton Text="Kayıt Ol"
+                                      Icon="person_add"
+                                      ButtonType="ButtonType.Submit" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </EditForm>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    private RegisterModel model = new();
+    private List<Firma> firmalar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        firmalar = await FirmaService.GetAllAsync();
+    }
+
+    private async Task HandleRegister()
+    {
+        var status = await JS.InvokeAsync<int>("EMutabakatAuth.postJsonStatus", "api/auth/register", model);
+        if (status == 200)
+        {
+            NavigationManager.NavigateTo("/", true);
+            return;
+        }
+
+        if (status == 409)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Bu mail adresi zaten kayıtlı.");
+            return;
+        }
+
+        NotificationService.Notify(NotificationSeverity.Error, "Hata", "Kayıt sırasında hata oluştu.");
+    }
+}

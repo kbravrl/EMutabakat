@@ -1,7 +1,7 @@
-﻿@page "/mutabakatlar/detay/{id:int}"
+﻿@page "/reconciliations/datail/{id:int}"
 
-@using EMutabakat.Models
-@using EMutabakat.Services.Interfaces
+@attribute [Authorize]
+
 @inject IMutabakatService MutabakatService
 @inject NavigationManager NavigationManager
 
@@ -64,7 +64,7 @@ else
 
     private void BackToList()
     {
-        NavigationManager.NavigateTo("/mutabakatlar");
+        NavigationManager.NavigateTo("/reconciliations");
     }
 
     private string GetMutabakatTipiText(int tip)

@@ -1,14 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EMutabakat.Models
 {
-    public class Kullanici
+    public class RegisterModel
     {
-        [Key]
-        public int KullaniciId { get; set; }
-
-        [ForeignKey("Firma")]
+        [Required(ErrorMessage = "Firma seçiniz.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Firma seçiniz.")]
         public int FirmaId { get; set; }
 
         [Required(ErrorMessage = "Ad zorunludur.")]
@@ -18,7 +15,7 @@ namespace EMutabakat.Models
         public string KullaniciSoyadi { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mail zorunludur.")]
-        [EmailAddress(ErrorMessage = "Geçerli bir mail adresi giriniz.")]
+        [EmailAddress(ErrorMessage = "Geçerli bir mail giriniz.")]
         public string KullaniciMail { get; set; } = string.Empty;
 
         public string? KullaniciGsm { get; set; }
@@ -26,8 +23,8 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Şifre zorunludur.")]
         public string Sifre { get; set; } = string.Empty;
 
-        public string KullaniciAktifPasif { get; set; } = "1";
-
-        public Firma? Firma { get; set; }
+        [Required(ErrorMessage = "Şifre tekrar zorunludur.")]
+        [Compare(nameof(Sifre), ErrorMessage = "Şifreler eşleşmiyor.")]
+        public string SifreTekrar { get; set; } = string.Empty;
     }
 }

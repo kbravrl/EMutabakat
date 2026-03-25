@@ -1,4 +1,6 @@
-﻿@page "/firmalar/duzenle/{id:int}"
+﻿@page "/companies/edit/{id:int}"
+
+@attribute [Authorize]
 
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
@@ -179,7 +181,7 @@ else
                 "Başarılı",
                 "Firma kaydı güncellendi.");
 
-            NavigationManager.NavigateTo("/firmalar");
+            NavigationManager.NavigateTo("/companies");
         }
         else
         {
@@ -192,6 +194,6 @@ else
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/firmalar");
+        NavigationManager.NavigateTo("/companies");
     }
 }

@@ -1,4 +1,6 @@
-﻿@page "/cariler/ekle"
+﻿@page "/currents/add"
+
+@attribute [Authorize]
 
 @inject ICariService CariService
 @inject IFirmaService FirmaService
@@ -182,11 +184,11 @@
             "Başarılı",
             "Cari kaydı eklendi.");
 
-        NavigationManager.NavigateTo("/cariler");
+        NavigationManager.NavigateTo("/currents");
     }
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/cariler");
+        NavigationManager.NavigateTo("/currents");
     }
 }

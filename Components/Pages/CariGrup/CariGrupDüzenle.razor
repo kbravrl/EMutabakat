@@ -1,4 +1,6 @@
-﻿@page "/cari-grup/düzenle/{id:int}"
+﻿@page "/current-groups/edit/{id:int}"
+
+@attribute [Authorize]
 
 @inject ICariGrupService CariGrupService
 @inject IFirmaService FirmaService
@@ -70,7 +72,7 @@ else
         if (result != null)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari grup kaydı güncellendi.");
-            NavigationManager.NavigateTo("/cari-gruplar");
+            NavigationManager.NavigateTo("/current-groups");
         }
         else
         {
@@ -80,6 +82,6 @@ else
 
     private void Cancel()
     {
-        NavigationManager.NavigateTo("/cari-gruplar");
+        NavigationManager.NavigateTo("/current-groups");
     }
 }

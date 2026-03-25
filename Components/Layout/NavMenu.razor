@@ -1,54 +1,25 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">EMutabakat</a>
+﻿<div class="radzen-nav">
+    <div class="nav-brand">
+        <div class="brand-avatar" aria-hidden="true"></div>
+        <div class="brand-text">EMutabakat</div>
     </div>
+
+    <RadzenPanelMenu Style="background:transparent; border:0;">
+        <AuthorizeView>
+            <Authorized>
+                <RadzenPanelMenuItem Text="Kontrol Paneli" Path="/" Icon="home" />
+                <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
+                <RadzenPanelMenuItem Text="Cariler" Path="/currents" Icon="account_circle" />
+                <RadzenPanelMenuItem Text="Cari Gruplar" Path="/current-groups" Icon="group_work" />
+                <RadzenPanelMenuItem Text="Mutabakatlar" Path="/reconciliations" Icon="description" />
+                <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
+                <RadzenPanelMenuItem Text="Çıkış Yap" Path="/logout" Icon="logout" />
+            </Authorized>
+
+            <NotAuthorized>
+                <RadzenPanelMenuItem Text="Giriş Yap" Path="/login" Icon="login" />
+                <RadzenPanelMenuItem Text="Kayıt Ol" Path="/register" Icon="person_add" />
+            </NotAuthorized>
+        </AuthorizeView>
+    </RadzenPanelMenu>
 </div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/firmalar" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Firmalar
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/cariler" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cariler
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/cari-gruplar" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Cari Gruplar
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/mutabakatlar" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Mutabakatlar
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
-

@@ -9,5 +9,9 @@ namespace EMutabakat.Services.Interfaces
         Task<Kullanici> AddAsync(Kullanici kullanici);
         Task<Kullanici?> UpdateAsync(Kullanici kullanici);
         Task<bool> DeleteAsync(int id);
+
+        Task<Kullanici?> GetByMailAsync(string mail);
+        Task<Kullanici?> RegisterAsync(Kullanici kullanici);
+        Task<Kullanici?> LoginAsync(string mail, string sifre);
     }
 }

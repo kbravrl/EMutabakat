@@ -1,4 +1,6 @@
-﻿@page "/cariler"
+﻿@page "/currents"
+
+@attribute [Authorize]
 
 @inject ICariService CariService
 @inject NavigationManager NavigationManager
@@ -98,17 +100,17 @@
 
     private void GoToCreatePage()
     {
-        NavigationManager.NavigateTo("/cariler/ekle");
+        NavigationManager.NavigateTo("/currents/add");
     }
 
     private void GoToEditPage(int id)
     {
-        NavigationManager.NavigateTo($"/cariler/düzenle/{id}");
+        NavigationManager.NavigateTo($"/currents/edit/{id}");
     }
 
     private void GoToDetailsPage(int id)
     {
-        NavigationManager.NavigateTo($"/cariler/detay/{id}");
+        NavigationManager.NavigateTo($"/currents/detail/{id}");
     }
 
     private async Task DeleteCari(int id, string cariAdi)
