@@ -10,15 +10,18 @@ namespace EMutabakat.Services
         private readonly AppDbContext _db;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public MutabakatService(
             AppDbContext db,
             IEmailService emailService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHttpContextAccessor httpContextAccessor)
         {
             _db = db;
             _emailService = emailService;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Mutabakat>> GetAllAsync()
@@ -73,8 +76,6 @@ namespace EMutabakat.Services
 
             if (existingMutabakat == null)
                 return null;
-
-            // Mail gönderildiyse kritik alanları değiştirmeyelim
             var mailGonderildiMi = existingMutabakat.MutabakatGonderimTarihSaat.HasValue;
 
             if (!mailGonderildiMi)
@@ -113,26 +114,39 @@ namespace EMutabakat.Services
         public async Task<bool> SendMailAsync(int mutabakatId)
         {
             var mutabakat = await _db.Mutabakatlar
-                .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
 
-            if (mutabakat == null || mutabakat.Firma == null || mutabakat.Cari == null)
+            if (mutabakat == null || mutabakat.Cari == null)
                 return false;
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
             {
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
             }
+            var user = _httpContextAccessor.HttpContext?.User;
 
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
-            var approveUrl = $"{baseUrl}/mutabakat/response/{mutabakat.MutabakatToken}?durum=approve";
-            var rejectUrl = $"{baseUrl}/mutabakat/response/{mutabakat.MutabakatToken}?durum=reject";
+            if (user == null || !user.Identity.IsAuthenticated)
+                return false;
+
+            var email = user.Identity.Name;
+
+            var kullanici = await _db.Kullanicilar
+               .Include(x => x.Firma)
+               .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+
+            if (kullanici == null || kullanici.Firma == null)
+                return false;
+
+ 
+            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
+
+            var approveUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=approve";
+            var rejectUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=reject";
 
             var result = await _emailService.SendMutabakatMailAsync(
                 mutabakat,
-                mutabakat.Firma,
-                mutabakat.Cari,
+                kullanici,
                 approveUrl,
                 rejectUrl,
                 false);
@@ -141,14 +155,15 @@ namespace EMutabakat.Services
                 return false;
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-            mutabakat.MutabakatGonderimDurumu = 1; // Normal
+            mutabakat.MutabakatGonderimDurumu = 1;
 
             if (mutabakat.MutabakatDurum == 0)
             {
-                mutabakat.MutabakatDurum = 3; // Cevaplanmayan
+                mutabakat.MutabakatDurum = 3;
             }
 
             await _db.SaveChangesAsync();
+
             return true;
         }
 
@@ -159,7 +174,7 @@ namespace EMutabakat.Services
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
 
-            if (mutabakat == null || mutabakat.Firma == null || mutabakat.Cari == null)
+            if (mutabakat == null || mutabakat.Cari == null)
                 return false;
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
@@ -167,14 +182,28 @@ namespace EMutabakat.Services
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
             }
 
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            if (user == null || !user.Identity.IsAuthenticated)
+                return false;
+
+            var email = user.Identity.Name;
+
+            var kullanici = await _db.Kullanicilar
+               .Include(x => x.Firma)
+               .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+
+            if (kullanici == null || kullanici.Firma == null)
+                return false;
+
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
-            var approveUrl = $"{baseUrl}/mutabakat/response/{mutabakat.MutabakatToken}?durum=approve";
-            var rejectUrl = $"{baseUrl}/mutabakat/response/{mutabakat.MutabakatToken}?durum=reject";
+
+            var approveUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=approve";
+            var rejectUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=reject";
 
             var result = await _emailService.SendMutabakatMailAsync(
                 mutabakat,
-                mutabakat.Firma,
-                mutabakat.Cari,
+                kullanici,
                 approveUrl,
                 rejectUrl,
                 true);
@@ -183,9 +212,10 @@ namespace EMutabakat.Services
                 return false;
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-            mutabakat.MutabakatGonderimDurumu = 2; // Hatırlatma
+            mutabakat.MutabakatGonderimDurumu = 2;
 
             await _db.SaveChangesAsync();
+
             return true;
         }
 
@@ -205,7 +235,10 @@ namespace EMutabakat.Services
             if (mutabakat == null)
                 return false;
 
-            mutabakat.MutabakatDurum = 1; // Mutabık
+            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
+                return false;
+
+            mutabakat.MutabakatDurum = 1;
             mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
@@ -223,7 +256,13 @@ namespace EMutabakat.Services
             if (mutabakat == null)
                 return false;
 
-            mutabakat.MutabakatDurum = 2; // Değil
+            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(filePath))
+                return false;
+
+            mutabakat.MutabakatDurum = 2;
             mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;

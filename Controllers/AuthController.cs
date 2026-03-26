@@ -29,7 +29,7 @@ namespace EMutabakat.Controllers
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, kullanici.KullaniciId.ToString()),
-                new Claim(ClaimTypes.Name, $"{kullanici.KullaniciAdi} {kullanici.KullaniciSoyadi}"),
+                new Claim(ClaimTypes.Name, kullanici.KullaniciMail),
                 new Claim(ClaimTypes.Email, kullanici.KullaniciMail)
             };
 
@@ -63,7 +63,7 @@ namespace EMutabakat.Controllers
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, result.KullaniciId.ToString()),
-                new Claim(ClaimTypes.Name, $"{result.KullaniciAdi} {result.KullaniciSoyadi}"),
+                new Claim(ClaimTypes.Name, result.KullaniciMail),
                 new Claim(ClaimTypes.Email, result.KullaniciMail)
             };
 

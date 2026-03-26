@@ -6,8 +6,7 @@ namespace EMutabakat.Services.Interfaces
     {
         Task<bool> SendMutabakatMailAsync(
             Mutabakat mutabakat,
-            Firma firma,
-            Cari cari,
+            Kullanici kullanici,
             string approveUrl,
             string rejectUrl,
             bool isReminder = false);
