@@ -1,0 +1,226 @@
+@page "/reconciliations/response/{token}"
+
+@inject IMutabakatClientService MutabakatClientService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Mutabakat Cevabı</PageTitle>
+
+<RadzenRow JustifyContent="JustifyContent.Center" class="mt-5">
+    <RadzenColumn Size="12" SizeMD="8" SizeLG="6">
+
+        <RadzenCard class="p-4 shadow-2" Style="border-radius:16px;">
+
+            @if (isLoading)
+            {
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+                    <RadzenText TextStyle="TextStyle.H5">İşleniyor...</RadzenText>
+                </RadzenStack>
+            }
+            else if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Success" ShowIcon="true" Variant="Variant.Flat">
+                    @successMessage
+                </RadzenAlert>
+            }
+            else if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" Variant="Variant.Flat">
+                    @errorMessage
+                </RadzenAlert>
+            }
+            else if (showRejectUpload && mutabakat is not null)
+            {
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H4">Mutabakat Cevabı</RadzenText>
+
+                    <RadzenAlert AlertStyle="AlertStyle.Light" ShowIcon="true" Variant="Variant.Flat">
+                        Mutabık değilseniz lütfen PDF (.pdf) dosyası yükleyiniz.
+                    </RadzenAlert>
+
+                    <InputFile OnChange="OnFileSelected" accept=".pdf" />
+
+                    <RadzenTextBox Style="width:100%" Placeholder="Cevap e-posta (opsiyonel)" @bind-Value="responseMail" />
+                    <RadzenTextBox Style="width:100%" Placeholder="Cevap Ad Soyad (opsiyonel)" @bind-Value="responseName" />
+                    <RadzenTextBox Style="width:100%" Placeholder="Cevap GSM (opsiyonel)" @bind-Value="responseGsm" />
+
+                    @if (!string.IsNullOrWhiteSpace(fileName))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2">
+                            Seçilen dosya: <b>@fileName</b>
+                        </RadzenText>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(fileError))
+                    {
+                        <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" Variant="Variant.Flat">
+                            @fileError
+                        </RadzenAlert>
+                    }
+
+                    <RadzenButton Text="Dosyayı Gönder"
+                                  Icon="upload"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Click="SubmitRejectAsync"
+                                  Disabled="@isSubmitting" />
+                </RadzenStack>
+            }
+
+        </RadzenCard>
+
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+    [Parameter] public string token { get; set; } = string.Empty;
+
+    private Mutabakat? mutabakat;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private bool showRejectUpload = false;
+
+    private string? successMessage;
+    private string? errorMessage;
+    private string? durum;
+    private string? fileError;
+    private string? fileName;
+    private IBrowserFile? selectedFile;
+    private string? responseMail;
+    private string? responseName;
+    private string? responseGsm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            errorMessage = "Geçersiz link.";
+            isLoading = false;
+            return;
+        }
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("durum", out var durumValue))
+        {
+            durum = durumValue.ToString().Trim().ToLowerInvariant();
+        }
+
+        mutabakat = await MutabakatClientService.GetByTokenAsync(token);
+
+        if (mutabakat == null)
+        {
+            errorMessage = "Mutabakat bulunamadı.";
+            isLoading = false;
+            return;
+        }
+
+        if (mutabakat.MutabakatDurum == 1)
+        {
+            successMessage = "Cevabınız başarı ile kaydedildi.";
+            isLoading = false;
+            return;
+        }
+
+        if (mutabakat.MutabakatDurum == 2)
+        {
+            successMessage = "Dosya gönderildi.";
+            isLoading = false;
+            return;
+        }
+
+        if (durum == "approve")
+        {
+            var ok = await MutabakatClientService.ApproveAsync(token);
+
+            if (ok)
+                successMessage = "Cevabınız başarı ile kaydedildi.";
+            else
+                errorMessage = "Bu link daha önce kullanılmış olabilir.";
+
+            isLoading = false;
+            return;
+        }
+
+        if (durum == "reject")
+        {
+            showRejectUpload = true;
+            isLoading = false;
+            return;
+        }
+
+        errorMessage = "Geçersiz işlem.";
+        isLoading = false;
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        fileError = null;
+        fileName = null;
+        selectedFile = null;
+
+        var file = e.File;
+        if (file == null)
+            return;
+
+
+        var extension = Path.GetExtension(file.Name)?.ToLowerInvariant();
+
+        if (extension != ".pdf")
+        {
+            fileError = "Sadece PDF (.pdf) dosyası yükleyebilirsiniz.";
+            return;
+        }
+
+        selectedFile = file;
+        fileName = file.Name;
+    }
+
+    private async Task SubmitRejectAsync()
+    {
+        if (isSubmitting)
+            return;
+
+        fileError = null;
+        errorMessage = null;
+
+        if (selectedFile == null)
+        {
+            fileError = "Lütfen bir PDF dosyası seçiniz.";
+            return;
+        }
+
+        isSubmitting = true;
+
+        try
+        {
+            await using var stream = selectedFile.OpenReadStream(50_000_000);
+
+            var ok = await MutabakatClientService.RejectAsync(
+                token,
+                responseMail,
+                responseName,
+                responseGsm,
+                stream,
+                selectedFile.Name);
+
+            if (ok)
+            {
+                showRejectUpload = false;
+                successMessage = "Dosya gönderildi.";
+            }
+            else
+            {
+                errorMessage = "Bu link daha önce kullanılmış olabilir veya dosya gönderilemedi.";
+            }
+        }
+        catch
+        {
+            fileError = "Dosya yüklenirken hata oluştu.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

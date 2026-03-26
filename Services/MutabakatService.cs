@@ -1,7 +1,12 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace EMutabakat.Services
 {
@@ -120,6 +125,9 @@ namespace EMutabakat.Services
             if (mutabakat == null || mutabakat.Cari == null)
                 return false;
 
+            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
+                return false;
+
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
             {
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
@@ -138,7 +146,7 @@ namespace EMutabakat.Services
             if (kullanici == null || kullanici.Firma == null)
                 return false;
 
- 
+
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
 
             var approveUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=approve";
@@ -175,6 +183,9 @@ namespace EMutabakat.Services
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
 
             if (mutabakat == null || mutabakat.Cari == null)
+                return false;
+
+            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
                 return false;
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
@@ -251,6 +262,7 @@ namespace EMutabakat.Services
         public async Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? filePath)
         {
             var mutabakat = await _db.Mutabakatlar
+                .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
 
             if (mutabakat == null)
@@ -268,6 +280,24 @@ namespace EMutabakat.Services
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
             mutabakat.MutabakatCevapGsm = gsm;
             mutabakat.MutabakatReceiveStoragePath = filePath;
+
+            if (mutabakat.Cari != null)
+            {
+                if (!string.IsNullOrWhiteSpace(mail))
+                {
+                    mutabakat.Cari.CariYetkiliMail = mail;
+                }
+
+                if (!string.IsNullOrWhiteSpace(adSoyad))
+                {
+                    mutabakat.Cari.CariYetkiliAdiSoyadi = adSoyad;
+                }
+
+                if (!string.IsNullOrWhiteSpace(gsm))
+                {
+                    mutabakat.Cari.CariYetkiliGsm = gsm;
+                }
+            }
 
             await _db.SaveChangesAsync();
             return true;

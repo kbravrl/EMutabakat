@@ -92,17 +92,23 @@
                 <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="340px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
-                            <RadzenButton Icon="mail"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Primary"
-                                          Click="@(() => SendMail(item.MutabakatId))" />
 
-                            <RadzenButton Icon="refresh"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Warning"
-                                          Click="@(() => SendReminder(item.MutabakatId))" />
+                            @if (item.MutabakatDurum != 1 && item.MutabakatDurum != 2)
+                            {
+                                <RadzenButton Icon="mail"
+                                              Size="ButtonSize.Small"
+                                              Variant="Variant.Flat"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Click="@(() => SendMail(item.MutabakatId))"
+                                              Disabled="@isSubmitting" />
+
+                                <RadzenButton Icon="refresh"
+                                              Size="ButtonSize.Small"
+                                              Variant="Variant.Flat"
+                                              ButtonStyle="ButtonStyle.Warning"
+                                              Click="@(() => SendReminder(item.MutabakatId))"
+                                              Disabled="@isSubmitting" />
+                            }
 
                             <RadzenButton Icon="visibility"
                                           Size="ButtonSize.Small"
@@ -114,7 +120,8 @@
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
-                                          Click="@(() => DeleteMutabakat(item.MutabakatId))" />
+                                          Click="@(() => DeleteMutabakat(item.MutabakatId))"
+                                          Disabled="@isSubmitting" />
                         </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>
@@ -125,6 +132,7 @@
 
 @code {
     private List<Mutabakat> mutabakatlar = new();
+    private bool isSubmitting = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -148,46 +156,66 @@
 
     private async Task SendMail(int id)
     {
-        var result = await MutabakatService.SendMailAsync(id);
+        if (isSubmitting) return;
+        isSubmitting = true;
 
-        if (result)
+        try
         {
-            NotificationService.Notify(
-                NotificationSeverity.Success,
-                "Başarılı",
-                "Mutabakat maili gönderildi.");
-        }
-        else
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                "Mutabakat maili gönderilemedi.");
-        }
+            var result = await MutabakatService.SendMailAsync(id);
 
-        await LoadMutabakatlarAsync();
+            if (result)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Mutabakat maili gönderildi.");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Mutabakat maili gönderilemedi.");
+            }
+
+            await LoadMutabakatlarAsync();
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private async Task SendReminder(int id)
     {
-        var result = await MutabakatService.SendReminderAsync(id);
+        if (isSubmitting) return;
+        isSubmitting = true;
 
-        if (result)
+        try
         {
-            NotificationService.Notify(
-                NotificationSeverity.Success,
-                "Başarılı",
-                "Hatırlatma maili gönderildi.");
-        }
-        else
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                "Hatırlatma maili gönderilemedi.");
-        }
+            var result = await MutabakatService.SendReminderAsync(id);
 
-        await LoadMutabakatlarAsync();
+            if (result)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Hatırlatma maili gönderildi.");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Hatırlatma maili gönderilemedi.");
+            }
+
+            await LoadMutabakatlarAsync();
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private async Task DeleteMutabakat(int id)
@@ -203,24 +231,34 @@
 
         if (confirmed == true)
         {
-            var result = await MutabakatService.DeleteAsync(id);
+            if (isSubmitting) return;
+            isSubmitting = true;
 
-            if (result)
+            try
             {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Mutabakat kaydı silindi.");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Mutabakat kaydı silinemedi.");
-            }
+                var result = await MutabakatService.DeleteAsync(id);
 
-            await LoadMutabakatlarAsync();
+                if (result)
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Başarılı",
+                        "Mutabakat kaydı silindi.");
+                }
+                else
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Error,
+                        "Hata",
+                        "Mutabakat kaydı silinemedi.");
+                }
+
+                await LoadMutabakatlarAsync();
+            }
+            finally
+            {
+                isSubmitting = false;
+            }
         }
     }
 
