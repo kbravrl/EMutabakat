@@ -1,0 +1,113 @@
+@inject IMutabakatService MutabakatService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+@inject IJSRuntime JS
+
+<div class="p-2">
+    <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
+
+    <div class="my-4">
+        <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
+    </div>
+
+    <div class="rz-text-align-right">
+        <RadzenButton Text="Yükle" Icon="file_upload" Click="Upload" Disabled="@isUploading" />
+        <RadzenButton Text="İptal" Icon="close" Click="Cancel" ButtonStyle="ButtonStyle.Secondary" />
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isUploading = false;
+
+    private void HandleSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private static int ParseIntCell(IRow row, int idx)
+    {
+        var cell = row.GetCell(idx);
+        if (cell == null) return 0;
+        if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
+        var s = cell.ToString();
+        return int.TryParse(s, out var v) ? v : 0;
+    }
+
+    private static decimal ParseDecimalCell(IRow row, int idx)
+    {
+        var cell = row.GetCell(idx);
+        if (cell == null) return 0m;
+        if (cell.CellType == CellType.Numeric) return Convert.ToDecimal(cell.NumericCellValue);
+        var s = cell.ToString();
+        return decimal.TryParse(s, out var v) ? v : 0m;
+    }
+
+    private static DateTime ParseDateCell(IRow row, int idx)
+    {
+        var cell = row.GetCell(idx);
+        if (cell == null) return DateTime.Today;
+        if (cell.CellType == CellType.Numeric)
+        {
+            if (DateUtil.IsCellDateFormatted(cell)) return cell.DateCellValue ?? DateTime.Today;
+            return DateTime.FromOADate(cell.NumericCellValue);
+        }
+        var s = cell.ToString();
+        return DateTime.TryParse(s, out var d) ? d : DateTime.Today;
+    }
+
+    private static string? GetStringCell(IRow row, int idx)
+    {
+        var cell = row.GetCell(idx);
+        return cell?.ToString();
+    }
+
+    private async Task Upload()
+    {
+        if (isUploading) return;
+        if (selectedFile == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen bir dosya seçin.");
+            return;
+        }
+
+        isUploading = true;
+
+        try
+        {
+            await using var ms = new MemoryStream();
+            await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
+            ms.Position = 0;
+
+            var (createdCount, mailSentCount, errors) = await MutabakatService.ImportFromExcelAsync(ms, selectedFile.Name);
+
+            var msg = $"Oluşturulan Kayıt: {createdCount}, Gönderilen mail: {mailSentCount}";
+            if (errors != null && errors.Count > 0)
+            {
+                var parameters = new Dictionary<string, object?> { ["Errors"] = errors };
+                await DialogService.OpenAsync(string.Empty, typeof(MutabakatImportErrors), parameters, new DialogOptions { Width = "700px", Height = "400px" });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Excel işlendi ve liste güncellendi.");
+                NotificationService.Notify(NotificationSeverity.Success, "Tamamlandı", msg);
+            }
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+}

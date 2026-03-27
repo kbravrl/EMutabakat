@@ -6,8 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
-@using Microsoft.AspNetCore.Components.Forms
-@using EMutabakat.Components.Dialogs
+
 
 <PageTitle>Mutabakatlar</PageTitle>
 
@@ -150,7 +149,7 @@
 
     private async Task OpenImportDialog()
     {
-        var options = new DialogOptions() { Width = "600px", Height = "220px" };
+        var options = new DialogOptions() { Width = "600px", Height = "260px" };
         RenderFragment content = builder =>
         {
             builder.OpenComponent(0, typeof(MutabakatImportDialog));
@@ -161,7 +160,6 @@
         if (result is bool b && b)
         {
             await LoadMutabakatlarAsync();
-            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Excel işlendi ve liste güncellendi.");
         }
     }
 
@@ -174,8 +172,6 @@
     {
         NavigationManager.NavigateTo("/reconciliations/add");
     }
-
-    // Upload is handled in the dialog component (Components/Dialogs/MutabakatImportDialog.razor)
 
     private void GoToDetailsPage(int id)
     {

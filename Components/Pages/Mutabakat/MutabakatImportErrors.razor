@@ -1,0 +1,77 @@
+@using Radzen
+@using System.Linq
+@inject DialogService DialogService
+@inject IJSRuntime JS
+
+<RadzenCard Class="p-3">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn>
+            <RadzenText TextStyle="TextStyle.H5">İşlem Hataları</RadzenText>
+            <RadzenText Style="font-size:0.9rem; color:#6b7280">Toplam: @(_items?.Count ?? 0)</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn class="rz-text-align-right">
+            <RadzenButton Text="Tümünü Kopyala" Icon="content_copy" ButtonStyle="ButtonStyle.Secondary" Click="CopyAll" Style="margin-right:8px" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <div style="margin-top:12px">
+        @if (_items == null || _items.Count == 0)
+        {
+            <RadzenText>Hata bulunamadı.</RadzenText>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@_items" TItem="ErrorItem" AllowPaging="true" PageSize="10" Style="max-height:360px; overflow:auto">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ErrorItem" Property="Row" Title="#" Width="60px" />
+                    <RadzenDataGridColumn TItem="ErrorItem" Property="Message" Title="Hata Mesajı">
+                        <Template Context="item">
+                            <div style="white-space:pre-wrap;">@item.Message</div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter]
+    public List<string>? Errors { get; set; }
+
+    private List<ErrorItem>? _items;
+
+    protected override void OnParametersSet()
+    {
+        if (Errors == null)
+        {
+            _items = new List<ErrorItem>();
+            return;
+        }
+
+        _items = new List<ErrorItem>();
+        for (int i = 0; i < Errors.Count; i++)
+        {
+            _items.Add(new ErrorItem { Row = i + 1, Message = Errors[i] });
+        }
+    }
+
+    private record ErrorItem
+    {
+        public int Row { get; init; }
+        public string Message { get; init; } = string.Empty;
+    }
+
+    private async Task CopyAll()
+    {
+        if (_items == null || _items.Count == 0) return;
+        var txt = string.Join("\n", _items.Select(i => $"{i.Row}: {i.Message}"));
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", txt);
+    }
+
+    private void Close()
+    {
+        DialogService.Close();
+    }
+}
