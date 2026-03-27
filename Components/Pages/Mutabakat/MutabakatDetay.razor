@@ -31,10 +31,10 @@ else
 
             <RadzenColumn Size="12" SizeMD="6"><b>Durum:</b> @GetMutabakatDurumText(mutabakat.MutabakatDurum)</RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="6"><b>Gönderim Tarihi:</b> @(mutabakat.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Gönderim Tarihi:</b> @(mutabakat.MutabakatGonderimTarihSaat?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Gönderim Durumu:</b> @GetGonderimDurumuText(mutabakat.MutabakatGonderimDurumu)</RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="6"><b>Cevap Tarihi:</b> @(mutabakat.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="6"><b>Cevap Tarihi:</b> @(mutabakat.MutabakatCevapTarihSaat?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Cevap Mail:</b> @mutabakat.MutabakatCevapMail</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Cevap Ad Soyad:</b> @mutabakat.MutabakatCevapAdSoyad</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Cevap GSM:</b> @mutabakat.MutabakatCevapGsm</RadzenColumn>
