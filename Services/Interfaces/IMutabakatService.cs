@@ -14,5 +14,6 @@ namespace EMutabakat.Services.Interfaces
         Task<Mutabakat?> GetByTokenAsync(string token);
         Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm);
         Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? filePath);
+        Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName);
     }
 }

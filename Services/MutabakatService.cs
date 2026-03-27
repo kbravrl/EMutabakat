@@ -1,6 +1,10 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using NPOI.HSSF.UserModel;
+using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -301,6 +305,240 @@ namespace EMutabakat.Services
 
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        // Helper parsers used by Excel import
+        private static int ParseIntCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return 0;
+            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
+            var s = cell.ToString();
+            return int.TryParse(s, out var v) ? v : 0;
+        }
+
+        private static decimal ParseDecimalCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return 0m;
+            if (cell.CellType == CellType.Numeric) return Convert.ToDecimal(cell.NumericCellValue);
+            var s = cell.ToString();
+            return decimal.TryParse(s, out var v) ? v : 0m;
+        }
+
+        private static DateTime ParseDateCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return DateTime.Today;
+            if (cell.CellType == CellType.Numeric)
+            {
+                if (DateUtil.IsCellDateFormatted(cell)) return cell.DateCellValue ?? DateTime.Today;
+                return DateTime.FromOADate(cell.NumericCellValue);
+            }
+            var s = cell.ToString();
+            return DateTime.TryParse(s, out var d) ? d : DateTime.Today;
+        }
+
+        private static string? GetStringCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            return cell?.ToString();
+        }
+
+        public async Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        {
+            var errors = new List<string>();
+            var createdCount = 0;
+            var mailSentCount = 0;
+
+            try
+            {
+                IWorkbook workbook;
+                var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
+                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
+                else workbook = new HSSFWorkbook(stream);
+
+                var sheet = workbook.GetSheetAt(0);
+                if (sheet == null)
+                {
+                    errors.Add("Excel sayfası bulunamadı.");
+                    return (0, 0, errors);
+                }
+
+                var headerRow = sheet.GetRow(0);
+                if (headerRow == null)
+                {
+                    errors.Add("Excel başlık satırı bulunamadı.");
+                    return (0, 0, errors);
+                }
+
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < headerRow.LastCellNum; i++)
+                {
+                    var cell = headerRow.GetCell(i);
+                    if (cell == null) continue;
+                    var text = cell.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
+                }
+
+                string[] required = new[] { "FirmaId", "CariId", "MutabakatDonemi", "MutabakatTipi", "MutabakatDovizKodu", "MutabakatBakiye", "MutabakatBakiyeTipi" };
+                foreach (var h in required)
+                {
+                    if (!headerMap.ContainsKey(h))
+                    {
+                        errors.Add($"Gerekli sütun '{h}' bulunamadı.");
+                        return (0, 0, errors);
+                    }
+                }
+
+                var prepared = new List<(int RowNumber, Mutabakat Entity)>();
+
+                for (int r = 1; r <= sheet.LastRowNum; r++)
+                {
+                    var row = sheet.GetRow(r);
+                    if (row == null) continue;
+
+                    try
+                    {
+                        int firmaId = ParseIntCell(row, headerMap["FirmaId"]);
+                        int cariId = ParseIntCell(row, headerMap["CariId"]);
+                        DateTime donem = ParseDateCell(row, headerMap["MutabakatDonemi"]);
+                        int tipi = ParseIntCell(row, headerMap["MutabakatTipi"]);
+                        int doviz = ParseIntCell(row, headerMap["MutabakatDovizKodu"]);
+                        decimal bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
+                        var bakiyeTipi = GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B";
+                        var aciklama = headerMap.ContainsKey("MutabakatAciklama") ? GetStringCell(row, headerMap["MutabakatAciklama"]) : string.Empty;
+
+                        var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == firmaId);
+                        if (!firmaExists)
+                        {
+                            errors.Add($"Satır {r + 1}: FirmaId {firmaId} bulunamadı.");
+                            continue;
+                        }
+
+                        var cariExists = await _db.Cariler.AnyAsync(c => c.CariId == cariId);
+                        if (!cariExists)
+                        {
+                            errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
+                            continue;
+                        }
+
+                        var mutabakat = new Mutabakat
+                        {
+                            FirmaId = firmaId,
+                            CariId = cariId,
+                            MutabakatDonemi = donem,
+                            MutabakatTipi = tipi,
+                            MutabakatDovizKodu = doviz,
+                            MutabakatBakiye = bakiye,
+                            MutabakatBakiyeTipi = bakiyeTipi,
+                            MutabakatAciklama = aciklama ?? string.Empty
+                        };
+
+                        prepared.Add((r + 1, mutabakat));
+                    }
+                    catch (Exception exRow)
+                    {
+                        var detail = exRow.Message;
+                        var inner = exRow.InnerException;
+                        while (inner != null)
+                        {
+                            detail += " -> " + inner.Message;
+                            inner = inner.InnerException;
+                        }
+
+                        errors.Add($"Satır {r + 1}: {detail}");
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+                    return (0, 0, errors);
+                }
+
+                foreach (var (_, mutabakat) in prepared)
+                {
+                    mutabakat.MutabakatDonemi = DateTime.SpecifyKind(mutabakat.MutabakatDonemi, DateTimeKind.Utc);
+                    if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken)) mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
+                    if (mutabakat.MutabakatDurum == 0) mutabakat.MutabakatDurum = 3;
+                    if (mutabakat.MutabakatGonderimDurumu == 0) mutabakat.MutabakatGonderimDurumu = 1;
+
+                    _db.Mutabakatlar.Add(mutabakat);
+                }
+
+                await _db.SaveChangesAsync();
+                createdCount = prepared.Count;
+
+                var updated = new List<Mutabakat>();
+
+                foreach (var (_, mutabakat) in prepared)
+                {
+                    var full = await _db.Mutabakatlar
+                        .Include(m => m.Cari)
+                        .Include(m => m.Firma)
+                        .FirstOrDefaultAsync(m => m.MutabakatId == mutabakat.MutabakatId);
+
+                    if (full == null)
+                    {
+                        errors.Add($"MutabakatId {mutabakat.MutabakatId}: kayıt kaydedildikten sonra bulunamadı.");
+                        continue;
+                    }
+
+                    var sender = await _db.Kullanicilar.Include(k => k.Firma).FirstOrDefaultAsync(k => k.FirmaId == full.FirmaId);
+                    if (sender == null)
+                    {
+                        sender = new Kullanici { KullaniciMail = full.Firma?.FirmaMail ?? string.Empty, Firma = full.Firma };
+                    }
+
+                    try
+                    {
+                        var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
+                        var approveUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=approve";
+                        var rejectUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=reject";
+
+                        await _emailService.SendMutabakatMailAsync(full, sender, approveUrl, rejectUrl, false);
+
+                        full.MutabakatGonderimTarihSaat = DateTime.UtcNow;
+                        full.MutabakatGonderimDurumu = 1;
+                        if (full.MutabakatDurum == 0) full.MutabakatDurum = 3;
+
+                        updated.Add(full);
+                        mailSentCount++;
+                    }
+                    catch (Exception exMail)
+                    {
+                        var detailMail = exMail.Message;
+                        var innerMail = exMail.InnerException;
+                        while (innerMail != null)
+                        {
+                            detailMail += " -> " + innerMail.Message;
+                            innerMail = innerMail.InnerException;
+                        }
+                        errors.Add($"MutabakatId {full.MutabakatId}: Mail gönderimi başarısız: {detailMail}");
+                    }
+                }
+
+                if (updated.Count > 0)
+                {
+                    await _db.SaveChangesAsync();
+                }
+
+                return (createdCount, mailSentCount, errors);
+            }
+            catch (Exception ex)
+            {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null)
+                {
+                    detail += " -> " + inner.Message;
+                    inner = inner.InnerException;
+                }
+
+                errors.Add($"İşlem sırasında hata oluştu: {detail}");
+                return (0, 0, errors);
+            }
+
         }
     }
 }
