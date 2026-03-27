@@ -6,6 +6,8 @@
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@using Microsoft.AspNetCore.Components.Forms
+@using EMutabakat.Components.Dialogs
 
 <PageTitle>Mutabakatlar</PageTitle>
 
@@ -16,9 +18,15 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni Mutabakat Ekle"
-                          Icon="add_circle"
-                          Click="@GoToCreatePage" />
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                <RadzenButton Text="Excel Yükle"
+                              Icon="file_upload"
+                              Click="@OpenImportDialog" />
+
+                <RadzenButton Text="Yeni Mutabakat Ekle"
+                              Icon="add_circle"
+                              Click="@GoToCreatePage" />
+            </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
 
@@ -32,12 +40,13 @@
                         EmptyText="Kayıt bulunamadı">
 
             <Columns>
+                <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" />
+
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Dönem">
                     <Template Context="item">
                         @item.MutabakatDonemi.ToString("dd.MM.yyyy")
                     </Template>
                 </RadzenDataGridColumn>
-
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
                     <Template Context="item">
                         @item.Firma?.FirmaAdi
@@ -139,6 +148,23 @@
         await LoadMutabakatlarAsync();
     }
 
+    private async Task OpenImportDialog()
+    {
+        var options = new DialogOptions() { Width = "600px", Height = "220px" };
+        RenderFragment content = builder =>
+        {
+            builder.OpenComponent(0, typeof(MutabakatImportDialog));
+            builder.CloseComponent();
+        };
+
+        var result = await DialogService.OpenAsync<MutabakatImportDialog>("Excel Yükle", null, options);
+        if (result is bool b && b)
+        {
+            await LoadMutabakatlarAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Excel işlendi ve liste güncellendi.");
+        }
+    }
+
     private async Task LoadMutabakatlarAsync()
     {
         mutabakatlar = await MutabakatService.GetAllAsync();
@@ -148,6 +174,8 @@
     {
         NavigationManager.NavigateTo("/reconciliations/add");
     }
+
+    // Upload is handled in the dialog component (Components/Dialogs/MutabakatImportDialog.razor)
 
     private void GoToDetailsPage(int id)
     {

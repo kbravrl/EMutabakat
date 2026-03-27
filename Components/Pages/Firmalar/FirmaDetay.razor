@@ -1,4 +1,4 @@
-﻿@page "/companies/datail/{id:int}"
+﻿@page "/companies/detail/{id:int}"
 
 @attribute [Authorize]
 
@@ -41,11 +41,11 @@ else
                 <RadzenText TextStyle="TextStyle.H6" class="mt-3 mb-2">SMTP Bilgileri</RadzenText>
             </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="4"><b>SMTP Host:</b> @firma.FirmaSmtpHost</RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="4"><b>SMTP Port:</b> @firma.FirmaSmtpPort</RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="4"><b>SMTP User:</b> @firma.FirmaSmtpUser</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3"><b>SMTP Host:</b> @firma.FirmaSmtpHost</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3"><b>SMTP Port:</b> @firma.FirmaSmtpPort</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3"><b>SMTP User:</b> @firma.FirmaSmtpUser</RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3"><b>SMTP Secure:</b> @firma.FirmaSmtpSecure</RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="6"><b>SMTP Secure:</b> @firma.FirmaSmtpSecure</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6">
                 <b>Durum:</b>
                 @(firma.FirmaAktifPasif == 1 ? "Aktif" : "Pasif")

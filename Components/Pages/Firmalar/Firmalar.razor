@@ -32,6 +32,7 @@
                         EmptyText="Kayıt bulunamadı">
 
             <Columns>
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaId" Title="ID" />
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı" />
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
                 <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
@@ -71,41 +72,6 @@
                     </Template>
                 </RadzenDataGridColumn>
             </Columns>
-            <Template Context="firma">
-                <RadzenCard class="p-3">
-                    <RadzenRow>
-
-                        <RadzenColumn Size="12" SizeMD="6">
-                            <b>Vergi Dairesi:</b> @firma.FirmaVergiDairesi
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="6">
-                            <b>Vergi No:</b> @firma.FirmaVergiNumarasi
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12">
-                            <b>Adres:</b> @firma.FirmaAdres
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="3">
-                            <b>SMTP Host:</b> @firma.FirmaSmtpHost
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="3">
-                            <b>SMTP Port:</b> @firma.FirmaSmtpPort
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="3">
-                            <b>SMTP User:</b> @firma.FirmaSmtpUser
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeMD="3">
-                            <b>SMTP Secure:</b> @firma.FirmaSmtpSecure
-                        </RadzenColumn>
-
-                    </RadzenRow>
-                </RadzenCard>
-            </Template>
         </RadzenDataGrid>
     </RadzenCard>
 </RadzenStack>
