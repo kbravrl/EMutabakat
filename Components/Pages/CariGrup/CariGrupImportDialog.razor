@@ -1,0 +1,72 @@
+@inject ICariGrupService CariGrupService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<div class="p-2">
+    <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
+
+    <div class="my-4">
+        <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
+    </div>
+
+    <div class="rz-text-align-right">
+        <RadzenButton Text="Yükle" Icon="file_upload" Click="Upload" Disabled="@isUploading" />
+        <RadzenButton Text="İptal" Icon="close" Click="Cancel" ButtonStyle="ButtonStyle.Secondary" />
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isUploading = false;
+
+    private void HandleSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private async Task Upload()
+    {
+        if (isUploading) return;
+        if (selectedFile == null)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen bir dosya seçin.");
+            return;
+        }
+
+        isUploading = true;
+
+        try
+        {
+            await using var ms = new MemoryStream();
+            await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
+            ms.Position = 0;
+
+            var (createdCount, errors) = await CariGrupService.ImportFromExcelAsync(ms, selectedFile.Name);
+
+            if (errors != null && errors.Count > 0)
+            {
+                var parameters = new Dictionary<string, object?> { ["Errors"] = errors };
+                await DialogService.OpenAsync(string.Empty, typeof(ImportErrors), parameters, new DialogOptions { Width = "700px", Height = "400px" });
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", $"Oluşturulan kayıt: {createdCount}");
+            }
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+}
