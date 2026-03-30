@@ -3,6 +3,12 @@ using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using NPOI.HSSF.UserModel;
+using System.IO;
+using System;
+using System.Collections.Generic;
 
 namespace EMutabakat.Services
 {
@@ -15,6 +21,156 @@ namespace EMutabakat.Services
         {
             _db = db;
             _passwordHasher = new PasswordHasher<Kullanici>();
+        }
+
+        // Helper parsers
+        private static string? GetStringCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            return cell?.ToString();
+        }
+
+        private static int ParseIntCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return 0;
+            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
+            var s = cell.ToString();
+            return int.TryParse(s, out var v) ? v : 0;
+        }
+
+        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        {
+            var errors = new List<string>();
+            var created = 0;
+
+            try
+            {
+                IWorkbook workbook;
+                var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
+                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
+                else workbook = new HSSFWorkbook(stream);
+
+                var sheet = workbook.GetSheetAt(0);
+                if (sheet == null)
+                {
+                    errors.Add("Excel sayfası bulunamadı.");
+                    return (0, errors);
+                }
+
+                var headerRow = sheet.GetRow(0);
+                if (headerRow == null)
+                {
+                    errors.Add("Excel başlık satırı bulunamadı.");
+                    return (0, errors);
+                }
+
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < headerRow.LastCellNum; i++)
+                {
+                    var cell = headerRow.GetCell(i);
+                    if (cell == null) continue;
+                    var text = cell.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
+                }
+
+                string[] required = new[] { "KullaniciAdi", "KullaniciSoyadi", "KullaniciMail", "Sifre", "FirmaId" };
+                foreach (var h in required)
+                {
+                    if (!headerMap.ContainsKey(h))
+                    {
+                        errors.Add($"Gerekli sütun '{h}' bulunamadı.");
+                        return (0, errors);
+                    }
+                }
+
+                var prepared = new List<(int RowNumber, Kullanici Entity)>();
+
+                for (int r = 1; r <= sheet.LastRowNum; r++)
+                {
+                    var row = sheet.GetRow(r);
+                    if (row == null) continue;
+
+                    try
+                    {
+                        var firmaId = ParseIntCell(row, headerMap.GetValueOrDefault("FirmaId"));
+                        var kullanici = new Kullanici
+                        {
+                            FirmaId = firmaId,
+                            KullaniciAdi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciAdi")) ?? string.Empty,
+                            KullaniciSoyadi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciSoyadi")) ?? string.Empty,
+                            KullaniciMail = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciMail")) ?? string.Empty,
+                            KullaniciGsm = headerMap.ContainsKey("KullaniciGsm") ? GetStringCell(row, headerMap["KullaniciGsm"]) ?? string.Empty : string.Empty,
+                            Sifre = GetStringCell(row, headerMap.GetValueOrDefault("Sifre")) ?? string.Empty,
+                            KullaniciAktifPasif = headerMap.ContainsKey("KullaniciAktifPasif") ? GetStringCell(row, headerMap["KullaniciAktifPasif"]) ?? "1" : "1"
+                        };
+
+                        if (kullanici.FirmaId <= 0)
+                        {
+                            errors.Add($"Satır {r + 1}: FirmaId geçerli olmalıdır.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi) || string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi) || string.IsNullOrWhiteSpace(kullanici.KullaniciMail) || string.IsNullOrWhiteSpace(kullanici.Sifre))
+                        {
+                            errors.Add($"Satır {r + 1}: Zorunlu alanlar boş olamaz (Ad, Soyad, Mail, Şifre).");
+                            continue;
+                        }
+
+                        var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+                        if (!firmaExists)
+                        {
+                            errors.Add($"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.");
+                            continue;
+                        }
+
+                        // Hash password now
+                        kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
+
+                        prepared.Add((r + 1, kullanici));
+                    }
+                    catch (Exception exRow)
+                    {
+                        var detail = exRow.Message;
+                        var inner = exRow.InnerException;
+                        while (inner != null)
+                        {
+                            detail += " -> " + inner.Message;
+                            inner = inner.InnerException;
+                        }
+
+                        errors.Add($"Satır {r + 1}: {detail}");
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+                    return (0, errors);
+                }
+
+                foreach (var (_, kullanici) in prepared)
+                {
+                    _db.Kullanicilar.Add(kullanici);
+                }
+
+                await _db.SaveChangesAsync();
+                created = prepared.Count;
+
+                return (created, errors);
+            }
+            catch (Exception ex)
+            {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null)
+                {
+                    detail += " -> " + inner.Message;
+                    inner = inner.InnerException;
+                }
+
+                errors.Add($"İşlem sırasında hata oluştu: {detail}");
+                return (0, errors);
+            }
         }
 
         public async Task<List<Kullanici>> GetAllAsync()

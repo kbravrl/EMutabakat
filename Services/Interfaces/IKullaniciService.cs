@@ -13,5 +13,6 @@ namespace EMutabakat.Services.Interfaces
         Task<Kullanici?> GetByMailAsync(string mail);
         Task<Kullanici?> RegisterAsync(Kullanici kullanici);
         Task<Kullanici?> LoginAsync(string mail, string sifre);
+        Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName);
     }
 }
