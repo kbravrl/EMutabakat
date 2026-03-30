@@ -15,10 +15,17 @@
             <RadzenText TextStyle="TextStyle.H4">Cari Listesi</RadzenText>
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni Cari Ekle"
-                          Icon="add_circle"
-                          Click="@GoToCreatePage" />
+          <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                <RadzenButton Text="Excel İçe Aktar"
+                              Icon="file_upload"
+                              Style="margin-left:8px"
+                              Click="OpenImportDialog" />
+
+                <RadzenButton Text="Yeni Cari Ekle"
+                              Icon="add_circle"
+                              Click="@GoToCreatePage" />
+            </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
 
@@ -138,6 +145,17 @@
             {
                 NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari kaydı silinemedi.");
             }
+
+        }
+    }
+
+    private async Task OpenImportDialog()
+    {
+        var parameters = new Dictionary<string, object?>();
+        var result = await DialogService.OpenAsync(string.Empty, typeof(Components.Pages.Cari.CariImportDialog), parameters, new DialogOptions { Width = "600px" });
+        if (result == true)
+        {
+            await LoadCarilerAsync();
         }
     }
 }
