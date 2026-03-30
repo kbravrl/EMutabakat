@@ -16,9 +16,15 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni Firma Ekle"
-                          Icon="add_circle"
-                          Click="@GoToCreatePage" />
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                <RadzenButton Text="Excel İçe Aktar"
+                              Icon="file_upload"
+                              Click="@OpenImportDialog" />
+
+                <RadzenButton Text="Yeni Firma Ekle"
+                              Icon="add_circle"
+                              Click="@GoToCreatePage" />
+            </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
 
@@ -135,6 +141,16 @@
                     "Hata",
                     "Firma kaydı silinemedi.");
             }
+        }
+    }
+
+    private async Task OpenImportDialog()
+    {
+        var options = new DialogOptions() { Width = "600px" };
+        var result = await DialogService.OpenAsync<FirmaImportDialog>("Excel İçe Aktar", null, options);
+        if (result is bool b && b)
+        {
+            await LoadFirmalarAsync();
         }
     }
 }
