@@ -8,6 +8,7 @@ namespace EMutabakat.Models
         [Key]
         public int KullaniciId { get; set; }
 
+        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
         [ForeignKey("Firma")]
         public int FirmaId { get; set; }
 
@@ -26,7 +27,8 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Şifre zorunludur.")]
         public string Sifre { get; set; } = string.Empty;
 
-        public string KullaniciAktifPasif { get; set; } = "1";
+        [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
+        public string KullaniciAktifPasif { get; set; }
 
         public Firma? Firma { get; set; }
     }

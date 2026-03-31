@@ -74,7 +74,16 @@ namespace EMutabakat.Services
                     if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
                 }
 
-                string[] required = new[] { "KullaniciAdi", "KullaniciSoyadi", "KullaniciMail", "Sifre", "FirmaId" };
+                string[] required = new[]
+                {
+                   "FirmaId",
+                   "KullaniciAdi",
+                   "KullaniciSoyadi",
+                   "KullaniciMail",
+                   "Sifre",
+                   "KullaniciAktifPasif"
+                };
+
                 foreach (var h in required)
                 {
                     if (!headerMap.ContainsKey(h))
@@ -121,6 +130,12 @@ namespace EMutabakat.Services
                         if (!firmaExists)
                         {
                             errors.Add($"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                        {
+                            errors.Add($"Satır {r + 1}: Aktif/Pasif bilgisi boş olamaz.");
                             continue;
                         }
 
@@ -228,6 +243,28 @@ namespace EMutabakat.Services
 
         public async Task<Kullanici> AddAsync(Kullanici kullanici)
         {
+            if (kullanici.FirmaId <= 0)
+                throw new Exception("Firma seçimi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
+                throw new Exception("Ad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi))
+                throw new Exception("Soyad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
+                throw new Exception("Mail zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.Sifre))
+                throw new Exception("Şifre zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
+
+            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+            if (!firmaExists)
+                throw new Exception("Seçilen firma bulunamadı.");
+
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
             _db.Kullanicilar.Add(kullanici);
@@ -242,6 +279,25 @@ namespace EMutabakat.Services
 
             if (existingKullanici == null)
                 return null;
+
+            if (kullanici.FirmaId <= 0)
+                throw new Exception("Firma seçimi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
+                throw new Exception("Ad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi))
+                throw new Exception("Soyad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
+                throw new Exception("Mail zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
+
+            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+            if (!firmaExists)
+                throw new Exception("Seçilen firma bulunamadı.");
 
             existingKullanici.FirmaId = kullanici.FirmaId;
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;

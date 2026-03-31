@@ -9,78 +9,139 @@
 
 <PageTitle>Kullanıcı Düzenle</PageTitle>
 
-@if (kullanici == null)
+@if (isLoading)
+{
+    <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" Style="height:6px;" />
+}
+else if (kullanici == null)
 {
     <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
 }
 else
 {
-    <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
-        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+    <RadzenCard Class="p-4" Style="max-width:950px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.SpaceBetween"
+                     Gap="8px">
             <RadzenText TextStyle="TextStyle.H4">Kullanıcı Düzenle</RadzenText>
         </RadzenStack>
+
         <RadzenDivider />
+
         <EditForm Model="@kullanici" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />
-            <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
+
+            <RadzenFieldset Text="Kullanıcı Bilgileri" Style="margin-bottom:16px">
                 <RadzenRow Gap="16px">
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Firma" Style="width:100%;">
-                        <RadzenDropDown Data="@firmalar"
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Firma *" />
+                        <RadzenDropDown Name="FirmaId"
+                                        Data="@firmalar"
                                         TextProperty="FirmaAdi"
                                         ValueProperty="FirmaId"
                                         @bind-Value="kullanici.FirmaId"
+                                        Placeholder="Firma seçiniz"
                                         Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                        <RadzenRequiredValidator Component="FirmaId"
+                                                 Text="Firma seçimi zorunludur."
+                                                 Popup="true" />
+                        <RadzenCompareValidator Component="FirmaId"
+                                                Value="1"
+                                                Operator="CompareOperator.GreaterThanEqual"
+                                                Text="Firma seçimi zorunludur."
+                                                Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Durum" Style="width:100%;">
-                        <RadzenDropDown Data="@durumlar"
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Durum *" />
+                        <RadzenDropDown Name="KullaniciAktifPasif"
+                                        Data="@durumlar"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
                                         @bind-Value="kullanici.KullaniciAktifPasif"
+                                        Placeholder="Durum seçiniz"
                                         Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                        <RadzenRequiredValidator Component="KullaniciAktifPasif"
+                                                 Text="Aktif/Pasif bilgisi zorunludur."
+                                                 Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Ad" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="kullanici.KullaniciAdi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Ad *" />
+                        <RadzenTextBox Name="KullaniciAdi"
+                                       @bind-Value="kullanici.KullaniciAdi"
+                                       Placeholder="Ad giriniz"
+                                       Style="width:100%;" />
+                        <RadzenRequiredValidator Component="KullaniciAdi"
+                                                 Text="Ad zorunludur."
+                                                 Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Soyad" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="kullanici.KullaniciSoyadi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Soyad *" />
+                        <RadzenTextBox Name="KullaniciSoyadi"
+                                       @bind-Value="kullanici.KullaniciSoyadi"
+                                       Placeholder="Soyad giriniz"
+                                       Style="width:100%;" />
+                        <RadzenRequiredValidator Component="KullaniciSoyadi"
+                                                 Text="Soyad zorunludur."
+                                                 Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Mail" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="kullanici.KullaniciMail" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Mail *" />
+                        <RadzenTextBox Name="KullaniciMail"
+                                       @bind-Value="kullanici.KullaniciMail"
+                                       Placeholder="Mail giriniz"
+                                       Style="width:100%;" />
+                        <RadzenRequiredValidator Component="KullaniciMail"
+                                                 Text="Mail zorunludur."
+                                                 Popup="true" />
+                        <RadzenEmailValidator Component="KullaniciMail"
+                                              Text="Geçerli bir mail adresi giriniz."
+                                              Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Yeni Şifre" Style="width:100%;">
-                        <RadzenPassword @bind-Value="kullanici.Sifre" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="GSM" />
+                        <RadzenTextBox Name="KullaniciGsm"
+                                       @bind-Value="kullanici.KullaniciGsm"
+                                       Placeholder="GSM giriniz"
+                                       Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="GSM" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="kullanici.KullaniciGsm" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Şifre" />
+                        <RadzenPassword Name="Sifre"
+                                        @bind-Value="kullanici.Sifre"
+                                        Placeholder="kullanici.Sifre"
+                                        Style="width:100%;" />
+                    </RadzenColumn>
 
+                </RadzenRow>
+            </RadzenFieldset>
+
+            <RadzenRow>
                 <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
-                        <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
+                    <RadzenStack Orientation="Orientation.Horizontal"
+                                 Gap="10px"
+                                 JustifyContent="JustifyContent.End"
+                                 Class="mt-3">
+                        <RadzenButton Text="İptal"
+                                      Icon="close"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@Cancel"
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+
+                        <RadzenButton Text="Güncelle"
+                                      Icon="save"
+                                      ButtonType="ButtonType.Submit"
+                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
-            </RadzenFieldset>
         </EditForm>
     </RadzenCard>
 }
@@ -89,13 +150,31 @@ else
     [Parameter] public int id { get; set; }
 
     private Kullanici? kullanici;
+    private bool isLoading = true;
     private List<Firma> firmalar = new();
-    private List<string> durumlar = new() { "1", "0" };
+
+    private List<DurumOption> durumlar = new()
+    {
+        new() { Text = "Aktif", Value = "1" },
+        new() { Text = "Pasif", Value = "0" }
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        firmalar = await FirmaService.GetAllAsync();
-        kullanici = await KullaniciService.GetByIdAsync(id);
+        try
+        {
+            firmalar = await FirmaService.GetAllAsync();
+            kullanici = await KullaniciService.GetByIdAsync(id);
+
+            if (kullanici != null)
+            {
+                kullanici.Sifre = string.Empty;
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private async Task HandleValidSubmit()
@@ -103,28 +182,44 @@ else
         if (kullanici == null)
             return;
 
-        var result = await KullaniciService.UpdateAsync(kullanici);
-
-        if (result != null)
+        try
         {
-            NotificationService.Notify(
-                NotificationSeverity.Success,
-                "Başarılı",
-                "Kullanıcı kaydı güncellendi.");
+            var result = await KullaniciService.UpdateAsync(kullanici);
 
-            NavigationManager.NavigateTo("/users");
+            if (result != null)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Kullanıcı kaydı güncellendi.");
+
+                NavigationManager.NavigateTo("/users");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Kullanıcı kaydı bulunamadı.");
+            }
         }
-        else
+        catch (Exception ex)
         {
             NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                "Kullanıcı kaydı güncellenemedi.");
+                NotificationSeverity.Warning,
+                "Uyarı",
+                ex.Message);
         }
     }
 
     private void Cancel()
     {
         NavigationManager.NavigateTo("/users");
+    }
+
+    private class DurumOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 }
