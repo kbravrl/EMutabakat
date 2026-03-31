@@ -15,14 +15,16 @@
 }
 else
 {
-    <RadzenCard class="p-4">
-        <RadzenText TextStyle="TextStyle.H4" class="mb-3">Kullanıcı Düzenle</RadzenText>
-
+    <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Kullanıcı Düzenle</RadzenText>
+        </RadzenStack>
+        <RadzenDivider />
         <EditForm Model="@kullanici" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />
-
-            <RadzenRow Gap="16px">
+            <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
+                <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenFormField Text="Firma" Style="width:100%;">
                         <RadzenDropDown Data="@firmalar"
@@ -72,12 +74,13 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" class="mt-3">
-                        <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" />
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
+                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                        <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
+            </RadzenFieldset>
         </EditForm>
     </RadzenCard>
 }

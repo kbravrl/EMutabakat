@@ -13,9 +13,12 @@
 }
 else
 {
-    <RadzenCard class="p-4">
-        <RadzenText TextStyle="TextStyle.H4" class="mb-4">Cari Detay</RadzenText>
-
+    <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Cari Detay</RadzenText>
+        </RadzenStack>
+        <RadzenDivider />
+        <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
         <RadzenRow Gap="16px">
             <RadzenColumn Size="12" SizeMD="6"><b>Cari Adı:</b> @cari.CariAdi</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Cari Unvan:</b> @cari.CariUnvan</RadzenColumn>
@@ -41,18 +44,20 @@ else
             <RadzenColumn Size="12" SizeMD="6"><b>Durum:</b> @(cari.CariAktifPasif == 1 ? "Aktif" : "Pasif")</RadzenColumn>
 
             <RadzenColumn Size="12" class="mt-3">
-                <RadzenStack Orientation="Orientation.Horizontal" Gap="10px">
-                    <RadzenButton Text="Düzenle"
-                                  Icon="edit"
-                                  Click="@(() => NavigationManager.NavigateTo($"/cariler/duzenle/{cari.CariId}"))" />
-
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End">
                     <RadzenButton Text="Listeye Dön"
                                   Icon="arrow_back"
                                   ButtonStyle="ButtonStyle.Secondary"
-                                  Click="@BackToList" />
+                                  Click="@BackToList"
+                                  Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                    <RadzenButton Text="Düzenle"
+                                  Icon="edit"
+                                  Click="@(() => NavigationManager.NavigateTo($"/cariler/duzenle/{cari.CariId}"))"
+                                  Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>
+        </RadzenFieldset>
     </RadzenCard>
 }
 

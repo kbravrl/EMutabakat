@@ -14,144 +14,111 @@
 }
 else
 {
-    <RadzenCard class="p-4">
-        <RadzenText TextStyle="TextStyle.H4" class="mb-3">Firma Düzenle</RadzenText>
+    <RadzenCard Class="p-4" Style="max-width:760px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Firma Düzenle</RadzenText>
+        </RadzenStack>
+
+        <RadzenDivider />
 
         <EditForm Model="@firma" OnValidSubmit="@HandleValidSubmit">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
 
-            <RadzenRow Gap="16px">
+            <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
+                <RadzenRow Gap="16px">
+                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenTextBox @bind-value="firma.FirmaAdi" Placeholder="Firma adı" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Firma Adı" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaAdi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenTextBox @bind-value="firma.FirmaUnvan" Placeholder="Unvan" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Firma Unvan" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaUnvan" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12">
+                        <RadzenTextArea @bind-value="firma.FirmaAdres" Placeholder="Adres" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12">
-                    <RadzenFormField Text="Adres" Style="width:100%;">
-                        <RadzenTextArea @bind-Value="firma.FirmaAdres" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaIlce" Placeholder="İlçe" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="İlçe" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaIlce" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaIl" Placeholder="İl" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="İl" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaIl" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaVergiDairesi" Placeholder="Vergi Dairesi" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Vergi Dairesi" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaVergiDairesi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaVergiNumarasi" Placeholder="Vergi No" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Vergi Numarası" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaVergiNumarasi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaMersisNumarasi" Placeholder="Mersis No" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Mersis Numarası" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaMersisNumarasi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaWebAdresi" Placeholder="Web" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Web Adresi" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaWebAdresi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenTextBox @bind-value="firma.FirmaYetkiliAdiSoyadi" Placeholder="Yetkili" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Yetkili Adı Soyadı" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaYetkiliAdiSoyadi" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenTextBox @bind-value="firma.FirmaMail" Placeholder="E-posta" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Mail" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaMail" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenTextBox @bind-value="firma.FirmaTelefon" Placeholder="Telefon" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Telefon" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaTelefon" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenTextBox @bind-value="firma.FirmaGsm" Placeholder="GSM" Style="width:100%;border:1px solid #f0f0f0;border-radius:8px;padding:8px;" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="GSM" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaGsm" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
 
-                <RadzenColumn Size="12">
-                    <RadzenText TextStyle="TextStyle.H6" class="mt-3 mb-2">SMTP Bilgileri</RadzenText>
-                </RadzenColumn>
+            <RadzenFieldset Text="SMTP Ayarları">
+                <RadzenRow Gap="16px">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaSmtpHost" Placeholder="SMTP Host" Style="width:100%;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenNumeric TValue="int" @bind-value="firma.FirmaSmtpPort" Placeholder="Port" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenFormField Text="SMTP Host" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaSmtpHost" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox @bind-value="firma.FirmaSmtpUser" Placeholder="Kullanıcı" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenFormField Text="SMTP Host" Style="width:100%;">
-                        <RadzenNumeric @bind-Value="firma.FirmaSmtpPort"
-                                       Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenPassword @bind-value="firma.FirmaSmtpPassword" Placeholder="Şifre" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenFormField Text="SMTP User" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaSmtpUser" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenTextBox @bind-value="firma.FirmaSmtpSecure" Placeholder="Secure" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="SMTP Password" Style="width:100%;">
-                        <RadzenPassword @bind-Value="firma.FirmaSmtpPassword" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                            <RadzenText>Aktif</RadzenText>
+                            <RadzenDropDown @bind-value="firma.FirmaAktifPasif"
+                                            Data="@durumlar"
+                                            Style="width:100%;" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenFieldset>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenFormField Text="SMTP Secure" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="firma.FirmaSmtpSecure" Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
+            <RadzenColumn Size="12">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
+                    <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" Style="background:#fafafa;color:#333;border:1px solid #eee;border-radius:8px;padding:8px 14px;" />
+                    <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" Style="background:#f0f7ff;color:#0b57d0;border:1px solid #dbeeff;border-radius:8px;padding:8px 14px;" />
+                </RadzenStack>
+            </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenFormField Text="Aktif/Pasif" Style="width:100%;">
-                        <RadzenDropDown @bind-Value="firma.FirmaAktifPasif"
-                                        Data="@durumlar"
-                                        Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
-
-                <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" class="mt-3">
-                        <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" />
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
-                    </RadzenStack>
-                </RadzenColumn>
-
-            </RadzenRow>
         </EditForm>
     </RadzenCard>
 }
@@ -161,6 +128,7 @@ else
 
     private Firma? firma;
     private List<int> durumlar = new() { 1, 0 };
+    private bool isActiveBool = true;
 
     protected override async Task OnInitializedAsync()
     {
