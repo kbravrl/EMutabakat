@@ -2,6 +2,12 @@
 
 @attribute [Authorize]
 
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Radzen
+
 @inject ICariGrupService CariGrupService
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
@@ -13,30 +19,54 @@
     <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
         <RadzenText TextStyle="TextStyle.H4">Yeni Cari Grup Ekle</RadzenText>
     </RadzenStack>
+
     <RadzenDivider />
+
     <EditForm Model="@cariGrup" OnValidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator />
-        <ValidationSummary />
+ 
         <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
             <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Firma" Style="width:100%;">
-                        <RadzenDropDown Data="@firmalar"
+                    <RadzenLabel Text="Firma *" Style="width:100%;" />
+                        <RadzenDropDown Name="FirmaId"
+                                        Data="@firmalar"
                                         TextProperty="FirmaAdi"
                                         ValueProperty="FirmaId"
                                         @bind-Value="cariGrup.FirmaId"
+                                        Placeholder="Firma seçiniz"
                                         Style="width:100%;" />
-                    </RadzenFormField>
+                    <RadzenRequiredValidator Component="FirmaId"
+                                             Text="Firma seçimi zorunludur."
+                                             Popup="true" />
                 </RadzenColumn>
+
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Cari Grup Adı" Style="width:100%;">
-                        <RadzenTextBox @bind-Value="cariGrup.CariGrupAdi" Style="width:100%;" />
-                    </RadzenFormField>
+                    <RadzenLabel Text="Cari Grup Adı *" Style="width:100%;" />
+                        <RadzenTextBox Name="CariGrupAdi"
+                                       @bind-Value="cariGrup.CariGrupAdi"
+                                       Placeholder="Cari grup adı giriniz"
+                                       Style="width:100%;" />
+                    <RadzenRequiredValidator Component="CariGrupAdi"
+                                             Text="Cari grup adı zorunludur."
+                                             Popup="true" />
                 </RadzenColumn>
+
                 <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
-                        <RadzenButton Text="Kaydet" Icon="save" ButtonType="ButtonType.Submit" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
+                    <RadzenStack Orientation="Orientation.Horizontal"
+                                 Gap="10px"
+                                 JustifyContent="JustifyContent.End"
+                                 Class="mt-3">
+                        <RadzenButton Text="İptal"
+                                      Icon="close"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@Cancel"
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+
+                        <RadzenButton Text="Kaydet"
+                                      Icon="save"
+                                      ButtonType="ButtonType.Submit"
+                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
@@ -55,14 +85,24 @@
 
     private async Task HandleValidSubmit()
     {
-        await CariGrupService.AddAsync(cariGrup);
+        try
+        {
+            await CariGrupService.AddAsync(cariGrup);
 
-        NotificationService.Notify(
-            NotificationSeverity.Success,
-            "Başarılı",
-            "Cari grup kaydı eklendi.");
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Cari grup kaydı eklendi.");
 
-        NavigationManager.NavigateTo("/current-groups");
+            NavigationManager.NavigateTo("/current-groups");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Warning,
+                "Uyarı",
+                ex.Message);
+        }
     }
 
     private void Cancel()

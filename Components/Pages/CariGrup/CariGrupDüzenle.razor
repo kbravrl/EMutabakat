@@ -19,25 +19,32 @@ else
         <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
             <RadzenText TextStyle="TextStyle.H4">Cari Grup Düzenle</RadzenText>
         </RadzenStack>
+
         <RadzenDivider />
+
         <EditForm Model="@cariGrup" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
-            <ValidationSummary />
+
             <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
                 <RadzenRow Gap="16px">
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenFormField Text="Firma" Style="width:100%;">
-                            <RadzenDropDown Data="@firmalar"
+                        <RadzenLabel Text="Firma *" Style="width:100%;" />
+                            <RadzenDropDown Name="FirmaId"
+                                            Data="@firmalar"
                                             TextProperty="FirmaAdi"
                                             ValueProperty="FirmaId"
                                             @bind-Value="cariGrup.FirmaId"
                                             Style="width:100%;" />
-                        </RadzenFormField>
+
+                            <RadzenRequiredValidator Component="FirmaId" Text="Firma seçimi zorunludur." Popup="true" />
                     </RadzenColumn>
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenFormField Text="Cari Grup Adı" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="cariGrup.CariGrupAdi" Style="width:100%;" />
-                        </RadzenFormField>
+                        <RadzenLabel Text="Cari Grup Adı *" Style="width:100%;" />
+                            <RadzenTextBox Name="CariGrupAdi"
+                                           @bind-Value="cariGrup.CariGrupAdi"
+                                           Style="width:100%;" />
+
+                            <RadzenRequiredValidator Component="CariGrupAdi" Text="Cari grup adı zorunludur." Popup="true" />
                     </RadzenColumn>
                     <RadzenColumn Size="12">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">

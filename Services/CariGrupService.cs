@@ -37,8 +37,20 @@ namespace EMutabakat.Services
 
         public async Task<CariGrup> AddAsync(CariGrup cariGrup)
         {
+            if (cariGrup.FirmaId <= 0)
+                throw new Exception("Firma seçimi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
+                throw new Exception("Cari grup adı zorunludur.");
+
+            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
+
+            if (!firmaExists)
+                throw new Exception("Seçilen firma bulunamadı.");
+
             _db.CariGruplar.Add(cariGrup);
             await _db.SaveChangesAsync();
+
             return cariGrup;
         }
 
