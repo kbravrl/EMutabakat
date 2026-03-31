@@ -16,59 +16,80 @@
     <RadzenDivider />
 
     <EditForm Model="@firma" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
 
         <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
             <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaAdi" Placeholder="Firma adı" Style="width:100%;" />
+                    <RadzenLabel Text="Firma Adı *" />
+                    <RadzenTextBox Name="FirmaAdi" @bind-Value="firma.FirmaAdi" Placeholder="Firma adı" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaAdi" Text="Firma adı zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaUnvan" Placeholder="Unvan" Style="width:100%;" />
+                    <RadzenLabel Text="Firma Unvanı" />
+                    <RadzenTextBox @bind-Value="firma.FirmaUnvan" Placeholder="Unvan" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
-                    <RadzenTextArea @bind-value="firma.FirmaAdres" Placeholder="Adres" Style="width:100%;" />
+                    <RadzenLabel Text="Adres" />
+                    <RadzenTextArea @bind-Value="firma.FirmaAdres" Placeholder="Adres" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaIlce" Placeholder="İlçe" Style="width:100%;" />
+                    <RadzenLabel Text="İlçe" />
+                    <RadzenTextBox @bind-Value="firma.FirmaIlce" Placeholder="İlçe" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaIl" Placeholder="İl" Style="width:100%;" />
+                    <RadzenLabel Text="İl" />
+                    <RadzenTextBox @bind-Value="firma.FirmaIl" Placeholder="İl" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaVergiDairesi" Placeholder="Vergi Dairesi" Style="width:100%;" />
+                    <RadzenLabel Text="Vergi Dairesi *" />
+                    <RadzenTextBox Name="FirmaVergiDairesi" @bind-Value="firma.FirmaVergiDairesi" Placeholder="Vergi Dairesi" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaVergiDairesi" Text="Vergi dairesi zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaVergiNumarasi" Placeholder="Vergi No" Style="width:100%;" />
+                    <RadzenLabel Text="Vergi Numarası *" />
+                    <RadzenTextBox Name="FirmaVergiNumarasi" @bind-Value="firma.FirmaVergiNumarasi" Placeholder="Vergi No" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaVergiNumarasi" Text="Vergi numarası zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaMersisNumarasi" Placeholder="Mersis No" Style="width:100%;" />
+                    <RadzenLabel Text="Mersis Numarası" />
+                    <RadzenTextBox @bind-Value="firma.FirmaMersisNumarasi" Placeholder="Mersis No" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaWebAdresi" Placeholder="Web" Style="width:100%;" />
+                    <RadzenLabel Text="Web Adresi" />
+                    <RadzenTextBox @bind-Value="firma.FirmaWebAdresi" Placeholder="Web" Style="width:100%;" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaYetkiliAdiSoyadi" Placeholder="Yetkili" Style="width:100%;" />
+                    <RadzenLabel Text="Yetkili Adı Soyadı *" />
+                    <RadzenTextBox Name="FirmaYetkiliAdiSoyadi" @bind-Value="firma.FirmaYetkiliAdiSoyadi" Placeholder="Yetkili" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaYetkiliAdiSoyadi" Text="Yetkili adı soyadı zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaMail" Placeholder="E-posta" Style="width:100%;" />
+                    <RadzenLabel Text="E-Posta *" />
+                    <RadzenTextBox Name="FirmaMail" @bind-Value="firma.FirmaMail" Placeholder="E-posta" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaMail" Text="Mail zorunludur." Popup="true" />
+                    <RadzenEmailValidator Component="FirmaMail" Text="Geçerli bir e-posta giriniz." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaTelefon" Placeholder="Telefon" Style="width:100%;" />
+                    <RadzenLabel Text="Telefon *" />
+                    <RadzenTextBox Name="FirmaTelefon" @bind-Value="firma.FirmaTelefon" Placeholder="Telefon" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaTelefon" Text="Telefon zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenTextBox @bind-value="firma.FirmaGsm" Placeholder="GSM" Style="width:100%;" />
+                    <RadzenLabel Text="GSM" />
+                    <RadzenTextBox @bind-Value="firma.FirmaGsm" Placeholder="GSM" Style="width:100%;" />
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
@@ -76,66 +97,119 @@
         <RadzenFieldset Text="SMTP Ayarları">
             <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaSmtpHost" Placeholder="SMTP Host" Style="width:100%;" />
+                    <RadzenLabel Text="SMTP Host *" />
+                    <RadzenTextBox Name="FirmaSmtpHost" @bind-Value="firma.FirmaSmtpHost" Placeholder="SMTP Host" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaSmtpHost" Text="SMTP Host zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenNumeric TValue="int" @bind-value="firma.FirmaSmtpPort" Placeholder="Port" Style="width:100%;" />
+                    <RadzenLabel Text="SMTP Port *" />
+                    <RadzenNumeric Name="FirmaSmtpPort"
+                                   TValue="int"
+                                   @bind-Value="firma.FirmaSmtpPort"
+                                   Placeholder="Port"
+                                   Min="1"
+                                   Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaSmtpPort" Text="SMTP Port zorunludur." Popup="true" />
+                    <RadzenCompareValidator Component="FirmaSmtpPort" Value="1" Operator="CompareOperator.GreaterThanEqual" Text="SMTP Port 1 veya daha büyük olmalıdır." Popup="true" />
                 </RadzenColumn>
 
-
                 <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenTextBox @bind-value="firma.FirmaSmtpUser" Placeholder="Kullanıcı" Style="width:100%;" />
+                    <RadzenLabel Text="SMTP Kullanıcı *" />
+                    <RadzenTextBox Name="FirmaSmtpUser" @bind-Value="firma.FirmaSmtpUser" Placeholder="Kullanıcı" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaSmtpUser" Text="SMTP kullanıcı adı zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenPassword @bind-value="firma.FirmaSmtpPassword" Placeholder="Şifre" Style="width:100%;" />
+                    <RadzenLabel Text="SMTP Şifre *" />
+                    <RadzenPassword Name="FirmaSmtpPassword" @bind-Value="firma.FirmaSmtpPassword" Placeholder="Şifre" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaSmtpPassword" Text="SMTP şifresi zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenTextBox @bind-value="firma.FirmaSmtpSecure" Placeholder="Secure" Style="width:100%;" />
+                    <RadzenLabel Text="SMTP Secure *" />
+                    <RadzenDropDown Name="FirmaSmtpSecure"
+                                    @bind-Value="firma.FirmaSmtpSecure"
+                                    Data="@secureOptions"
+                                    Placeholder="Seçiniz"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaSmtpSecure" Text="SMTP Secure bilgisi zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                        <RadzenText>Aktif</RadzenText>
-                        <RadzenDropDown @bind-value="firma.FirmaAktifPasif"
-                                        Data="@durumlar"
-                                        Style="width:100%;" />
-                    </RadzenStack>
+                    <RadzenLabel Text="Durum *" />
+                    <RadzenDropDown Name="FirmaAktifPasif"
+                                    @bind-Value="firma.FirmaAktifPasif"
+                                    Data="@durumlar"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    Placeholder="Seçiniz"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="FirmaAktifPasif" Text="Aktif/Pasif bilgisi zorunludur." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
-                        <RadzenButton Text="Kaydet" Icon="save" ButtonType="ButtonType.Submit" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
+                        <RadzenButton Text="İptal"
+                                      Icon="close"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@Cancel"
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                        <RadzenButton Text="Kaydet"
+                                      Icon="save"
+                                      ButtonType="ButtonType.Submit"
+                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
         </RadzenFieldset>
-
     </EditForm>
 </RadzenCard>
 
 @code {
-    private Firma firma = new();
-    private List<int> durumlar = new() { 1, 0 };
-    private bool isActiveBool = true;
+    private Firma firma = new()
+    {
+        FirmaAktifPasif = 1
+    };
+
+    private List<string> secureOptions = new() { "SSL", "TLS" };
+
+    private List<DurumOption> durumlar = new()
+    {
+        new() { Text = "Aktif", Value = 1 },
+        new() { Text = "Pasif", Value = 0 }
+    };
 
     private async Task HandleValidSubmit()
     {
-        await FirmaService.AddAsync(firma);
+        try
+        {
+            await FirmaService.AddAsync(firma);
 
-        NotificationService.Notify(
-            NotificationSeverity.Success,
-            "Başarılı",
-            "Firma kaydı eklendi.");
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Firma kaydı eklendi.");
 
-        NavigationManager.NavigateTo("/companies");
+            NavigationManager.NavigateTo("/companies");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
+        }
     }
 
     private void Cancel()
     {
         NavigationManager.NavigateTo("/companies");
+    }
+
+    private class DurumOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public int Value { get; set; }
     }
 }

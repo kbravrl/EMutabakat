@@ -123,23 +123,33 @@
 
         if (confirmed == true)
         {
-            var result = await FirmaService.DeleteAsync(id);
-
-            if (result)
+            try
             {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Firma kaydı silindi.");
+                var result = await FirmaService.DeleteAsync(id);
 
-                await LoadFirmalarAsync();
+                if (result)
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Başarılı",
+                        "Firma kaydı silindi.");
+
+                    await LoadFirmalarAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Warning,
+                        "Uyarı",
+                        "Firma kaydı bulunamadı.");
+                }
             }
-            else
+            catch (Exception ex)
             {
                 NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Firma kaydı silinemedi.");
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    ex.Message);
             }
         }
     }

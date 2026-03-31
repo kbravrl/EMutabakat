@@ -2,6 +2,7 @@
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using NPOI.HSSF.UserModel;
@@ -80,9 +81,21 @@ namespace EMutabakat.Services
             if (firma == null)
                 return false;
 
-            _db.Firmalar.Remove(firma);
-            await _db.SaveChangesAsync();
-            return true;
+            try
+            {
+                _db.Firmalar.Remove(firma);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
+                {
+                    throw new Exception("Bu firma başka kayıtlarda kullanıldığı için silinemez.");
+                }
+
+                throw new Exception("Firma silinirken bir veritabanı hatası oluştu.");
+            }
         }
 
         // Helper parsers
@@ -136,7 +149,22 @@ namespace EMutabakat.Services
                     if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
                 }
 
-                string[] required = new[] { "FirmaAdi", "FirmaMail" };
+                string[] required = new[]
+                {
+                   "FirmaAdi",
+                   "FirmaVergiDairesi",
+                   "FirmaVergiNumarasi",
+                   "FirmaYetkiliAdiSoyadi",
+                   "FirmaMail",
+                   "FirmaTelefon",
+                   "FirmaSmtpHost",
+                   "FirmaSmtpPort",
+                   "FirmaSmtpUser",
+                   "FirmaSmtpPassword",
+                   "FirmaSmtpSecure",
+                   "FirmaAktifPasif"
+                };
+
                 foreach (var h in required)
                 {
                     if (!headerMap.ContainsKey(h))
@@ -157,36 +185,97 @@ namespace EMutabakat.Services
                     {
                         var firma = new Firma
                         {
-                            FirmaAdi = GetStringCell(row, headerMap.GetValueOrDefault("FirmaAdi")) ?? string.Empty,
-                            FirmaUnvan = headerMap.ContainsKey("FirmaUnvan") ? GetStringCell(row, headerMap["FirmaUnvan"]) ?? string.Empty : string.Empty,
-                            FirmaAdres = headerMap.ContainsKey("FirmaAdres") ? GetStringCell(row, headerMap["FirmaAdres"]) ?? string.Empty : string.Empty,
-                            FirmaIlce = headerMap.ContainsKey("FirmaIlce") ? GetStringCell(row, headerMap["FirmaIlce"]) ?? string.Empty : string.Empty,
-                            FirmaIl = headerMap.ContainsKey("FirmaIl") ? GetStringCell(row, headerMap["FirmaIl"]) ?? string.Empty : string.Empty,
-                            FirmaVergiDairesi = headerMap.ContainsKey("FirmaVergiDairesi") ? GetStringCell(row, headerMap["FirmaVergiDairesi"]) ?? string.Empty : string.Empty,
-                            FirmaVergiNumarasi = headerMap.ContainsKey("FirmaVergiNumarasi") ? GetStringCell(row, headerMap["FirmaVergiNumarasi"]) ?? string.Empty : string.Empty,
-                            FirmaMersisNumarasi = headerMap.ContainsKey("FirmaMersisNumarasi") ? GetStringCell(row, headerMap["FirmaMersisNumarasi"]) ?? string.Empty : string.Empty,
-                            FirmaWebAdresi = headerMap.ContainsKey("FirmaWebAdresi") ? GetStringCell(row, headerMap["FirmaWebAdresi"]) ?? string.Empty : string.Empty,
-                            FirmaYetkiliAdiSoyadi = headerMap.ContainsKey("FirmaYetkiliAdiSoyadi") ? GetStringCell(row, headerMap["FirmaYetkiliAdiSoyadi"]) ?? string.Empty : string.Empty,
-                            FirmaMail = GetStringCell(row, headerMap.GetValueOrDefault("FirmaMail")) ?? string.Empty,
-                            FirmaTelefon = headerMap.ContainsKey("FirmaTelefon") ? GetStringCell(row, headerMap["FirmaTelefon"]) ?? string.Empty : string.Empty,
-                            FirmaGsm = headerMap.ContainsKey("FirmaGsm") ? GetStringCell(row, headerMap["FirmaGsm"]) ?? string.Empty : string.Empty,
-                            FirmaSmtpHost = headerMap.ContainsKey("FirmaSmtpHost") ? GetStringCell(row, headerMap["FirmaSmtpHost"]) ?? string.Empty : string.Empty,
-                            FirmaSmtpPort = headerMap.ContainsKey("FirmaSmtpPort") ? ParseIntCell(row, headerMap["FirmaSmtpPort"]) : 0,
-                            FirmaSmtpUser = headerMap.ContainsKey("FirmaSmtpUser") ? GetStringCell(row, headerMap["FirmaSmtpUser"]) ?? string.Empty : string.Empty,
-                            FirmaSmtpPassword = headerMap.ContainsKey("FirmaSmtpPassword") ? GetStringCell(row, headerMap["FirmaSmtpPassword"]) ?? string.Empty : string.Empty,
-                            FirmaSmtpSecure = headerMap.ContainsKey("FirmaSmtpSecure") ? GetStringCell(row, headerMap["FirmaSmtpSecure"]) ?? string.Empty : string.Empty,
-                            FirmaAktifPasif = headerMap.ContainsKey("FirmaAktifPasif") ? ParseIntCell(row, headerMap["FirmaAktifPasif"]) : 1
+                            FirmaAdi = GetStringCell(row, headerMap["FirmaAdi"]) ?? string.Empty,
+                            FirmaUnvan = headerMap.ContainsKey("FirmaUnvan") ? GetStringCell(row, headerMap["FirmaUnvan"]) : null,
+                            FirmaAdres = headerMap.ContainsKey("FirmaAdres") ? GetStringCell(row, headerMap["FirmaAdres"]) : null,
+                            FirmaIlce = headerMap.ContainsKey("FirmaIlce") ? GetStringCell(row, headerMap["FirmaIlce"]) : null,
+                            FirmaIl = headerMap.ContainsKey("FirmaIl") ? GetStringCell(row, headerMap["FirmaIl"]) : null,
+                            FirmaVergiDairesi = GetStringCell(row, headerMap["FirmaVergiDairesi"]) ?? string.Empty,
+                            FirmaVergiNumarasi = GetStringCell(row, headerMap["FirmaVergiNumarasi"]) ?? string.Empty,
+                            FirmaMersisNumarasi = headerMap.ContainsKey("FirmaMersisNumarasi") ? GetStringCell(row, headerMap["FirmaMersisNumarasi"]) : null,
+                            FirmaWebAdresi = headerMap.ContainsKey("FirmaWebAdresi") ? GetStringCell(row, headerMap["FirmaWebAdresi"]) : null,
+                            FirmaYetkiliAdiSoyadi = GetStringCell(row, headerMap["FirmaYetkiliAdiSoyadi"]) ?? string.Empty,
+                            FirmaMail = GetStringCell(row, headerMap["FirmaMail"]) ?? string.Empty,
+                            FirmaTelefon = GetStringCell(row, headerMap["FirmaTelefon"]) ?? string.Empty,
+                            FirmaGsm = headerMap.ContainsKey("FirmaGsm") ? GetStringCell(row, headerMap["FirmaGsm"]) : null,
+                            FirmaSmtpHost = GetStringCell(row, headerMap["FirmaSmtpHost"]) ?? string.Empty,
+                            FirmaSmtpPort = ParseIntCell(row, headerMap["FirmaSmtpPort"]),
+                            FirmaSmtpUser = GetStringCell(row, headerMap["FirmaSmtpUser"]) ?? string.Empty,
+                            FirmaSmtpPassword = GetStringCell(row, headerMap["FirmaSmtpPassword"]) ?? string.Empty,
+                            FirmaSmtpSecure = GetStringCell(row, headerMap["FirmaSmtpSecure"]) ?? string.Empty,
+                            FirmaAktifPasif = ParseIntCell(row, headerMap["FirmaAktifPasif"])
                         };
+
 
                         if (string.IsNullOrWhiteSpace(firma.FirmaAdi))
                         {
-                            errors.Add($"Satır {r + 1}: FirmaAdi boş olamaz.");
+                            errors.Add($"Satır {r + 1}: Firma adı boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaVergiDairesi))
+                        {
+                            errors.Add($"Satır {r + 1}: Vergi dairesi boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaVergiNumarasi))
+                        {
+                            errors.Add($"Satır {r + 1}: Vergi numarası boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaYetkiliAdiSoyadi))
+                        {
+                            errors.Add($"Satır {r + 1}: Yetkili adı soyadı boş olamaz.");
                             continue;
                         }
 
                         if (string.IsNullOrWhiteSpace(firma.FirmaMail))
                         {
-                            errors.Add($"Satır {r + 1}: FirmaMail boş olamaz.");
+                            errors.Add($"Satır {r + 1}: Mail adresi boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaTelefon))
+                        {
+                            errors.Add($"Satır {r + 1}: Telefon boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpHost))
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP Host boş olamaz.");
+                            continue;
+                        }
+
+                        if (firma.FirmaSmtpPort <= 0)
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP Port geçerli bir değer olmalıdır.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpUser))
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP kullanıcı adı boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpPassword))
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP şifresi boş olamaz.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP Secure bilgisi boş olamaz.");
+                            continue;
+                        }
+
+                        if (firma.FirmaAktifPasif != 0 && firma.FirmaAktifPasif != 1)
+                        {
+                            errors.Add($"Satır {r + 1}: Aktif/Pasif değeri 0 veya 1 olmalıdır.");
                             continue;
                         }
 
