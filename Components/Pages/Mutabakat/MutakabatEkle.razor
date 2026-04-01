@@ -245,7 +245,20 @@
         try
         {
             await MutabakatService.AddAsync(mutabakat);
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Mutabakat kaydedildi.");
+
             NavigationManager.NavigateTo("/reconciliations");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
         }
         finally
         {
@@ -264,9 +277,30 @@
         try
         {
             var created = await MutabakatService.AddAsync(mutabakat);
-            await MutabakatService.SendMailAsync(created.MutabakatId);
+            var sent = await MutabakatService.SendMailAsync(created.MutabakatId);
 
-            NavigationManager.NavigateTo("/reconciliations");
+            if (sent)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    "Mutabakat kaydedildi ve mail gönderildi.");
+                NavigationManager.NavigateTo("/reconciliations");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    "Mutabakat kaydedildi fakat mail gönderilemedi, lütfen bilgileri kontrol edin.");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
         }
         finally
         {

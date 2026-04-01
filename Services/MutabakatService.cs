@@ -130,6 +130,7 @@ namespace EMutabakat.Services
         public async Task<bool> SendMailAsync(int mutabakatId)
         {
             var mutabakat = await _db.Mutabakatlar
+                .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
 
@@ -154,7 +155,10 @@ namespace EMutabakat.Services
                .Include(x => x.Firma)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
-            if (kullanici == null || kullanici.Firma == null)
+            if (kullanici == null)
+                return false;
+
+            if (kullanici.Firma == null)
                 return false;
 
 
@@ -163,14 +167,14 @@ namespace EMutabakat.Services
             var approveUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=approve";
             var rejectUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=reject";
 
-            var result = await _emailService.SendMutabakatMailAsync(
+            var ok = await _emailService.SendMutabakatMailAsync(
                 mutabakat,
                 kullanici,
                 approveUrl,
                 rejectUrl,
                 false);
 
-            if (!result)
+            if (!ok)
                 return false;
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
@@ -215,22 +219,25 @@ namespace EMutabakat.Services
                .Include(x => x.Firma)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
-            if (kullanici == null || kullanici.Firma == null)
+            if (kullanici == null)
                 return false;
 
-            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
+            if (kullanici.Firma == null)
+                return false;
+
+            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
 
             var approveUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=approve";
             var rejectUrl = $"{baseUrl}/reconciliations/response/{mutabakat.MutabakatToken}?durum=reject";
 
-            var result = await _emailService.SendMutabakatMailAsync(
+            var ok = await _emailService.SendMutabakatMailAsync(
                 mutabakat,
                 kullanici,
                 approveUrl,
                 rejectUrl,
                 true);
 
-            if (!result)
+            if (!ok)
                 return false;
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
@@ -503,7 +510,11 @@ namespace EMutabakat.Services
                         var approveUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=approve";
                         var rejectUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=reject";
 
-                        await _emailService.SendMutabakatMailAsync(full, sender, approveUrl, rejectUrl, false);
+                        var ok = await _emailService.SendMutabakatMailAsync(full, sender, approveUrl, rejectUrl, false);
+                        if (!ok)
+                        {
+                            throw new InvalidOperationException("Mail gönderilemedi, bilgileri kontrol edin.");
+                        }
 
                         full.MutabakatGonderimTarihSaat = DateTime.UtcNow;
                         full.MutabakatGonderimDurumu = 1;

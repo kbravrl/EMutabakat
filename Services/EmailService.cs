@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Mail;
 using System.Text;
+using System.Diagnostics;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 
@@ -40,8 +41,17 @@ namespace EMutabakat.Services
                 await smtpClient.SendMailAsync(mailMessage);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null)
+                {
+                    detail += " -> " + inner.Message;
+                    inner = inner.InnerException;
+                }
+
+                Debug.WriteLine($"SendMutabakatMailAsync failed: {detail}");
                 return false;
             }
         }
