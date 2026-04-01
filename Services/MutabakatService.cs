@@ -57,6 +57,10 @@ namespace EMutabakat.Services
                 mutabakat.MutabakatDonemi,
                 DateTimeKind.Utc);
 
+            mutabakat.MutabakatAciklama = string.IsNullOrWhiteSpace(mutabakat.MutabakatAciklama)
+                ? null
+                : mutabakat.MutabakatAciklama.Trim();
+
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
             {
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
@@ -85,22 +89,25 @@ namespace EMutabakat.Services
 
             if (existingMutabakat == null)
                 return null;
-            var mailGonderildiMi = existingMutabakat.MutabakatGonderimTarihSaat.HasValue;
+
+            var mailGonderildiMi = existingMutabakat.MutabakatGonderimTarihSaat != default(DateTime);
 
             if (!mailGonderildiMi)
             {
                 existingMutabakat.FirmaId = mutabakat.FirmaId;
                 existingMutabakat.CariId = mutabakat.CariId;
                 existingMutabakat.MutabakatDonemi = DateTime.SpecifyKind(
-                     mutabakat.MutabakatDonemi,
-                     DateTimeKind.Utc);
+                    mutabakat.MutabakatDonemi,
+                    DateTimeKind.Utc);
                 existingMutabakat.MutabakatTipi = mutabakat.MutabakatTipi;
                 existingMutabakat.MutabakatDovizKodu = mutabakat.MutabakatDovizKodu;
                 existingMutabakat.MutabakatBakiye = mutabakat.MutabakatBakiye;
                 existingMutabakat.MutabakatBakiyeTipi = mutabakat.MutabakatBakiyeTipi;
             }
 
-            existingMutabakat.MutabakatAciklama = mutabakat.MutabakatAciklama;
+            existingMutabakat.MutabakatAciklama = string.IsNullOrWhiteSpace(mutabakat.MutabakatAciklama)
+                ? null
+                : mutabakat.MutabakatAciklama.Trim();
 
             await _db.SaveChangesAsync();
             return existingMutabakat;

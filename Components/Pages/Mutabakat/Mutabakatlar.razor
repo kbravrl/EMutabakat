@@ -91,9 +91,7 @@
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim Tarihi">
                     <Template Context="item">
-                        @(item.MutabakatGonderimTarihSaat.HasValue
-                            ? item.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                            : "-")
+                        @(item.MutabakatGonderimTarihSaat.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))
                     </Template>
                 </RadzenDataGridColumn>
 

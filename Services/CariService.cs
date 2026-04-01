@@ -11,16 +11,16 @@ namespace EMutabakat.Services
 {
     public class CariService : ICariService
     {
-        private readonly AppDbContext _db;
+        private readonly AppDbContext _context;
 
-        public CariService(AppDbContext db)
+        public CariService(AppDbContext context)
         {
-            _db = db;
+            _context = context;
         }
 
         public async Task<List<Cari>> GetAllAsync()
         {
-            return await _db.Cariler
+            return await _context.Cariler
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
                 .OrderBy(x => x.CariAdi)
@@ -29,7 +29,7 @@ namespace EMutabakat.Services
 
         public async Task<Cari?> GetByIdAsync(int id)
         {
-            return await _db.Cariler
+            return await _context.Cariler
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
@@ -40,14 +40,14 @@ namespace EMutabakat.Services
         {
             await ValidateCariAsync(cari);
 
-            _db.Cariler.Add(cari);
-            await _db.SaveChangesAsync();
+            _context.Cariler.Add(cari);
+            await _context.SaveChangesAsync();
             return cari;
         }
 
         public async Task<Cari?> UpdateAsync(Cari cari)
         {
-            var existingCari = await _db.Cariler
+            var existingCari = await _context.Cariler
                 .FirstOrDefaultAsync(x => x.CariId == cari.CariId);
 
             if (existingCari == null)
@@ -72,13 +72,13 @@ namespace EMutabakat.Services
             existingCari.CariDovizKodu = cari.CariDovizKodu;
             existingCari.CariAktifPasif = cari.CariAktifPasif;
 
-            await _db.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return existingCari;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var cari = await _db.Cariler
+            var cari = await _context.Cariler
                 .FirstOrDefaultAsync(x => x.CariId == id);
 
             if (cari == null)
@@ -86,8 +86,8 @@ namespace EMutabakat.Services
 
             try
             {
-                _db.Cariler.Remove(cari);
-                await _db.SaveChangesAsync();
+                _context.Cariler.Remove(cari);
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)
@@ -139,11 +139,11 @@ namespace EMutabakat.Services
             if (cari.CariAktifPasif != 0 && cari.CariAktifPasif != 1)
                 throw new Exception("Aktif/Pasif değeri geçersiz.");
 
-            var firmaExists = await _db.Firmalar.AnyAsync(x => x.FirmaId == cari.FirmaId);
+            var firmaExists = await _context.Firmalar.AnyAsync(x => x.FirmaId == cari.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
 
-            var cariGrup = await _db.CariGruplar
+            var cariGrup = await _context.CariGruplar
                 .FirstOrDefaultAsync(x => x.CariGrupId == cari.CariGrupId);
 
             if (cariGrup == null)
@@ -275,8 +275,8 @@ namespace EMutabakat.Services
                 if (errors.Count > 0)
                     return (0, errors);
 
-                _db.Cariler.AddRange(prepared);
-                await _db.SaveChangesAsync();
+                _context.Cariler.AddRange(prepared);
+                await _context.SaveChangesAsync();
 
                 created = prepared.Count;
                 return (created, errors);
