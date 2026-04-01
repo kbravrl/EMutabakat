@@ -11,16 +11,19 @@ namespace EMutabakat.Services
 {
     public class CariService : ICariService
     {
-        private readonly AppDbContext _context;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public CariService(AppDbContext context)
+        public CariService(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<Cari>> GetAllAsync()
         {
-            return await _context.Cariler
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Cariler
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
                 .OrderBy(x => x.CariAdi)
@@ -29,7 +32,9 @@ namespace EMutabakat.Services
 
         public async Task<Cari?> GetByIdAsync(int id)
         {
-            return await _context.Cariler
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Cariler
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
@@ -38,22 +43,26 @@ namespace EMutabakat.Services
 
         public async Task<Cari> AddAsync(Cari cari)
         {
-            await ValidateCariAsync(cari);
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
-            _context.Cariler.Add(cari);
-            await _context.SaveChangesAsync();
+            await ValidateCariAsync(context, cari);
+
+            context.Cariler.Add(cari);
+            await context.SaveChangesAsync();
             return cari;
         }
 
         public async Task<Cari?> UpdateAsync(Cari cari)
         {
-            var existingCari = await _context.Cariler
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var existingCari = await context.Cariler
                 .FirstOrDefaultAsync(x => x.CariId == cari.CariId);
 
             if (existingCari == null)
                 return null;
 
-            await ValidateCariAsync(cari);
+            await ValidateCariAsync(context, cari);
 
             existingCari.FirmaId = cari.FirmaId;
             existingCari.CariAdi = cari.CariAdi;
@@ -72,13 +81,15 @@ namespace EMutabakat.Services
             existingCari.CariDovizKodu = cari.CariDovizKodu;
             existingCari.CariAktifPasif = cari.CariAktifPasif;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return existingCari;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var cari = await _context.Cariler
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var cari = await context.Cariler
                 .FirstOrDefaultAsync(x => x.CariId == id);
 
             if (cari == null)
@@ -86,8 +97,8 @@ namespace EMutabakat.Services
 
             try
             {
-                _context.Cariler.Remove(cari);
-                await _context.SaveChangesAsync();
+                context.Cariler.Remove(cari);
+                await context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)
@@ -116,7 +127,7 @@ namespace EMutabakat.Services
             }
         }
 
-        private async Task ValidateCariAsync(Cari cari)
+        private async Task ValidateCariAsync(AppDbContext context, Cari cari)
         {
             if (cari.FirmaId <= 0)
                 throw new Exception("Firma seçimi zorunludur.");
@@ -139,11 +150,11 @@ namespace EMutabakat.Services
             if (cari.CariAktifPasif != 0 && cari.CariAktifPasif != 1)
                 throw new Exception("Aktif/Pasif değeri geçersiz.");
 
-            var firmaExists = await _context.Firmalar.AnyAsync(x => x.FirmaId == cari.FirmaId);
+            var firmaExists = await context.Firmalar.AnyAsync(x => x.FirmaId == cari.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
 
-            var cariGrup = await _context.CariGruplar
+            var cariGrup = await context.CariGruplar
                 .FirstOrDefaultAsync(x => x.CariGrupId == cari.CariGrupId);
 
             if (cariGrup == null)
@@ -234,6 +245,8 @@ namespace EMutabakat.Services
 
                 var prepared = new List<Cari>();
 
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
                 for (int r = 1; r <= sheet.LastRowNum; r++)
                 {
                     var row = sheet.GetRow(r);
@@ -263,7 +276,7 @@ namespace EMutabakat.Services
 
                     try
                     {
-                        await ValidateCariAsync(cari);
+                        await ValidateCariAsync(context, cari);
                         prepared.Add(cari);
                     }
                     catch (Exception ex)
@@ -275,8 +288,8 @@ namespace EMutabakat.Services
                 if (errors.Count > 0)
                     return (0, errors);
 
-                _context.Cariler.AddRange(prepared);
-                await _context.SaveChangesAsync();
+                context.Cariler.AddRange(prepared);
+                await context.SaveChangesAsync();
 
                 created = prepared.Count;
                 return (created, errors);
