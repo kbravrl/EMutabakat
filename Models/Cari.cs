@@ -9,28 +9,42 @@ namespace EMutabakat.Models
         public int CariId { get; set; }
 
         [ForeignKey("Firma")]
+        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
         public int FirmaId { get; set; }
 
-        public string CariAdi { get; set; }
-        public string CariUnvan { get; set; }
-        public string CariAdres { get; set; }
-        public string CariIlce { get; set; }
-        public string CariIl { get; set; }
-        public string CariVergiDairesi { get; set; }
-        public string CariVergiNumarasi { get; set; }
-        public string CariWebAdresi { get; set; }
-        public string CariYetkiliAdiSoyadi { get; set; }
-        public string CariYetkiliTelefon { get; set; }
-        public string CariYetkiliGsm { get; set; }
-        public string CariYetkiliMail { get; set; }
+        [Required(ErrorMessage = "Cari adı zorunludur.")]
+        public string CariAdi { get; set; } = string.Empty;
+
+        public string? CariUnvan { get; set; }
+        public string? CariAdres { get; set; }
+        public string? CariIlce { get; set; }
+        public string? CariIl { get; set; }
+
+        [Required(ErrorMessage = "Vergi dairesi zorunludur.")]
+        public string CariVergiDairesi { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vergi numarası zorunludur.")]
+        public string CariVergiNumarasi { get; set; } = string.Empty;
+
+        public string? CariWebAdresi { get; set; }
+        public string? CariYetkiliAdiSoyadi { get; set; }
+        public string? CariYetkiliTelefon { get; set; }
+        public string? CariYetkiliGsm { get; set; }
+
+        [Required(ErrorMessage = "Yetkili mail zorunludur.")]
+        [EmailAddress(ErrorMessage = "Geçerli bir mail adresi giriniz.")]
+        public string CariYetkiliMail { get; set; } = string.Empty;
 
         [ForeignKey("CariGrup")]
+        [Required(ErrorMessage = "Cari grup seçimi zorunludur.")]
         public int CariGrupId { get; set; }
 
-        public int CariDovizKodu { get; set; }
+        public int? CariDovizKodu { get; set; }
+
+        [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public int CariAktifPasif { get; set; }
 
-        public Firma Firma { get; set; }
-        public CariGrup CariGrup { get; set; }
+        public Firma? Firma { get; set; }
+        public CariGrup? CariGrup { get; set; }
     }
 }

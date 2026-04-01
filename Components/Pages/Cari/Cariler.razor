@@ -134,18 +134,24 @@
 
         if (confirmed == true)
         {
-            var result = await CariService.DeleteAsync(id);
-
-            if (result)
+            try
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari kaydı silindi.");
-                await LoadCarilerAsync();
-            }
-            else
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari kaydı silinemedi.");
-            }
+                var result = await CariService.DeleteAsync(id);
 
+                if (result)
+                {
+                    NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari kaydı silindi.");
+                    await LoadCarilerAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Cari kaydı bulunamadı.");
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+            }
         }
     }
 
