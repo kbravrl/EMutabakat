@@ -2,6 +2,7 @@
 
 @inject IMutabakatClientService MutabakatClientService
 @inject NavigationManager NavigationManager
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>Mutabakat Cevabı</PageTitle>
 
@@ -188,6 +189,16 @@
         {
             fileError = "Lütfen bir PDF dosyası seçiniz.";
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(responseMail))
+        {
+            var validator = new EmailAddressAttribute();
+            if (!validator.IsValid(responseMail))
+            {
+                fileError = "Geçerli bir e-posta adresi giriniz.";
+                return;
+            }
         }
 
         isSubmitting = true;
