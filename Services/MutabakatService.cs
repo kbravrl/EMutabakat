@@ -470,42 +470,44 @@ namespace EMutabakat.Services
                     return (0, 0, errors);
                 }
 
-                foreach (var (_, mutabakat) in prepared)
+                await using var tx = await _db.Database.BeginTransactionAsync();
+
+                try
                 {
-                    mutabakat.MutabakatDonemi = DateTime.SpecifyKind(mutabakat.MutabakatDonemi, DateTimeKind.Utc);
-                    if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken)) mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
-                    if (mutabakat.MutabakatDurum == 0) mutabakat.MutabakatDurum = 3;
-                    if (mutabakat.MutabakatGonderimDurumu == 0) mutabakat.MutabakatGonderimDurumu = 1;
-
-                    _db.Mutabakatlar.Add(mutabakat);
-                }
-
-                await _db.SaveChangesAsync();
-                createdCount = prepared.Count;
-
-                var updated = new List<Mutabakat>();
-
-                foreach (var (_, mutabakat) in prepared)
-                {
-                    var full = await _db.Mutabakatlar
-                        .Include(m => m.Cari)
-                        .Include(m => m.Firma)
-                        .FirstOrDefaultAsync(m => m.MutabakatId == mutabakat.MutabakatId);
-
-                    if (full == null)
+                    foreach (var (_, mutabakat) in prepared)
                     {
-                        errors.Add($"MutabakatId {mutabakat.MutabakatId}: kayıt kaydedildikten sonra bulunamadı.");
-                        continue;
+                        mutabakat.MutabakatDonemi = DateTime.SpecifyKind(mutabakat.MutabakatDonemi, DateTimeKind.Utc);
+                        if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken)) mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
+                        if (mutabakat.MutabakatDurum == 0) mutabakat.MutabakatDurum = 3;
+                        if (mutabakat.MutabakatGonderimDurumu == 0) mutabakat.MutabakatGonderimDurumu = 1;
+
+                        _db.Mutabakatlar.Add(mutabakat);
                     }
 
-                    var sender = await _db.Kullanicilar.Include(k => k.Firma).FirstOrDefaultAsync(k => k.FirmaId == full.FirmaId);
-                    if (sender == null)
-                    {
-                        sender = new Kullanici { KullaniciMail = full.Firma?.FirmaMail ?? string.Empty, Firma = full.Firma };
-                    }
+                    await _db.SaveChangesAsync();
+                    createdCount = prepared.Count;
 
-                    try
+                    foreach (var (_, mutabakat) in prepared)
                     {
+                        var full = await _db.Mutabakatlar
+                            .Include(m => m.Cari)
+                            .Include(m => m.Firma)
+                            .FirstOrDefaultAsync(m => m.MutabakatId == mutabakat.MutabakatId);
+
+                        if (full == null)
+                        {
+                            throw new InvalidOperationException($"MutabakatId {mutabakat.MutabakatId}: kayıt kaydedildikten sonra bulunamadı.");
+                        }
+
+                        var sender = await _db.Kullanicilar
+                            .Include(k => k.Firma)
+                            .FirstOrDefaultAsync(k => k.FirmaId == full.FirmaId);
+
+                        if (sender == null)
+                        {
+                            sender = new Kullanici { KullaniciMail = full.Firma?.FirmaMail ?? string.Empty, Firma = full.Firma };
+                        }
+
                         var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
                         var approveUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=approve";
                         var rejectUrl = $"{baseUrl}/reconciliations/response/{full.MutabakatToken}?durum=reject";
@@ -513,35 +515,28 @@ namespace EMutabakat.Services
                         var ok = await _emailService.SendMutabakatMailAsync(full, sender, approveUrl, rejectUrl, false);
                         if (!ok)
                         {
-                            throw new InvalidOperationException("Mail gönderilemedi, bilgileri kontrol edin.");
+                            throw new InvalidOperationException($"MutabakatId {full.MutabakatId}: Mail gönderilemedi, bilgileri kontrol edin.");
                         }
 
                         full.MutabakatGonderimTarihSaat = DateTime.UtcNow;
                         full.MutabakatGonderimDurumu = 1;
                         if (full.MutabakatDurum == 0) full.MutabakatDurum = 3;
 
-                        updated.Add(full);
                         mailSentCount++;
                     }
-                    catch (Exception exMail)
-                    {
-                        var detailMail = exMail.Message;
-                        var innerMail = exMail.InnerException;
-                        while (innerMail != null)
-                        {
-                            detailMail += " -> " + innerMail.Message;
-                            innerMail = innerMail.InnerException;
-                        }
-                        errors.Add($"MutabakatId {full.MutabakatId}: Mail gönderimi başarısız: {detailMail}");
-                    }
-                }
 
-                if (updated.Count > 0)
-                {
                     await _db.SaveChangesAsync();
-                }
+                    await tx.CommitAsync();
 
-                return (createdCount, mailSentCount, errors);
+                    return (createdCount, mailSentCount, errors);
+                }
+                catch (Exception exMailAny)
+                {
+                    await tx.RollbackAsync();
+
+                    errors.Add("Mail gönderimi başarısız, lütfen bilgileri kontrol ediniz");
+                    return (0, 0, errors);
+                }
             }
             catch (Exception ex)
             {

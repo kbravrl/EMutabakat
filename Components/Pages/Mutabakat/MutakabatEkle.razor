@@ -127,12 +127,6 @@
                                       Click="@SaveAndSendMail"
                                       Disabled="@isSubmitting"
                                       Style="background:#d7e6ff;color:#0b57d0;border:1px solid #b5cfff;border-radius:8px;padding:8px 14px;" />
-
-                        <RadzenButton Text="Kaydet"
-                                      Icon="save"
-                                      ButtonType="ButtonType.Submit"
-                                      Disabled="@isSubmitting"
-                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>
                 </RadzenColumn>
 
@@ -279,28 +273,28 @@
             var created = await MutabakatService.AddAsync(mutabakat);
             var sent = await MutabakatService.SendMailAsync(created.MutabakatId);
 
-            if (sent)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Mutabakat kaydedildi ve mail gönderildi.");
-                NavigationManager.NavigateTo("/reconciliations");
-            }
-            else
+            if (!sent)
             {
                 NotificationService.Notify(
                     NotificationSeverity.Error,
                     "Hata",
-                    "Mutabakat kaydedildi fakat mail gönderilemedi, lütfen bilgileri kontrol edin.");
+                    "Mail gönderimi başarısız, lütfen bilgileri kontrol ediniz");
+                return;
             }
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Mutabakat kaydedildi ve mail gönderildi.");
+
+            NavigationManager.NavigateTo("/reconciliations");
         }
         catch (Exception ex)
         {
             NotificationService.Notify(
                 NotificationSeverity.Error,
                 "Hata",
-                ex.Message);
+                "Mail gönderimi başarısız, lütfen bilgileri kontrol ediniz");
         }
         finally
         {
