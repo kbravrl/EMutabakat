@@ -120,24 +120,34 @@
 
         if (confirmed == true)
         {
-            var result = await KullaniciService.DeleteAsync(id);
+            try
+            {
+                var result = await KullaniciService.DeleteAsync(id);
 
-            if (result)
+                if (result)
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Başarılı",
+                        "Kullanıcı kaydı silindi.");
+
+                    await LoadKullanicilarAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Warning,
+                        "Uyarı",
+                        "Kullanıcı kaydı bulunamadı.");
+                }
+            }
+            catch (Exception ex)
             {
                 NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Kullanıcı kaydı silindi.");
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    ex.Message);
             }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Kullanıcı kaydı silinemedi.");
-            }
-
-            await LoadKullanicilarAsync();
         }
     }
 

@@ -96,6 +96,21 @@ namespace EMutabakat.Services
 
                 throw new Exception("Firma silinirken bir veritabanı hatası oluştu.");
             }
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message.Contains("association between entity types") ||
+                    ex.Message.Contains("relationship") ||
+                    ex.Message.Contains("severed"))
+                {
+                    throw new Exception("Bu firma başka kayıtlarda kullanıldığı için silinemez.");
+                }
+
+                throw new Exception("Firma silinirken bir işlem hatası oluştu.");
+            }
+            catch
+            {
+                throw new Exception("Firma silinirken bir hata oluştu.");
+            }
         }
 
         // Helper parsers

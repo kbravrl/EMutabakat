@@ -7,6 +7,7 @@ using NPOI.XSSF.UserModel;
 using NPOI.HSSF.UserModel;
 using System.IO;
 using System;
+using Npgsql;
 using System.Collections.Generic;
 
 namespace EMutabakat.Services
@@ -77,9 +78,36 @@ namespace EMutabakat.Services
             if (cariGrup == null)
                 return false;
 
-            _db.CariGruplar.Remove(cariGrup);
-            await _db.SaveChangesAsync();
-            return true;
+            try
+            {
+                _db.CariGruplar.Remove(cariGrup);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
+                {
+                    throw new Exception("Bu cari grup başka kayıtlarda kullanıldığı için silinemez.");
+                }
+
+                throw new Exception("Cari grup silinirken bir veritabanı hatası oluştu.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message.Contains("association between entity types") ||
+                    ex.Message.Contains("relationship") ||
+                    ex.Message.Contains("severed"))
+                {
+                    throw new Exception("Bu cari grup başka kayıtlarda kullanıldığı için silinemez.");
+                }
+
+                throw new Exception("Cari grup silinirken bir işlem hatası oluştu.");
+            }
+            catch
+            {
+                throw new Exception("Cari grup silinirken bir hata oluştu.");
+            }
         }
 
         // Helper parsers

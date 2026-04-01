@@ -102,16 +102,33 @@
 
         if (confirmed == true)
         {
-            var result = await CariGrupService.DeleteAsync(id);
+            try
+            {
+                var result = await CariGrupService.DeleteAsync(id);
 
-            if (result)
-            {
-                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari grup kaydı silindi.");
-                await LoadCariGruplarAsync();
+                if (result)
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Success,
+                        "Başarılı",
+                        "Cari grup kaydı silindi.");
+
+                    await LoadCariGruplarAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Warning,
+                        "Uyarı",
+                        "Cari grup kaydı bulunamadı.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari grup kaydı silinemedi.");
+                NotificationService.Notify(
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    ex.Message);
             }
         }
     }
