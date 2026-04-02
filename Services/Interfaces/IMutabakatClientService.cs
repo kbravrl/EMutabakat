@@ -19,6 +19,7 @@ namespace EMutabakat.Services.Interfaces
             string? mail = null,
             string? adSoyad = null,
             string? gsm = null,
+            string? aciklama = null,
             Stream? fileStream = null,
             string? originalFileName = null);
     }

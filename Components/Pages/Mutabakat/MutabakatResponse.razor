@@ -44,6 +44,7 @@
                     <RadzenTextBox Style="width:100%" Placeholder="Cevap e-posta (opsiyonel)" @bind-Value="responseMail" />
                     <RadzenTextBox Style="width:100%" Placeholder="Cevap Ad Soyad (opsiyonel)" @bind-Value="responseName" />
                     <RadzenTextBox Style="width:100%" Placeholder="Cevap GSM (opsiyonel)" @bind-Value="responseGsm" />
+                    <RadzenTextArea Style="width:100%" Placeholder="Cevap Açıklama (opsiyonel)" @bind-Value="responseAciklama" />
 
                     @if (!string.IsNullOrWhiteSpace(fileName))
                     {
@@ -89,6 +90,7 @@
     private string? responseMail;
     private string? responseName;
     private string? responseGsm;
+    private string? responseAciklama;
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,6 +214,7 @@
                 responseMail,
                 responseName,
                 responseGsm,
+                responseAciklama,
                 stream,
                 selectedFile.Name);
 

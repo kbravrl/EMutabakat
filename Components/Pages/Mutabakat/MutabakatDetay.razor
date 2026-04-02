@@ -84,6 +84,10 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
+                    <b>Cevap Açıklama:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAciklama) ? "-" : mutabakat.MutabakatCevapAciklama)
+                </RadzenColumn>
+
+                <RadzenColumn Size="12">
                     <b>Token:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatToken) ? "-" : mutabakat.MutabakatToken)
                 </RadzenColumn>
 

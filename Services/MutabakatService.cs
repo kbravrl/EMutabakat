@@ -287,7 +287,7 @@ namespace EMutabakat.Services
             return true;
         }
 
-        public async Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? filePath)
+        public async Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? aciklama, string? filePath)
         {
             var mutabakat = await _db.Mutabakatlar
                 .Include(x => x.Cari)
@@ -307,6 +307,9 @@ namespace EMutabakat.Services
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
             mutabakat.MutabakatCevapGsm = gsm;
+            mutabakat.MutabakatCevapAciklama = string.IsNullOrWhiteSpace(aciklama)
+                ? null
+                : aciklama.Trim();
             mutabakat.MutabakatReceiveStoragePath = filePath;
 
             if (mutabakat.Cari != null)

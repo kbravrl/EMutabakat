@@ -45,6 +45,7 @@ namespace EMutabakat.Services
             string? mail = null,
             string? adSoyad = null,
             string? gsm = null,
+            string? aciklama = null,
             Stream? fileStream = null,
             string? originalFileName = null)
         {
@@ -83,6 +84,7 @@ namespace EMutabakat.Services
                 mail ?? string.Empty,
                 adSoyad ?? string.Empty,
                 gsm ?? string.Empty,
+                string.IsNullOrWhiteSpace(aciklama) ? null : aciklama.Trim(),
                 savedRelativePath);
 
             if (!ok)

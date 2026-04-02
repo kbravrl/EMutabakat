@@ -47,6 +47,8 @@ namespace EMutabakat.Models
 
         public string? MutabakatCevapGsm { get; set; }
 
+        public string? MutabakatCevapAciklama { get; set; }
+
         [Required(ErrorMessage = "Durum zorunludur.")]
         public int MutabakatDurum { get; set; }
 
