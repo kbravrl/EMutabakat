@@ -1,7 +1,5 @@
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
-using Microsoft.AspNetCore.Hosting;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -10,12 +8,12 @@ namespace EMutabakat.Services
     public class MutabakatClientService : IMutabakatClientService
     {
         private readonly IMutabakatService _mutabakatService;
-        private readonly IWebHostEnvironment _env;
+        private readonly ISdService _sdService;
 
-        public MutabakatClientService(IMutabakatService _mutabakatService, IWebHostEnvironment env)
+        public MutabakatClientService(IMutabakatService _mutabakatService, ISdService sdService)
         {
             this._mutabakatService = _mutabakatService;
-            _env = env;
+            _sdService = sdService;
         }
 
         public Task<Mutabakat?> GetByTokenAsync(string token)
@@ -51,11 +49,13 @@ namespace EMutabakat.Services
             string? originalFileName = null)
         {
             string? savedRelativePath = null;
+            var mutabakat = await _mutabakatService.GetByTokenAsync(token);
+
+            if (mutabakat == null)
+                return false;
 
             if (string.IsNullOrWhiteSpace(mail) || string.IsNullOrWhiteSpace(adSoyad) || string.IsNullOrWhiteSpace(gsm))
             {
-                var mutabakat = await _mutabakatService.GetByTokenAsync(token);
-
                 if (mutabakat?.Cari != null)
                 {
                     mail = string.IsNullOrWhiteSpace(mail) ? mutabakat.Cari.CariYetkiliMail : mail;
@@ -67,35 +67,30 @@ namespace EMutabakat.Services
             if (fileStream == null || string.IsNullOrWhiteSpace(originalFileName))
                 return false;
 
-            var ext = Path.GetExtension(originalFileName)?.ToLowerInvariant() ?? string.Empty;
-            if (ext != ".xls" && ext != ".xlsx" && ext != ".pdf")
+            savedRelativePath = await _sdService.SaveMutabakatResponseFileAsync(
+                token,
+                mutabakat.MutabakatDonemi,
+                mutabakat.CariId,
+                mutabakat.Firma?.FirmaAdi,
+                fileStream,
+                originalFileName);
+
+            if (string.IsNullOrWhiteSpace(savedRelativePath))
                 return false;
 
-            var webRoot = _env.WebRootPath;
-            if (string.IsNullOrWhiteSpace(webRoot))
-            {
-                webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            }
-
-            var uploadsRoot = Path.Combine(webRoot, "uploads", "mutabakat", token);
-            Directory.CreateDirectory(uploadsRoot);
-
-            var safeFileName = $"{Guid.NewGuid():N}_{Path.GetFileName(originalFileName)}";
-            var filePath = Path.Combine(uploadsRoot, safeFileName);
-
-            await using (var fs = File.Create(filePath))
-            {
-                await fileStream.CopyToAsync(fs);
-            }
-
-            savedRelativePath = $"/uploads/mutabakat/{token}/{safeFileName}";
-
-            return await _mutabakatService.RejectAsync(
+            var ok = await _mutabakatService.RejectAsync(
                 token,
                 mail ?? string.Empty,
                 adSoyad ?? string.Empty,
                 gsm ?? string.Empty,
                 savedRelativePath);
+
+            if (!ok)
+            {
+                await _sdService.DeleteMutabakatResponseFileAsync(savedRelativePath);
+            }
+
+            return ok;
         }
     }
 }

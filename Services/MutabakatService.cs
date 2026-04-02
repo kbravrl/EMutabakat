@@ -18,17 +18,20 @@ namespace EMutabakat.Services
     {
         private readonly AppDbContext _db;
         private readonly IEmailService _emailService;
+        private readonly ISdService _sdService;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public MutabakatService(
             AppDbContext db,
             IEmailService emailService,
+            ISdService sdService,
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor)
         {
             _db = db;
             _emailService = emailService;
+            _sdService = sdService;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -121,8 +124,15 @@ namespace EMutabakat.Services
             if (mutabakat == null)
                 return false;
 
+            var filePath = mutabakat.MutabakatReceiveStoragePath;
+
             _db.Mutabakatlar.Remove(mutabakat);
             await _db.SaveChangesAsync();
+
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                await _sdService.DeleteMutabakatResponseFileAsync(filePath);
+            }
 
             return true;
         }

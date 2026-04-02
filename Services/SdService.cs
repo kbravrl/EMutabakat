@@ -1,0 +1,105 @@
+using EMutabakat.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace EMutabakat.Services
+{
+    public class SdService : ISdService
+    {
+        private readonly string _storageRoot;
+
+        public SdService(IConfiguration configuration)
+        {
+            _storageRoot = configuration["Storage:RootPath"] ?? @"D:\EMutabakatRedDosyaları";
+        }
+
+        public async Task<string?> SaveMutabakatResponseFileAsync(
+            string token,
+            DateTime mutabakatDonemi,
+            int cariId,
+            string? firmaAdi,
+            Stream fileStream,
+            string originalFileName,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(token) || fileStream == null || string.IsNullOrWhiteSpace(originalFileName))
+                return null;
+
+            var ext = Path.GetExtension(originalFileName)?.ToLowerInvariant();
+            if (ext != ".pdf")
+                return null;
+
+            var donemFolder = mutabakatDonemi.ToString("yyyy-MM");
+            var cariIdFolder = cariId.ToString();
+            var firmaAdiFolder = SanitizePathSegment(firmaAdi);
+
+            var uploadsRoot = Path.Combine(_storageRoot, donemFolder, cariIdFolder, firmaAdiFolder);
+            Directory.CreateDirectory(uploadsRoot);
+
+            var safeFileName = $"{Guid.NewGuid():N}_{Path.GetFileName(originalFileName)}";
+            var filePath = Path.Combine(uploadsRoot, safeFileName);
+
+            await using var fs = File.Create(filePath);
+            await fileStream.CopyToAsync(fs, cancellationToken);
+
+            return $"/uploads/{donemFolder}/{cariIdFolder}/{firmaAdiFolder}/{safeFileName}";
+        }
+
+        public Task<bool> DeleteMutabakatResponseFileAsync(string relativePath, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath))
+                return Task.FromResult(false);
+
+            var normalizedRelativePath = relativePath.Trim().TrimStart('~').TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+
+            var relativeUnderUploads = normalizedRelativePath;
+            if (relativeUnderUploads.StartsWith($"uploads{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            {
+                relativeUnderUploads = relativeUnderUploads.Substring($"uploads{Path.DirectorySeparatorChar}".Length);
+            }
+
+            if (relativeUnderUploads.StartsWith($"mutabakat{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            {
+                relativeUnderUploads = relativeUnderUploads.Substring($"mutabakat{Path.DirectorySeparatorChar}".Length);
+            }
+
+            if (relativeUnderUploads.StartsWith($"EMutabkatRedDosyaları{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            {
+                relativeUnderUploads = relativeUnderUploads.Substring($"EMutabkatRedDosyaları{Path.DirectorySeparatorChar}".Length);
+            }
+
+            if (relativeUnderUploads.StartsWith($"EMutabakatRedDosyaları{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            {
+                relativeUnderUploads = relativeUnderUploads.Substring($"EMutabakatRedDosyaları{Path.DirectorySeparatorChar}".Length);
+            }
+
+            var fullPath = Path.GetFullPath(Path.Combine(_storageRoot, relativeUnderUploads));
+            var allowedRoot = Path.GetFullPath(_storageRoot);
+
+            if (!fullPath.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
+                return Task.FromResult(false);
+
+            if (!File.Exists(fullPath))
+                return Task.FromResult(false);
+
+            File.Delete(fullPath);
+
+            return Task.FromResult(true);
+        }
+
+        private static string SanitizePathSegment(string? value)
+        {
+            var text = string.IsNullOrWhiteSpace(value) ? "Firma" : value.Trim();
+
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            {
+                text = text.Replace(invalidChar, '_');
+            }
+
+            return string.IsNullOrWhiteSpace(text) ? "Firma" : text;
+        }
+    }
+}

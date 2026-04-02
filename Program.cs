@@ -4,6 +4,7 @@ using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +26,7 @@ builder.Services.AddScoped<ICariGrupService, CariGrupService>();
 builder.Services.AddScoped<ICariService, CariService>();
 builder.Services.AddScoped<IMutabakatService, MutabakatService>();
 builder.Services.AddScoped<IMutabakatClientService, MutabakatClientService>();
+builder.Services.AddScoped<ISdService, SdService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IKullaniciService, KullaniciService>();
 builder.Services.AddAuthorizationCore();
@@ -78,6 +80,15 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+
+var uploadsRootPath = builder.Configuration["Storage:RootPath"] ?? @"D:\EMutabakatRedDosyaları";
+Directory.CreateDirectory(uploadsRootPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsRootPath),
+    RequestPath = "/uploads"
+});
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
