@@ -36,6 +36,18 @@ namespace EMutabakat.Services
 
         public async Task<Firma> AddAsync(Firma firma)
         {
+            if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
+            {
+                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+            }
+
+            var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
+            if (smtpSecure != "true" && smtpSecure != "false")
+            {
+                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+            }
+
+            firma.FirmaSmtpSecure = smtpSecure;
             _db.Firmalar.Add(firma);
             await _db.SaveChangesAsync();
             return firma;
@@ -66,7 +78,18 @@ namespace EMutabakat.Services
             existingFirma.FirmaSmtpPort = firma.FirmaSmtpPort;
             existingFirma.FirmaSmtpUser = firma.FirmaSmtpUser;
             existingFirma.FirmaSmtpPassword = firma.FirmaSmtpPassword;
-            existingFirma.FirmaSmtpSecure = firma.FirmaSmtpSecure;
+            if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
+            {
+                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+            }
+
+            var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
+            if (smtpSecure != "true" && smtpSecure != "false")
+            {
+                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+            }
+
+            existingFirma.FirmaSmtpSecure = smtpSecure;
             existingFirma.FirmaAktifPasif = firma.FirmaAktifPasif;
 
             await _db.SaveChangesAsync();
@@ -287,6 +310,15 @@ namespace EMutabakat.Services
                             errors.Add($"Satır {r + 1}: SMTP Secure bilgisi boş olamaz.");
                             continue;
                         }
+
+                        var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
+                        if (smtpSecure != "true" && smtpSecure != "false")
+                        {
+                            errors.Add($"Satır {r + 1}: SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+                            continue;
+                        }
+
+                        firma.FirmaSmtpSecure = smtpSecure;
 
                         if (firma.FirmaAktifPasif != 0 && firma.FirmaAktifPasif != 1)
                         {

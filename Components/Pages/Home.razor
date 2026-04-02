@@ -2,8 +2,133 @@
 
 @attribute [Authorize]
 
-<PageTitle>Home</PageTitle>
+@inject IFirmaService FirmaService
+@inject ICariService CariService
+@inject ICariGrupService CariGrupService
+@inject IMutabakatService MutabakatService
+@inject IKullaniciService KullaniciService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
 
-<h1>Hello, world!</h1>
+<PageTitle>Kontrol Paneli</PageTitle>
 
-Welcome to your new app.
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenText TextStyle="TextStyle.H4">Kontrol Paneli</RadzenText>
+    <RadzenText TextStyle="TextStyle.Body1">Hoş geldiniz. Sistemdeki temel modüllerin özet bilgilerini aşağıda görebilirsiniz.</RadzenText>
+
+    <RadzenRow Gap="16px">
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
+                    <RadzenButton Text="Firmalara Git" Icon="business" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Cariler</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@cariCount</RadzenText>
+                    <RadzenButton Text="Carilere Git" Icon="account_circle" Click='@(() => NavigationManager.NavigateTo("/currents"))' />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Cari Gruplar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@cariGrupCount</RadzenText>
+                    <RadzenButton Text="Cari Gruplara Git" Icon="group_work" Click='@(() => NavigationManager.NavigateTo("/current-groups"))' />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Mutabakatlar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@mutabakatCount</RadzenText>
+                    <RadzenButton Text="Mutabakatlara Git" Icon="description" Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Kullanıcılar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@kullaniciCount</RadzenText>
+                    <RadzenButton Text="Kullanıcılara Git" Icon="people" Click='@(() => NavigationManager.NavigateTo("/users"))' />
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.75rem">
+            <RadzenText TextStyle="TextStyle.Subtitle1">Mutabakat Durum Özeti</RadzenText>
+            <RadzenRow Gap="12px">
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenBadge Text='@($"Mutabık: {mutabikCount}")' BadgeStyle="BadgeStyle.Success" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenBadge Text='@($"Mutabık Değil: {mutabikDegilCount}")' BadgeStyle="BadgeStyle.Danger" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenBadge Text='@($"Cevaplanmayan: {cevaplanmayanCount}")' BadgeStyle="BadgeStyle.Warning" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenBadge Text='@($"Okunmayan: {okunmayanCount}")' BadgeStyle="BadgeStyle.Secondary" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private int firmaCount;
+    private int cariCount;
+    private int cariGrupCount;
+    private int mutabakatCount;
+    private int kullaniciCount;
+    private int mutabikCount;
+    private int mutabikDegilCount;
+    private int cevaplanmayanCount;
+    private int okunmayanCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        try
+        {
+            var firmalar = await FirmaService.GetAllAsync();
+            var cariler = await CariService.GetAllAsync();
+            var cariGruplar = await CariGrupService.GetAllAsync();
+            var mutabakatlar = await MutabakatService.GetAllAsync();
+            var kullanicilar = await KullaniciService.GetAllAsync();
+
+            firmaCount = firmalar.Count;
+            cariCount = cariler.Count;
+            cariGrupCount = cariGruplar.Count;
+            mutabakatCount = mutabakatlar.Count;
+            kullaniciCount = kullanicilar.Count;
+
+            mutabikCount = mutabakatlar.Count(x => x.MutabakatDurum == 1);
+            mutabikDegilCount = mutabakatlar.Count(x => x.MutabakatDurum == 2);
+            cevaplanmayanCount = mutabakatlar.Count(x => x.MutabakatDurum == 3);
+            okunmayanCount = mutabakatlar.Count(x => x.MutabakatDurum == 4);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+        }
+    }
+}

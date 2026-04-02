@@ -169,10 +169,11 @@
 @code {
     private Firma firma = new()
     {
-        FirmaAktifPasif = 1
+        FirmaAktifPasif = 1,
+        FirmaSmtpSecure = "false"
     };
 
-    private List<string> secureOptions = new() { "SSL", "TLS" };
+    private List<string> secureOptions = new() { "true", "false" };
 
     private List<DurumOption> durumlar = new()
     {
