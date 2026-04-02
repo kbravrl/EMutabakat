@@ -3,28 +3,7 @@
     box-shadow: 0 2px 8px rgba(16,24,40,0.06);
     border-right: 1px solid #efefef;
     padding: 1.25rem 0.75rem;
-    height: 100vh;
-}
-
-.nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0 0.5rem 1rem 0.5rem;
-    border-bottom: 1px solid #f2f2f2;
-    margin-bottom: 0.75rem;
-}
-
-.brand-avatar {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg,#4f46e5,#06b6d4);
-    border-radius: 8px;
-}
-
-.brand-text {
-    font-weight: 600;
-    color: #0f172a;
+    height: 100%;
 }
 
 .radzen-nav ::deep .rz-panelmenu .rz-panelmenu-content {
@@ -48,8 +27,4 @@
 .radzen-nav ::deep .rz-panelmenuitem-link.rz-state-active {
     background: #eef2ff;
     box-shadow: inset 0 0 0 1px rgba(99,102,241,0.06);
-}
-
-@media (min-width: 641px) {
-    .radzen-nav { width: 260px; position: sticky; top: 0; }
 }
