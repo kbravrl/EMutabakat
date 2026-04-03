@@ -57,6 +57,7 @@
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
+                                          Disabled="@isSubmitting"
                                           Click="@(() => DeleteCariGrup(item.CariGrupId, item.CariGrupAdi))" />
                         </RadzenStack>
                     </Template>
@@ -68,6 +69,7 @@
 
 @code {
     private List<CariGrup> cariGruplar = new();
+    private bool isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,6 +104,8 @@
 
         if (confirmed == true)
         {
+            if (isSubmitting) return;
+            isSubmitting = true;
             try
             {
                 var result = await CariGrupService.DeleteAsync(id);
@@ -129,6 +133,10 @@
                     NotificationSeverity.Warning,
                     "Uyarı",
                     ex.Message);
+            }
+            finally
+            {
+                isSubmitting = false;
             }
         }
     }

@@ -55,29 +55,6 @@ namespace EMutabakat.Services
 
         public async Task<Firma?> UpdateAsync(Firma firma)
         {
-            var existingFirma = await _db.Firmalar
-                .FirstOrDefaultAsync(x => x.FirmaId == firma.FirmaId);
-
-            if (existingFirma == null)
-                return null;
-
-            existingFirma.FirmaAdi = firma.FirmaAdi;
-            existingFirma.FirmaUnvan = firma.FirmaUnvan;
-            existingFirma.FirmaAdres = firma.FirmaAdres;
-            existingFirma.FirmaIlce = firma.FirmaIlce;
-            existingFirma.FirmaIl = firma.FirmaIl;
-            existingFirma.FirmaVergiDairesi = firma.FirmaVergiDairesi;
-            existingFirma.FirmaVergiNumarasi = firma.FirmaVergiNumarasi;
-            existingFirma.FirmaMersisNumarasi = firma.FirmaMersisNumarasi;
-            existingFirma.FirmaWebAdresi = firma.FirmaWebAdresi;
-            existingFirma.FirmaYetkiliAdiSoyadi = firma.FirmaYetkiliAdiSoyadi;
-            existingFirma.FirmaMail = firma.FirmaMail;
-            existingFirma.FirmaTelefon = firma.FirmaTelefon;
-            existingFirma.FirmaGsm = firma.FirmaGsm;
-            existingFirma.FirmaSmtpHost = firma.FirmaSmtpHost;
-            existingFirma.FirmaSmtpPort = firma.FirmaSmtpPort;
-            existingFirma.FirmaSmtpUser = firma.FirmaSmtpUser;
-            existingFirma.FirmaSmtpPassword = firma.FirmaSmtpPassword;
             if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
             {
                 throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
@@ -89,11 +66,33 @@ namespace EMutabakat.Services
                 throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
             }
 
-            existingFirma.FirmaSmtpSecure = smtpSecure;
-            existingFirma.FirmaAktifPasif = firma.FirmaAktifPasif;
+            var updated = await _db.Firmalar
+                .Where(x => x.FirmaId == firma.FirmaId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.FirmaAdi, firma.FirmaAdi)
+                    .SetProperty(x => x.FirmaUnvan, firma.FirmaUnvan)
+                    .SetProperty(x => x.FirmaAdres, firma.FirmaAdres)
+                    .SetProperty(x => x.FirmaIlce, firma.FirmaIlce)
+                    .SetProperty(x => x.FirmaIl, firma.FirmaIl)
+                    .SetProperty(x => x.FirmaVergiDairesi, firma.FirmaVergiDairesi)
+                    .SetProperty(x => x.FirmaVergiNumarasi, firma.FirmaVergiNumarasi)
+                    .SetProperty(x => x.FirmaMersisNumarasi, firma.FirmaMersisNumarasi)
+                    .SetProperty(x => x.FirmaWebAdresi, firma.FirmaWebAdresi)
+                    .SetProperty(x => x.FirmaYetkiliAdiSoyadi, firma.FirmaYetkiliAdiSoyadi)
+                    .SetProperty(x => x.FirmaMail, firma.FirmaMail)
+                    .SetProperty(x => x.FirmaTelefon, firma.FirmaTelefon)
+                    .SetProperty(x => x.FirmaGsm, firma.FirmaGsm)
+                    .SetProperty(x => x.FirmaSmtpHost, firma.FirmaSmtpHost)
+                    .SetProperty(x => x.FirmaSmtpPort, firma.FirmaSmtpPort)
+                    .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser)
+                    .SetProperty(x => x.FirmaSmtpPassword, firma.FirmaSmtpPassword)
+                    .SetProperty(x => x.FirmaSmtpSecure, smtpSecure)
+                    .SetProperty(x => x.FirmaAktifPasif, firma.FirmaAktifPasif));
 
-            await _db.SaveChangesAsync();
-            return existingFirma;
+            if (updated == 0)
+                return null;
+
+            return await GetByIdAsync(firma.FirmaId);
         }
 
         public async Task<bool> DeleteAsync(int id)
