@@ -1,4 +1,4 @@
-﻿@page "/users/edit/{id:int}"
+@page "/users/edit/{id:int}"
 
 @attribute [Authorize]
 
@@ -30,7 +30,6 @@ else
 
         <EditForm Model="@kullanici" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />
-            <ValidationSummary />
 
             <RadzenFieldset Text="Kullanıcı Bilgileri" Style="margin-bottom:16px">
                 <RadzenRow Gap="16px">
@@ -115,8 +114,8 @@ else
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Şifre" />
                         <RadzenPassword Name="Sifre"
-                                        @bind-Value="kullanici.Sifre"
-                                        Placeholder="kullanici.Sifre"
+                                        @bind-Value="yeniSifre"
+                                        Placeholder="Yeni şifre giriniz (opsiyonel)"
                                         Style="width:100%;" />
                     </RadzenColumn>
 
@@ -150,6 +149,7 @@ else
     [Parameter] public int id { get; set; }
 
     private Kullanici? kullanici;
+    private string? yeniSifre;
     private bool isLoading = true;
     private List<Firma> firmalar = new();
 
@@ -168,7 +168,8 @@ else
 
             if (kullanici != null)
             {
-                kullanici.Sifre = string.Empty;
+                kullanici.Sifre = "__UNCHANGED__";
+                yeniSifre = string.Empty;
             }
         }
         finally
@@ -184,6 +185,8 @@ else
 
         try
         {
+            kullanici.Sifre = string.IsNullOrWhiteSpace(yeniSifre) ? string.Empty : yeniSifre;
+
             var result = await KullaniciService.UpdateAsync(kullanici);
 
             if (result != null)

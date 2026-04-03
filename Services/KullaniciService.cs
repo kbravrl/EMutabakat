@@ -256,6 +256,11 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
                 throw new Exception("Mail zorunludur.");
 
+            var normalizedMail = kullanici.KullaniciMail.Trim().ToLower();
+            var mailExists = await _db.Kullanicilar.AnyAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
+            if (mailExists)
+                throw new Exception("Bu mail adresi ile kayıtlı kullanıcı zaten var.");
+
             if (string.IsNullOrWhiteSpace(kullanici.Sifre))
                 throw new Exception("Şifre zorunludur.");
 
@@ -265,6 +270,8 @@ namespace EMutabakat.Services
             var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
+
+            kullanici.KullaniciMail = kullanici.KullaniciMail.Trim();
 
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
