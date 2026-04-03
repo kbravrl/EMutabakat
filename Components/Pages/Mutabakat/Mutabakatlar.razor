@@ -18,7 +18,7 @@
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
             <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
-                <RadzenButton Text="Excel Yükle"
+                <RadzenButton Text="Excel İçe Aktar"
                               Icon="file_upload"
                               Click="@OpenImportDialog" />
 
@@ -154,7 +154,7 @@
             builder.CloseComponent();
         };
 
-        var result = await DialogService.OpenAsync<MutabakatImportDialog>("Excel Yükle", null, options);
+        var result = await DialogService.OpenAsync<MutabakatImportDialog>("Excel İçe Aktar", null, options);
         if (result is bool b && b)
         {
             await LoadMutabakatlarAsync();

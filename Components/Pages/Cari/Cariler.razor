@@ -166,7 +166,7 @@
     private async Task OpenImportDialog()
     {
         var parameters = new Dictionary<string, object?>();
-        var result = await DialogService.OpenAsync(string.Empty, typeof(Components.Pages.Cari.CariImportDialog), parameters, new DialogOptions { Width = "600px" });
+        var result = await DialogService.OpenAsync("Excel İçe Aktar", typeof(Components.Pages.Cari.CariImportDialog), parameters, new DialogOptions { Width = "600px" });
         if (result == true)
         {
             await LoadCarilerAsync();
