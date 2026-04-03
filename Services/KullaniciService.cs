@@ -15,12 +15,12 @@ namespace EMutabakat.Services
 {
     public class KullaniciService : IKullaniciService
     {
-        private readonly AppDbContext _db;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
         private readonly PasswordHasher<Kullanici> _passwordHasher;
 
-        public KullaniciService(AppDbContext db)
+        public KullaniciService(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _db = db;
+            _contextFactory = contextFactory;
             _passwordHasher = new PasswordHasher<Kullanici>();
         }
 
@@ -44,6 +44,7 @@ namespace EMutabakat.Services
         {
             var errors = new List<string>();
             var created = 0;
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
             {
@@ -127,7 +128,7 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
                         if (!firmaExists)
                         {
                             errors.Add($"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.");
@@ -166,10 +167,10 @@ namespace EMutabakat.Services
 
                 foreach (var (_, kullanici) in prepared)
                 {
-                    _db.Kullanicilar.Add(kullanici);
+                    context.Kullanicilar.Add(kullanici);
                 }
 
-                await _db.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 created = prepared.Count;
 
                 return (created, errors);
@@ -191,7 +192,10 @@ namespace EMutabakat.Services
 
         public async Task<List<Kullanici>> GetAllAsync()
         {
-            return await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Kullanicilar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
@@ -200,21 +204,29 @@ namespace EMutabakat.Services
 
         public async Task<Kullanici?> GetByIdAsync(int id)
         {
-            return await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Kullanicilar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.KullaniciId == id);
         }
 
         public async Task<Kullanici?> GetByMailAsync(string mail)
         {
-            return await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Kullanicilar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == mail);
         }
 
         public async Task<Kullanici?> RegisterAsync(Kullanici kullanici)
         {
-            var mevcutKullanici = await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mevcutKullanici = await context.Kullanicilar
                 .FirstOrDefaultAsync(x => x.KullaniciMail == kullanici.KullaniciMail);
 
             if (mevcutKullanici != null)
@@ -223,14 +235,16 @@ namespace EMutabakat.Services
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
             kullanici.KullaniciAktifPasif ??= "1";
 
-            _db.Kullanicilar.Add(kullanici);
-            await _db.SaveChangesAsync();
+            context.Kullanicilar.Add(kullanici);
+            await context.SaveChangesAsync();
             return kullanici;
         }
 
         public async Task<Kullanici?> LoginAsync(string mail, string sifre)
         {
-            var kullanici = await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var kullanici = await context.Kullanicilar
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == mail && x.KullaniciAktifPasif == "1");
 
@@ -244,6 +258,8 @@ namespace EMutabakat.Services
 
         public async Task<Kullanici> AddAsync(Kullanici kullanici)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
             if (kullanici.FirmaId <= 0)
                 throw new Exception("Firma seçimi zorunludur.");
 
@@ -257,7 +273,7 @@ namespace EMutabakat.Services
                 throw new Exception("Mail zorunludur.");
 
             var normalizedMail = kullanici.KullaniciMail.Trim().ToLower();
-            var mailExists = await _db.Kullanicilar.AnyAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
+            var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı kullanıcı zaten var.");
 
@@ -267,7 +283,7 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
-            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
 
@@ -275,14 +291,16 @@ namespace EMutabakat.Services
 
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
-            _db.Kullanicilar.Add(kullanici);
-            await _db.SaveChangesAsync();
+            context.Kullanicilar.Add(kullanici);
+            await context.SaveChangesAsync();
             return kullanici;
         }
 
         public async Task<Kullanici?> UpdateAsync(Kullanici kullanici)
         {
-            var existingKullanici = await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var existingKullanici = await context.Kullanicilar
                 .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.KullaniciId);
 
             if (existingKullanici == null)
@@ -303,7 +321,7 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
-            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
 
@@ -319,13 +337,15 @@ namespace EMutabakat.Services
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre);
             }
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return existingKullanici;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var kullanici = await _db.Kullanicilar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var kullanici = await context.Kullanicilar
                 .FirstOrDefaultAsync(x => x.KullaniciId == id);
 
             if (kullanici == null)
@@ -333,8 +353,8 @@ namespace EMutabakat.Services
 
             try
             {
-                _db.Kullanicilar.Remove(kullanici);
-                await _db.SaveChangesAsync();
+                context.Kullanicilar.Remove(kullanici);
+                await context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)

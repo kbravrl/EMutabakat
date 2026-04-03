@@ -14,28 +14,36 @@ namespace EMutabakat.Services
 {
     public class FirmaService : IFirmaService
     {
-        private readonly AppDbContext _db;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public FirmaService(AppDbContext db)
+        public FirmaService(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _db = db;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<Firma>> GetAllAsync()
         {
-            return await _db.Firmalar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Firmalar
+                .AsNoTracking()
                 .OrderBy(x => x.FirmaAdi)
                 .ToListAsync();
         }
 
         public async Task<Firma?> GetByIdAsync(int id)
         {
-            return await _db.Firmalar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Firmalar
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.FirmaId == id);
         }
 
         public async Task<Firma> AddAsync(Firma firma)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
             if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
             {
                 throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
@@ -48,13 +56,15 @@ namespace EMutabakat.Services
             }
 
             firma.FirmaSmtpSecure = smtpSecure;
-            _db.Firmalar.Add(firma);
-            await _db.SaveChangesAsync();
+            context.Firmalar.Add(firma);
+            await context.SaveChangesAsync();
             return firma;
         }
 
         public async Task<Firma?> UpdateAsync(Firma firma)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
             if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
             {
                 throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
@@ -66,7 +76,7 @@ namespace EMutabakat.Services
                 throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
             }
 
-            var updated = await _db.Firmalar
+            var updated = await context.Firmalar
                 .Where(x => x.FirmaId == firma.FirmaId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.FirmaAdi, firma.FirmaAdi)
@@ -97,7 +107,9 @@ namespace EMutabakat.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var firma = await _db.Firmalar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var firma = await context.Firmalar
                 .FirstOrDefaultAsync(x => x.FirmaId == id);
 
             if (firma == null)
@@ -105,8 +117,8 @@ namespace EMutabakat.Services
 
             try
             {
-                _db.Firmalar.Remove(firma);
-                await _db.SaveChangesAsync();
+                context.Firmalar.Remove(firma);
+                await context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)
@@ -155,6 +167,7 @@ namespace EMutabakat.Services
         {
             var errors = new List<string>();
             var created = 0;
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
             {
@@ -348,10 +361,10 @@ namespace EMutabakat.Services
 
                 foreach (var (_, firma) in prepared)
                 {
-                    _db.Firmalar.Add(firma);
+                    context.Firmalar.Add(firma);
                 }
 
-                await _db.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 created = prepared.Count;
 
                 return (created, errors);

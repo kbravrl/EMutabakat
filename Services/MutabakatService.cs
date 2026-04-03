@@ -16,20 +16,20 @@ namespace EMutabakat.Services
 {
     public class MutabakatService : IMutabakatService
     {
-        private readonly AppDbContext _db;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
         private readonly IEmailService _emailService;
         private readonly ISdService _sdService;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public MutabakatService(
-            AppDbContext db,
+            IDbContextFactory<AppDbContext> contextFactory,
             IEmailService emailService,
             ISdService sdService,
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor)
         {
-            _db = db;
+            _contextFactory = contextFactory;
             _emailService = emailService;
             _sdService = sdService;
             _configuration = configuration;
@@ -38,7 +38,10 @@ namespace EMutabakat.Services
 
         public async Task<List<Mutabakat>> GetAllAsync()
         {
-            return await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Mutabakatlar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .OrderByDescending(x => x.MutabakatDonemi)
@@ -48,7 +51,10 @@ namespace EMutabakat.Services
 
         public async Task<Mutabakat?> GetByIdAsync(int id)
         {
-            return await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Mutabakatlar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == id);
@@ -56,6 +62,8 @@ namespace EMutabakat.Services
 
         public async Task<Mutabakat> AddAsync(Mutabakat mutabakat)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
             mutabakat.MutabakatDonemi = DateTime.SpecifyKind(
                 mutabakat.MutabakatDonemi,
                 DateTimeKind.Utc);
@@ -79,15 +87,17 @@ namespace EMutabakat.Services
                 mutabakat.MutabakatGonderimDurumu = 1;
             }
 
-            _db.Mutabakatlar.Add(mutabakat);
-            await _db.SaveChangesAsync();
+            context.Mutabakatlar.Add(mutabakat);
+            await context.SaveChangesAsync();
 
             return mutabakat;
         }
 
         public async Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat)
         {
-            var existingMutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var existingMutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakat.MutabakatId);
 
             if (existingMutabakat == null)
@@ -112,13 +122,15 @@ namespace EMutabakat.Services
                 ? null
                 : mutabakat.MutabakatAciklama.Trim();
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return existingMutabakat;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var mutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x => x.MutabakatId == id);
 
             if (mutabakat == null)
@@ -126,8 +138,8 @@ namespace EMutabakat.Services
 
             var filePath = mutabakat.MutabakatReceiveStoragePath;
 
-            _db.Mutabakatlar.Remove(mutabakat);
-            await _db.SaveChangesAsync();
+            context.Mutabakatlar.Remove(mutabakat);
+            await context.SaveChangesAsync();
 
             if (!string.IsNullOrWhiteSpace(filePath))
             {
@@ -139,7 +151,9 @@ namespace EMutabakat.Services
 
         public async Task<bool> SendMailAsync(int mutabakatId)
         {
-            var mutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mutabakat = await context.Mutabakatlar
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
@@ -161,7 +175,7 @@ namespace EMutabakat.Services
 
             var email = user.Identity.Name;
 
-            var kullanici = await _db.Kullanicilar
+            var kullanici = await context.Kullanicilar
                .Include(x => x.Firma)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
@@ -195,14 +209,16 @@ namespace EMutabakat.Services
                 mutabakat.MutabakatDurum = 3;
             }
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<bool> SendReminderAsync(int mutabakatId)
         {
-            var mutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mutabakat = await context.Mutabakatlar
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
@@ -225,7 +241,7 @@ namespace EMutabakat.Services
 
             var email = user.Identity.Name;
 
-            var kullanici = await _db.Kullanicilar
+            var kullanici = await context.Kullanicilar
                .Include(x => x.Firma)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
@@ -253,14 +269,17 @@ namespace EMutabakat.Services
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatGonderimDurumu = 2;
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return true;
         }
 
         public async Task<Mutabakat?> GetByTokenAsync(string token)
         {
-            return await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Mutabakatlar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
@@ -268,7 +287,9 @@ namespace EMutabakat.Services
 
         public async Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm)
         {
-            var mutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
 
             if (mutabakat == null)
@@ -283,13 +304,15 @@ namespace EMutabakat.Services
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
             mutabakat.MutabakatCevapGsm = gsm;
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? aciklama, string? filePath)
         {
-            var mutabakat = await _db.Mutabakatlar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var mutabakat = await context.Mutabakatlar
                 .Include(x => x.Cari)
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
 
@@ -330,7 +353,7 @@ namespace EMutabakat.Services
                 }
             }
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
@@ -377,6 +400,7 @@ namespace EMutabakat.Services
             var errors = new List<string>();
             var createdCount = 0;
             var mailSentCount = 0;
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
             {
@@ -436,14 +460,14 @@ namespace EMutabakat.Services
                         var bakiyeTipi = GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B";
                         var aciklama = headerMap.ContainsKey("MutabakatAciklama") ? GetStringCell(row, headerMap["MutabakatAciklama"]) : string.Empty;
 
-                        var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == firmaId);
+                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == firmaId);
                         if (!firmaExists)
                         {
                             errors.Add($"Satır {r + 1}: FirmaId {firmaId} bulunamadı.");
                             continue;
                         }
 
-                        var cariExists = await _db.Cariler.AnyAsync(c => c.CariId == cariId);
+                        var cariExists = await context.Cariler.AnyAsync(c => c.CariId == cariId);
                         if (!cariExists)
                         {
                             errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
@@ -483,7 +507,7 @@ namespace EMutabakat.Services
                     return (0, 0, errors);
                 }
 
-                await using var tx = await _db.Database.BeginTransactionAsync();
+                await using var tx = await context.Database.BeginTransactionAsync();
 
                 try
                 {
@@ -494,15 +518,15 @@ namespace EMutabakat.Services
                         if (mutabakat.MutabakatDurum == 0) mutabakat.MutabakatDurum = 3;
                         if (mutabakat.MutabakatGonderimDurumu == 0) mutabakat.MutabakatGonderimDurumu = 1;
 
-                        _db.Mutabakatlar.Add(mutabakat);
+                        context.Mutabakatlar.Add(mutabakat);
                     }
 
-                    await _db.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     createdCount = prepared.Count;
 
                     foreach (var (_, mutabakat) in prepared)
                     {
-                        var full = await _db.Mutabakatlar
+                        var full = await context.Mutabakatlar
                             .Include(m => m.Cari)
                             .Include(m => m.Firma)
                             .FirstOrDefaultAsync(m => m.MutabakatId == mutabakat.MutabakatId);
@@ -512,7 +536,7 @@ namespace EMutabakat.Services
                             throw new InvalidOperationException($"MutabakatId {mutabakat.MutabakatId}: kayıt kaydedildikten sonra bulunamadı.");
                         }
 
-                        var sender = await _db.Kullanicilar
+                        var sender = await context.Kullanicilar
                             .Include(k => k.Firma)
                             .FirstOrDefaultAsync(k => k.FirmaId == full.FirmaId);
 
@@ -538,7 +562,7 @@ namespace EMutabakat.Services
                         mailSentCount++;
                     }
 
-                    await _db.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     await tx.CommitAsync();
 
                     return (createdCount, mailSentCount, errors);

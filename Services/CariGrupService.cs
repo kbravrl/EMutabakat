@@ -14,16 +14,19 @@ namespace EMutabakat.Services
 {
     public class CariGrupService : ICariGrupService
     {
-        private readonly AppDbContext _db;
+        private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-        public CariGrupService(AppDbContext db)
+        public CariGrupService(IDbContextFactory<AppDbContext> contextFactory)
         {
-            _db = db;
+            _contextFactory = contextFactory;
         }
       
         public async Task<List<CariGrup>> GetAllAsync()
         {
-            return await _db.CariGruplar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.CariGruplar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .OrderBy(x => x.CariGrupAdi)
                 .ToListAsync();
@@ -31,33 +34,40 @@ namespace EMutabakat.Services
 
         public async Task<CariGrup?> GetByIdAsync(int id)
         {
-            return await _db.CariGruplar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.CariGruplar
+                .AsNoTracking()
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.CariGrupId == id);
         }
 
         public async Task<CariGrup> AddAsync(CariGrup cariGrup)
         {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
             if (cariGrup.FirmaId <= 0)
                 throw new Exception("Firma seçimi zorunludur.");
 
             if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
                 throw new Exception("Cari grup adı zorunludur.");
 
-            var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
+            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
 
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
 
-            _db.CariGruplar.Add(cariGrup);
-            await _db.SaveChangesAsync();
+            context.CariGruplar.Add(cariGrup);
+            await context.SaveChangesAsync();
 
             return cariGrup;
         }
 
         public async Task<CariGrup?> UpdateAsync(CariGrup cariGrup)
         {
-            var existingCariGrup = await _db.CariGruplar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var existingCariGrup = await context.CariGruplar
                 .FirstOrDefaultAsync(x => x.CariGrupId == cariGrup.CariGrupId);
 
             if (existingCariGrup == null)
@@ -66,13 +76,15 @@ namespace EMutabakat.Services
             existingCariGrup.FirmaId = cariGrup.FirmaId;
             existingCariGrup.CariGrupAdi = cariGrup.CariGrupAdi;
 
-            await _db.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return existingCariGrup;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var cariGrup = await _db.CariGruplar
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var cariGrup = await context.CariGruplar
                 .FirstOrDefaultAsync(x => x.CariGrupId == id);
 
             if (cariGrup == null)
@@ -80,8 +92,8 @@ namespace EMutabakat.Services
 
             try
             {
-                _db.CariGruplar.Remove(cariGrup);
-                await _db.SaveChangesAsync();
+                context.CariGruplar.Remove(cariGrup);
+                await context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)
@@ -130,6 +142,7 @@ namespace EMutabakat.Services
         {
             var errors = new List<string>();
             var created = 0;
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
             {
@@ -199,7 +212,7 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        var firmaExists = await _db.Firmalar.AnyAsync(f => f.FirmaId == grup.FirmaId);
+                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == grup.FirmaId);
                         if (!firmaExists)
                         {
                             errors.Add($"Satır {r + 1}: FirmaId {grup.FirmaId} bulunamadı.");
@@ -229,10 +242,10 @@ namespace EMutabakat.Services
 
                 foreach (var (_, grup) in prepared)
                 {
-                    _db.CariGruplar.Add(grup);
+                    context.CariGruplar.Add(grup);
                 }
 
-                await _db.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 created = prepared.Count;
 
                 return (created, errors);
