@@ -7,70 +7,98 @@
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Kayıt Ol</PageTitle>
 
-<RadzenRow JustifyContent="JustifyContent.Center" class="mt-5">
-    <RadzenColumn Size="12" SizeMD="8" SizeLG="6">
-        <RadzenCard class="p-4">
-            <RadzenText TextStyle="TextStyle.H4" class="mb-3">Kayıt Ol</RadzenText>
+<RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" Style="min-height:calc(100vh - 120px);padding:12px;">
+    <RadzenColumn Size="12" SizeMD="6" SizeLG="4" Style="max-width:460px;">
+        <RadzenCard class="p-4" Style="border-radius:16px;border:1px solid #e7ecf5;box-shadow:0 10px 28px rgba(15,23,42,0.08);background:#ffffff;">
+            <RadzenText TextStyle="TextStyle.H4" class="mb-3" Style="display:block;text-align:center;color:#334155;">Kayıt Ol</RadzenText>
+            <RadzenDivider Style="margin:0 0 1rem 0;" />
 
-            <EditForm Model="@model" OnValidSubmit="HandleRegister">
+            <EditForm Model="@model" OnValidSubmit="HandleRegister" OnInvalidSubmit="HandleInvalidSubmit">
                 <DataAnnotationsValidator />
-                <ValidationSummary />
-
                 <RadzenRow Gap="16px">
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Firma" Style="width:100%;">
-                            <RadzenDropDown Data="@firmalar"
+                            <RadzenDropDown Name="FirmaId"
+                                            Data="@firmalar"
                                             TextProperty="FirmaAdi"
                                             ValueProperty="FirmaId"
                                             @bind-Value="model.FirmaId"
                                             Placeholder="Firma seçiniz"
                                             Style="width:100%;" />
+                            <RadzenRequiredValidator Component="FirmaId"
+                                                     DefaultValue="@(0)"
+                                                     Text="Firma seçimi zorunludur."
+                                                     Popup="true" />
                         </RadzenFormField>
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Ad" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="model.KullaniciAdi" Style="width:100%;" />
+                            <RadzenTextBox Name="KullaniciAdi" @bind-Value="model.KullaniciAdi" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="KullaniciAdi"
+                                                 Text="Ad alanı zorunludur."
+                                                 Popup="true" />
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Soyad" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="model.KullaniciSoyadi" Style="width:100%;" />
+                            <RadzenTextBox Name="KullaniciSoyadi" @bind-Value="model.KullaniciSoyadi" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="KullaniciSoyadi"
+                                                 Text="Soyad alanı zorunludur."
+                                                 Popup="true" />
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Mail" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="model.KullaniciMail" Style="width:100%;" />
+                            <RadzenTextBox Name="KullaniciMail" @bind-Value="model.KullaniciMail" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="KullaniciMail"
+                                                 Text="Mail alanı zorunludur."
+                                                 Popup="true" />
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="GSM" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="model.KullaniciGsm" Style="width:100%;" />
+                            <RadzenTextBox Name="KullaniciGsm" @bind-Value="model.KullaniciGsm" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="KullaniciGsm"
+                                                 Text="GSM alanı zorunludur."
+                                                 Popup="true" />
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Şifre" Style="width:100%;">
-                            <RadzenPassword @bind-Value="model.Sifre" Style="width:100%;" />
+                            <RadzenPassword Name="Sifre" @bind-Value="model.Sifre" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="Sifre"
+                                                 Text="Şifre alanı zorunludur."
+                                                 Popup="true" />
                     </RadzenColumn>
 
-                    <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenColumn Size="12">
                         <RadzenFormField Text="Şifre Tekrar" Style="width:100%;">
-                            <RadzenPassword @bind-Value="model.SifreTekrar" Style="width:100%;" />
+                            <RadzenPassword Name="SifreTekrar" @bind-Value="model.SifreTekrar" Style="width:100%;" />
                         </RadzenFormField>
+                        <RadzenRequiredValidator Component="SifreTekrar"
+                                                 Text="Şifre tekrar alanı zorunludur."
+                                                 Popup="true" />
+                        <RadzenCompareValidator Component="SifreTekrar"
+                                                Value="@model.Sifre"
+                                                Text="Şifreler eşleşmiyor."
+                                                Popup="true" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12">
                         <RadzenButton Text="Kayıt Ol"
                                       Icon="person_add"
-                                      ButtonType="ButtonType.Submit" />
+                                      ButtonType="ButtonType.Submit"
+                                      Style="width:100%;border-radius:10px;background:#4f46e5;border:none;" />
                     </RadzenColumn>
                 </RadzenRow>
             </EditForm>
@@ -84,24 +112,60 @@
 
     protected override async Task OnInitializedAsync()
     {
-        firmalar = await FirmaService.GetAllAsync();
+        try
+        {
+            firmalar = await FirmaService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", $"Firma listesi yüklenemedi: {ex.Message}");
+            firmalar = new List<Firma>();
+        }
     }
 
     private async Task HandleRegister()
     {
-        var status = await JS.InvokeAsync<int>("EMutabakatAuth.postJsonStatus", "api/auth/register", model);
-        if (status == 200)
+        try
         {
-            NavigationManager.NavigateTo("/", true);
+            var status = await JS.InvokeAsync<int>("EMutabakatAuth.postJsonStatus", "api/auth/register", model);
+            if (status == 200)
+            {
+                NavigationManager.NavigateTo("/", true);
+                return;
+            }
+
+            if (status == 409)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Bu mail adresi zaten kayıtlı.");
+                return;
+            }
+
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", $"Kayıt başarısız. Durum kodu: {status}");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", $"Kayıt sırasında hata oluştu: {ex.Message}");
+        }
+    }
+
+    private void HandleInvalidSubmit(EditContext editContext)
+    {
+        var messages = editContext.GetValidationMessages().Distinct().ToList();
+
+        if (messages.Count == 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen form alanlarını kontrol ediniz.");
             return;
         }
 
-        if (status == 409)
+        foreach (var message in messages)
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Bu mail adresi zaten kayıtlı.");
-            return;
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", message);
         }
-
-        NotificationService.Notify(NotificationSeverity.Error, "Hata", "Kayıt sırasında hata oluştu.");
     }
 }
+
+
+
+
+
