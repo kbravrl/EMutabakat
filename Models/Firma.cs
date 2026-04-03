@@ -43,6 +43,7 @@ namespace EMutabakat.Models
         public int FirmaSmtpPort { get; set; }
 
         [Required(ErrorMessage = "SMTP kullanıcı adı zorunludur.")]
+        [EmailAddress(ErrorMessage = "Geçerli bir mail adresi giriniz.")]
         public string FirmaSmtpUser { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "SMTP şifresi zorunludur.")]

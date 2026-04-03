@@ -118,6 +118,7 @@
                     <RadzenLabel Text="SMTP Kullanıcı *" />
                     <RadzenTextBox Name="FirmaSmtpUser" @bind-Value="firma.FirmaSmtpUser" Placeholder="Kullanıcı" Style="width:100%;" />
                     <RadzenRequiredValidator Component="FirmaSmtpUser" Text="SMTP kullanıcı adı zorunludur." Popup="true" />
+                    <RadzenEmailValidator Component="FirmaSmtpUser" Text="Geçerli bir e-posta giriniz." Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
