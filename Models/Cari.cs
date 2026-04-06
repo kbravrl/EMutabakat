@@ -37,7 +37,7 @@ namespace EMutabakat.Models
 
         [ForeignKey("CariGrup")]
         [Required(ErrorMessage = "Cari grup seçimi zorunludur.")]
-        public int CariGrupId { get; set; }
+        public string CariGrupId { get; set; } = string.Empty;
 
         public int? CariDovizKodu { get; set; }
 

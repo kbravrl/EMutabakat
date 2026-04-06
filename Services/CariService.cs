@@ -144,8 +144,10 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(cari.CariYetkiliMail))
                 throw new Exception("Yetkili mail zorunludur.");
 
-            if (cari.CariGrupId <= 0)
+            if (string.IsNullOrWhiteSpace(cari.CariGrupId))
                 throw new Exception("Cari grup seçimi zorunludur.");
+
+            cari.CariGrupId = cari.CariGrupId.Trim();
 
             if (cari.CariAktifPasif != 0 && cari.CariAktifPasif != 1)
                 throw new Exception("Aktif/Pasif değeri geçersiz.");
@@ -267,12 +269,14 @@ namespace EMutabakat.Services
                         CariYetkiliTelefon = headerMap.ContainsKey("CariYetkiliTelefon") ? GetStringCell(row, headerMap["CariYetkiliTelefon"]) : null,
                         CariYetkiliGsm = headerMap.ContainsKey("CariYetkiliGsm") ? GetStringCell(row, headerMap["CariYetkiliGsm"]) : null,
                         CariYetkiliMail = GetStringCell(row, headerMap["CariYetkiliMail"]) ?? string.Empty,
-                        CariGrupId = ParseIntCell(row, headerMap["CariGrupId"]),
+                        CariGrupId = GetStringCell(row, headerMap["CariGrupId"]) ?? string.Empty,
                         CariDovizKodu = headerMap.ContainsKey("CariDovizKodu")
                             ? ParseIntCell(row, headerMap["CariDovizKodu"])
                             : null,
                         CariAktifPasif = ParseIntCell(row, headerMap["CariAktifPasif"])
                     };
+
+                    cari.CariGrupId = cari.CariGrupId.Trim();
 
                     try
                     {

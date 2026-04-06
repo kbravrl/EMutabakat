@@ -85,12 +85,12 @@
         NavigationManager.NavigateTo("/current-groups/add");
     }
 
-    private void GoToEditPage(int id)
+    private void GoToEditPage(string id)
     {
-        NavigationManager.NavigateTo($"/current-groups/edit/{id}");
+        NavigationManager.NavigateTo($"/current-groups/edit/{Uri.EscapeDataString(id)}");
     }
 
-    private async Task DeleteCariGrup(int id, string cariGrupAdi)
+    private async Task DeleteCariGrup(string id, string cariGrupAdi)
     {
         var confirmed = await DialogService.Confirm(
             $"'{cariGrupAdi}' kaydını silmek istediğinize emin misiniz?",

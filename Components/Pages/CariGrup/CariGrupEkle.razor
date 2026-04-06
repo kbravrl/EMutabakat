@@ -28,6 +28,17 @@
         <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
             <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Cari Grup ID *" Style="width:100%;" />
+                    <RadzenTextBox Name="CariGrupId"
+                                   @bind-Value="cariGrup.CariGrupId"
+                                   Placeholder="Cari grup ID giriniz"
+                                   Style="width:100%;" />
+                    <RadzenRequiredValidator Component="CariGrupId"
+                                             Text="Cari grup ID zorunludur."
+                                             Popup="true" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Firma *" Style="width:100%;" />
                         <RadzenDropDown Name="FirmaId"
                                         Data="@firmalar"

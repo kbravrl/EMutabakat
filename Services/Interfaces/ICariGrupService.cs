@@ -5,10 +5,10 @@ namespace EMutabakat.Services.Interfaces
     public interface ICariGrupService
     {
         Task<List<CariGrup>> GetAllAsync();
-        Task<CariGrup?> GetByIdAsync(int id);
+        Task<CariGrup?> GetByIdAsync(string id);
         Task<CariGrup> AddAsync(CariGrup cariGrup);
         Task<CariGrup?> UpdateAsync(CariGrup cariGrup);
-        Task<bool> DeleteAsync(int id);
-        Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName);
+        Task<bool> DeleteAsync(string id);
+        Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId);
     }
 }

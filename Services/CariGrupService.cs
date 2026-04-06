@@ -32,7 +32,7 @@ namespace EMutabakat.Services
                 .ToListAsync();
         }
 
-        public async Task<CariGrup?> GetByIdAsync(int id)
+        public async Task<CariGrup?> GetByIdAsync(string id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -46,11 +46,26 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            cariGrup.CariGrupId = cariGrup.CariGrupId?.Trim() ?? string.Empty;
+            cariGrup.CariGrupAdi = cariGrup.CariGrupAdi?.Trim() ?? string.Empty;
+
             if (cariGrup.FirmaId <= 0)
                 throw new Exception("Firma seçimi zorunludur.");
 
+            if (string.IsNullOrWhiteSpace(cariGrup.CariGrupId))
+                throw new Exception("Cari grup ID zorunludur.");
+
             if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
                 throw new Exception("Cari grup adı zorunludur.");
+
+            var exists = await context.CariGruplar.AnyAsync(x => x.CariGrupId == cariGrup.CariGrupId);
+            if (exists)
+                throw new Exception("Bu cari grup ID zaten kullanılıyor.");
+
+            var sameNameExists = await context.CariGruplar
+                .AnyAsync(x => x.CariGrupAdi.ToLower() == cariGrup.CariGrupAdi.ToLower());
+            if (sameNameExists)
+                throw new Exception("Bu cari grup adı zaten kullanılıyor.");
 
             var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
 
@@ -67,11 +82,63 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            cariGrup.CariGrupId = cariGrup.CariGrupId?.Trim() ?? string.Empty;
+            cariGrup.CariGrupAdi = cariGrup.CariGrupAdi?.Trim() ?? string.Empty;
+            cariGrup.OriginalCariGrupId = string.IsNullOrWhiteSpace(cariGrup.OriginalCariGrupId)
+                ? cariGrup.CariGrupId
+                : cariGrup.OriginalCariGrupId.Trim();
+
+            if (string.IsNullOrWhiteSpace(cariGrup.CariGrupId))
+                throw new Exception("Cari grup ID zorunludur.");
+
+            if (cariGrup.FirmaId <= 0)
+                throw new Exception("Firma seçimi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
+                throw new Exception("Cari grup adı zorunludur.");
+
+            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
+            if (!firmaExists)
+                throw new Exception("Seçilen firma bulunamadı.");
+
             var existingCariGrup = await context.CariGruplar
-                .FirstOrDefaultAsync(x => x.CariGrupId == cariGrup.CariGrupId);
+                .FirstOrDefaultAsync(x => x.CariGrupId == cariGrup.OriginalCariGrupId);
 
             if (existingCariGrup == null)
                 return null;
+
+            var sameNameExists = await context.CariGruplar
+                .AnyAsync(x => x.CariGrupId != cariGrup.OriginalCariGrupId && x.CariGrupAdi.ToLower() == cariGrup.CariGrupAdi.ToLower());
+            if (sameNameExists)
+                throw new Exception("Bu cari grup adı zaten kullanılıyor.");
+
+            if (!string.Equals(cariGrup.OriginalCariGrupId, cariGrup.CariGrupId, StringComparison.Ordinal))
+            {
+                var newIdExists = await context.CariGruplar.AnyAsync(x => x.CariGrupId == cariGrup.CariGrupId);
+                if (newIdExists)
+                    throw new Exception("Bu cari grup ID zaten kullanılıyor.");
+
+                var newCariGrup = new CariGrup
+                {
+                    CariGrupId = cariGrup.CariGrupId,
+                    FirmaId = cariGrup.FirmaId,
+                    CariGrupAdi = cariGrup.CariGrupAdi
+                };
+
+                context.CariGruplar.Add(newCariGrup);
+                await context.SaveChangesAsync();
+
+                await context.Cariler
+                    .Where(c => c.CariGrupId == cariGrup.OriginalCariGrupId)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(c => c.CariGrupId, cariGrup.CariGrupId));
+
+                context.CariGruplar.Remove(existingCariGrup);
+                await context.SaveChangesAsync();
+
+                return await context.CariGruplar
+                    .Include(x => x.Firma)
+                    .FirstOrDefaultAsync(x => x.CariGrupId == cariGrup.CariGrupId);
+            }
 
             existingCariGrup.FirmaId = cariGrup.FirmaId;
             existingCariGrup.CariGrupAdi = cariGrup.CariGrupAdi;
@@ -80,12 +147,16 @@ namespace EMutabakat.Services
             return existingCariGrup;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(string id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var normalizedId = id?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(normalizedId))
+                return false;
+
             var cariGrup = await context.CariGruplar
-                .FirstOrDefaultAsync(x => x.CariGrupId == id);
+                .FirstOrDefaultAsync(x => x.CariGrupId == normalizedId);
 
             if (cariGrup == null)
                 return false;
@@ -138,11 +209,25 @@ namespace EMutabakat.Services
             return int.TryParse(s, out var v) ? v : 0;
         }
 
-        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId)
         {
             var errors = new List<string>();
             var created = 0;
+            var updated = 0;
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            if (firmaId <= 0)
+            {
+                errors.Add("Firma seçimi zorunludur.");
+                return (0, 0, errors);
+            }
+
+            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == firmaId);
+            if (!firmaExists)
+            {
+                errors.Add("Seçilen firma bulunamadı.");
+                return (0, 0, errors);
+            }
 
             try
             {
@@ -155,14 +240,14 @@ namespace EMutabakat.Services
                 if (sheet == null)
                 {
                     errors.Add("Excel sayfası bulunamadı.");
-                    return (0, errors);
+                    return (0, 0, errors);
                 }
 
                 var headerRow = sheet.GetRow(0);
                 if (headerRow == null)
                 {
                     errors.Add("Excel başlık satırı bulunamadı.");
-                    return (0, errors);
+                    return (0, 0, errors);
                 }
 
                 var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -174,17 +259,15 @@ namespace EMutabakat.Services
                     if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
                 }
 
-                string[] required = new[] { "FirmaId", "CariGrupAdi" };
+                string[] required = new[] { "CariGrupId", "CariGrupAdi" };
                 foreach (var h in required)
                 {
                     if (!headerMap.ContainsKey(h))
                     {
                         errors.Add($"Gerekli sütun '{h}' bulunamadı.");
-                        return (0, errors);
+                        return (0, 0, errors);
                     }
                 }
-
-                var prepared = new List<(int RowNumber, CariGrup Entity)>();
 
                 for (int r = 1; r <= sheet.LastRowNum; r++)
                 {
@@ -193,16 +276,18 @@ namespace EMutabakat.Services
 
                     try
                     {
-                        var firmaId = ParseIntCell(row, headerMap.GetValueOrDefault("FirmaId"));
                         var grup = new CariGrup
                         {
+                            CariGrupId = GetStringCell(row, headerMap.GetValueOrDefault("CariGrupId")) ?? string.Empty,
                             FirmaId = firmaId,
                             CariGrupAdi = GetStringCell(row, headerMap.GetValueOrDefault("CariGrupAdi")) ?? string.Empty
                         };
 
-                        if (grup.FirmaId <= 0)
+                        grup.CariGrupId = grup.CariGrupId.Trim();
+
+                        if (string.IsNullOrWhiteSpace(grup.CariGrupId))
                         {
-                            errors.Add($"Satır {r + 1}: FirmaId geçerli olmalıdır.");
+                            errors.Add($"Satır {r + 1}: CariGrupId boş olamaz.");
                             continue;
                         }
 
@@ -212,14 +297,18 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == grup.FirmaId);
-                        if (!firmaExists)
+                        var existing = await context.CariGruplar.FirstOrDefaultAsync(x => x.CariGrupId == grup.CariGrupId);
+                        if (existing == null)
                         {
-                            errors.Add($"Satır {r + 1}: FirmaId {grup.FirmaId} bulunamadı.");
-                            continue;
+                            context.CariGruplar.Add(grup);
+                            created++;
                         }
-
-                        prepared.Add((r + 1, grup));
+                        else
+                        {
+                            existing.CariGrupAdi = grup.CariGrupAdi;
+                            existing.FirmaId = grup.FirmaId;
+                            updated++;
+                        }
                     }
                     catch (Exception exRow)
                     {
@@ -237,18 +326,12 @@ namespace EMutabakat.Services
 
                 if (errors.Count > 0)
                 {
-                    return (0, errors);
-                }
-
-                foreach (var (_, grup) in prepared)
-                {
-                    context.CariGruplar.Add(grup);
+                    return (0, 0, errors);
                 }
 
                 await context.SaveChangesAsync();
-                created = prepared.Count;
 
-                return (created, errors);
+                return (created, updated, errors);
             }
             catch (Exception ex)
             {
@@ -261,7 +344,7 @@ namespace EMutabakat.Services
                 }
 
                 errors.Add($"İşlem sırasında hata oluştu: {detail}");
-                return (0, errors);
+                return (0, 0, errors);
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿@page "/current-groups/edit/{id:int}"
+﻿@page "/current-groups/edit/{id}"
 
 @attribute [Authorize]
 
@@ -27,6 +27,15 @@ else
 
             <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
                 <RadzenRow Gap="16px">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Cari Grup ID *" Style="width:100%;" />
+                        <RadzenTextBox Name="CariGrupId"
+                                       @bind-Value="cariGrup.CariGrupId"
+                                       Style="width:100%;" />
+
+                        <RadzenRequiredValidator Component="CariGrupId" Text="Cari grup ID zorunludur." Popup="true" />
+                    </RadzenColumn>
+
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Firma *" Style="width:100%;" />
                             <RadzenDropDown Name="FirmaId"
@@ -59,7 +68,7 @@ else
 }
 
 @code {
-    [Parameter] public int id { get; set; }
+    [Parameter] public string id { get; set; } = string.Empty;
 
     private CariGrup? cariGrup;
     private List<Firma> firmalar = new();
@@ -68,6 +77,10 @@ else
     {
         firmalar = await FirmaService.GetAllAsync();
         cariGrup = await CariGrupService.GetByIdAsync(id);
+        if (cariGrup != null)
+        {
+            cariGrup.OriginalCariGrupId = cariGrup.CariGrupId;
+        }
     }
 
     private async Task HandleValidSubmit()
@@ -75,16 +88,23 @@ else
         if (cariGrup == null)
             return;
 
-        var result = await CariGrupService.UpdateAsync(cariGrup);
+        try
+        {
+            var result = await CariGrupService.UpdateAsync(cariGrup);
 
-        if (result != null)
-        {
-            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari grup kaydı güncellendi.");
-            NavigationManager.NavigateTo("/current-groups");
+            if (result != null)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari grup kaydı güncellendi.");
+                NavigationManager.NavigateTo("/current-groups");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari grup kaydı güncellenemedi.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari grup kaydı güncellenemedi.");
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
         }
     }
 
