@@ -1,6 +1,6 @@
 @page "/users/edit/{id:int}"
 
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 @inject IKullaniciService KullaniciService
 @inject IFirmaService FirmaService
@@ -35,22 +35,30 @@ else
                 <RadzenRow Gap="16px">
 
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Firma *" />
-                        <RadzenDropDown Name="FirmaId"
+                        <RadzenLabel Text="Firmalar *" />
+                        <RadzenDropDown Name="FirmaIds"
                                         Data="@firmalar"
                                         TextProperty="FirmaAdi"
                                         ValueProperty="FirmaId"
-                                        @bind-Value="kullanici.FirmaId"
+                                        @bind-Value="selectedFirmaIds"
                                         Placeholder="Firma seçiniz"
+                                        Multiple="true"
+                                        AllowClear="true"
                                         Style="width:100%;" />
-                        <RadzenRequiredValidator Component="FirmaId"
-                                                 Text="Firma seçimi zorunludur."
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Rol *" />
+                        <RadzenDropDown Name="Rol"
+                                        Data="@roller"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="kullanici.Rol"
+                                        Placeholder="Rol seçiniz"
+                                        Style="width:100%;" />
+                        <RadzenRequiredValidator Component="Rol"
+                                                 Text="Rol seçimi zorunludur."
                                                  Popup="true" />
-                        <RadzenCompareValidator Component="FirmaId"
-                                                Value="1"
-                                                Operator="CompareOperator.GreaterThanEqual"
-                                                Text="Firma seçimi zorunludur."
-                                                Popup="true" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
@@ -152,6 +160,13 @@ else
     private string? yeniSifre;
     private bool isLoading = true;
     private List<Firma> firmalar = new();
+    private List<int> selectedFirmaIds = new();
+
+    private List<RolOption> roller = new()
+    {
+        new() { Text = "Standart", Value = KullaniciRolleri.Standart },
+        new() { Text = "Admin", Value = KullaniciRolleri.Admin }
+    };
 
     private List<DurumOption> durumlar = new()
     {
@@ -168,6 +183,12 @@ else
 
             if (kullanici != null)
             {
+                selectedFirmaIds = (kullanici.KullaniciFirmalari?.Select(x => x.FirmaId).Distinct().ToList() ?? new List<int>());
+                if (selectedFirmaIds.Count == 0 && kullanici.FirmaId > 0)
+                {
+                    selectedFirmaIds.Add(kullanici.FirmaId);
+                }
+
                 kullanici.Sifre = "__UNCHANGED__";
                 yeniSifre = string.Empty;
             }
@@ -185,6 +206,14 @@ else
 
         try
         {
+            if (selectedFirmaIds.Count == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "En az bir firma seçimi zorunludur.");
+                return;
+            }
+
+            kullanici.FirmaIds = selectedFirmaIds.Distinct().ToList();
+            kullanici.FirmaId = kullanici.FirmaIds.First();
             kullanici.Sifre = string.IsNullOrWhiteSpace(yeniSifre) ? string.Empty : yeniSifre;
 
             var result = await KullaniciService.UpdateAsync(kullanici);
@@ -221,6 +250,12 @@ else
     }
 
     private class DurumOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    private class RolOption
     {
         public string Text { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;

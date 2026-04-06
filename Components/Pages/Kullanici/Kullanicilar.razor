@@ -1,6 +1,6 @@
 ﻿@page "/users"
 
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 @inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
@@ -43,9 +43,19 @@
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciMail" Title="Mail" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciGsm" Title="GSM" />
 
-                <RadzenDataGridColumn TItem="Kullanici" Title="Firma">
+                <RadzenDataGridColumn TItem="Kullanici" Title="Rol">
                     <Template Context="item">
-                        @item.Firma?.FirmaAdi
+                        @item.Rol
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Kullanici" Title="Firmalar">
+                    <Template Context="item">
+                        @string.Join(", ",
+                            (item.KullaniciFirmalari?.Select(x => x.Firma?.FirmaAdi)
+                                .Where(x => !string.IsNullOrWhiteSpace(x))
+                                .Distinct()
+                                .ToList() ?? new List<string>()))
                     </Template>
                 </RadzenDataGridColumn>
 

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
 
 namespace EMutabakat.Models
 {
@@ -27,9 +28,16 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Şifre zorunludur.")]
         public string Sifre { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Rol seçimi zorunludur.")]
+        public string Rol { get; set; } = KullaniciRolleri.Standart;
+
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public string KullaniciAktifPasif { get; set; }
 
         public Firma? Firma { get; set; }
+        public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();
+
+        [NotMapped]
+        public List<int> FirmaIds { get; set; } = new();
     }
 }

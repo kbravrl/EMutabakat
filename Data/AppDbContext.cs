@@ -11,6 +11,7 @@ namespace EMutabakat.Data
         }
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
+        public DbSet<KullaniciFirma> KullaniciFirmalari { get; set; }
         public DbSet<CariGrup> CariGruplar { get; set; }
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
@@ -23,6 +24,22 @@ namespace EMutabakat.Data
                 .HasOne(k => k.Firma)
                 .WithMany()
                 .HasForeignKey(k => k.FirmaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<KullaniciFirma>()
+                .HasIndex(kf => new { kf.KullaniciId, kf.FirmaId })
+                .IsUnique();
+
+            modelBuilder.Entity<KullaniciFirma>()
+                .HasOne(kf => kf.Kullanici)
+                .WithMany(k => k.KullaniciFirmalari)
+                .HasForeignKey(kf => kf.KullaniciId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<KullaniciFirma>()
+                .HasOne(kf => kf.Firma)
+                .WithMany(f => f.KullaniciFirmalari)
+                .HasForeignKey(kf => kf.FirmaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<CariGrup>()

@@ -1,6 +1,6 @@
 ﻿@page "/users/add"
 
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 
 @inject IKullaniciService KullaniciService
 @inject IFirmaService FirmaService
@@ -25,22 +25,30 @@
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Firma *" />
-                    <RadzenDropDown Name="FirmaId"
+                    <RadzenLabel Text="Firmalar *" />
+                    <RadzenDropDown Name="FirmaIds"
                                     Data="@firmalar"
                                     TextProperty="FirmaAdi"
                                     ValueProperty="FirmaId"
-                                    @bind-Value="kullanici.FirmaId"
+                                    @bind-Value="selectedFirmaIds"
                                     Placeholder="Firma seçiniz"
+                                    Multiple="true"
+                                    AllowClear="true"
                                     Style="width:100%;" />
-                    <RadzenRequiredValidator Component="FirmaId"
-                                             Text="Firma seçimi zorunludur."
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Rol *" />
+                    <RadzenDropDown Name="Rol"
+                                    Data="@roller"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="kullanici.Rol"
+                                    Placeholder="Rol seçiniz"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Rol"
+                                             Text="Rol seçimi zorunludur."
                                              Popup="true" />
-                    <RadzenCompareValidator Component="FirmaId"
-                                            Value="1"
-                                            Operator="CompareOperator.GreaterThanEqual"
-                                            Text="Firma seçimi zorunludur."
-                                            Popup="true" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -140,10 +148,18 @@
 @code {
     private Kullanici kullanici = new()
     {
+        Rol = KullaniciRolleri.Standart,
         KullaniciAktifPasif = "1"
     };
 
     private List<Firma> firmalar = new();
+    private List<int> selectedFirmaIds = new();
+
+    private List<RolOption> roller = new()
+    {
+        new() { Text = "Standart", Value = KullaniciRolleri.Standart },
+        new() { Text = "Admin", Value = KullaniciRolleri.Admin }
+    };
 
     private List<DurumOption> durumlar = new()
     {
@@ -154,12 +170,22 @@
     protected override async Task OnInitializedAsync()
     {
         firmalar = await FirmaService.GetAllAsync();
+        selectedFirmaIds = new List<int>();
     }
 
     private async Task HandleValidSubmit()
     {
         try
         {
+            if (selectedFirmaIds.Count == 0)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "En az bir firma seçimi zorunludur.");
+                return;
+            }
+
+            kullanici.FirmaIds = selectedFirmaIds.Distinct().ToList();
+            kullanici.FirmaId = kullanici.FirmaIds.First();
+
             await KullaniciService.AddAsync(kullanici);
 
             NotificationService.Notify(
@@ -184,6 +210,12 @@
     }
 
     private class DurumOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    private class RolOption
     {
         public string Text { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;

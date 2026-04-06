@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace EMutabakat.Models
 {
@@ -54,5 +55,7 @@ namespace EMutabakat.Models
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public int FirmaAktifPasif { get; set; }
+
+        public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();
     }
 }

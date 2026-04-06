@@ -24,6 +24,21 @@ namespace EMutabakat.Services
             _passwordHasher = new PasswordHasher<Kullanici>();
         }
 
+        private static List<int> NormalizeFirmaIds(Kullanici kullanici)
+        {
+            var firmaIds = (kullanici.FirmaIds ?? new List<int>())
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            if (firmaIds.Count == 0 && kullanici.FirmaId > 0)
+            {
+                firmaIds.Add(kullanici.FirmaId);
+            }
+
+            return firmaIds;
+        }
+
         // Helper parsers
         private static string? GetStringCell(IRow row, int idx)
         {
@@ -113,6 +128,7 @@ namespace EMutabakat.Services
                             KullaniciMail = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciMail")) ?? string.Empty,
                             KullaniciGsm = headerMap.ContainsKey("KullaniciGsm") ? GetStringCell(row, headerMap["KullaniciGsm"]) ?? string.Empty : string.Empty,
                             Sifre = GetStringCell(row, headerMap.GetValueOrDefault("Sifre")) ?? string.Empty,
+                            Rol = headerMap.ContainsKey("Rol") ? GetStringCell(row, headerMap["Rol"]) ?? KullaniciRolleri.Standart : KullaniciRolleri.Standart,
                             KullaniciAktifPasif = headerMap.ContainsKey("KullaniciAktifPasif") ? GetStringCell(row, headerMap["KullaniciAktifPasif"]) ?? "1" : "1"
                         };
 
@@ -138,6 +154,12 @@ namespace EMutabakat.Services
                         if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                         {
                             errors.Add($"Satır {r + 1}: Aktif/Pasif bilgisi boş olamaz.");
+                            continue;
+                        }
+
+                        if (!KullaniciRolleri.IsValid(kullanici.Rol))
+                        {
+                            errors.Add($"Satır {r + 1}: Rol yalnızca '{KullaniciRolleri.Standart}' veya '{KullaniciRolleri.Admin}' olabilir.");
                             continue;
                         }
 
@@ -171,6 +193,17 @@ namespace EMutabakat.Services
                 }
 
                 await context.SaveChangesAsync();
+
+                foreach (var (_, kullanici) in prepared)
+                {
+                    context.KullaniciFirmalari.Add(new KullaniciFirma
+                    {
+                        KullaniciId = kullanici.KullaniciId,
+                        FirmaId = kullanici.FirmaId
+                    });
+                }
+
+                await context.SaveChangesAsync();
                 created = prepared.Count;
 
                 return (created, errors);
@@ -197,6 +230,8 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firma)
+                .Include(x => x.KullaniciFirmalari)
+                    .ThenInclude(x => x.Firma)
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
                 .ToListAsync();
@@ -209,6 +244,8 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firma)
+                .Include(x => x.KullaniciFirmalari)
+                    .ThenInclude(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.KullaniciId == id);
         }
 
@@ -219,6 +256,8 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firma)
+                .Include(x => x.KullaniciFirmalari)
+                    .ThenInclude(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == mail);
         }
 
@@ -232,10 +271,36 @@ namespace EMutabakat.Services
             if (mevcutKullanici != null)
                 return null;
 
+            var firmaIds = NormalizeFirmaIds(kullanici);
+            if (firmaIds.Count == 0)
+                throw new Exception("En az bir firma seçimi zorunludur.");
+
+            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
+            if (validFirmaCount != firmaIds.Count)
+                throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
+
+            if (!KullaniciRolleri.IsValid(kullanici.Rol))
+            {
+                kullanici.Rol = KullaniciRolleri.Standart;
+            }
+
+            kullanici.FirmaId = firmaIds[0];
+
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
             kullanici.KullaniciAktifPasif ??= "1";
 
             context.Kullanicilar.Add(kullanici);
+            await context.SaveChangesAsync();
+
+            foreach (var firmaId in firmaIds)
+            {
+                context.KullaniciFirmalari.Add(new KullaniciFirma
+                {
+                    KullaniciId = kullanici.KullaniciId,
+                    FirmaId = firmaId
+                });
+            }
+
             await context.SaveChangesAsync();
             return kullanici;
         }
@@ -246,6 +311,7 @@ namespace EMutabakat.Services
 
             var kullanici = await context.Kullanicilar
                 .Include(x => x.Firma)
+                .Include(x => x.KullaniciFirmalari)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == mail && x.KullaniciAktifPasif == "1");
 
             if (kullanici == null)
@@ -260,8 +326,9 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            if (kullanici.FirmaId <= 0)
-                throw new Exception("Firma seçimi zorunludur.");
+            var firmaIds = NormalizeFirmaIds(kullanici);
+            if (firmaIds.Count == 0)
+                throw new Exception("En az bir firma seçimi zorunludur.");
 
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
                 throw new Exception("Ad zorunludur.");
@@ -271,6 +338,9 @@ namespace EMutabakat.Services
 
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
                 throw new Exception("Mail zorunludur.");
+
+            if (!KullaniciRolleri.IsValid(kullanici.Rol))
+                throw new Exception("Geçerli bir rol seçiniz.");
 
             var normalizedMail = kullanici.KullaniciMail.Trim().ToLower();
             var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
@@ -283,15 +353,28 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
-            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
-            if (!firmaExists)
-                throw new Exception("Seçilen firma bulunamadı.");
+            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
+            if (validFirmaCount != firmaIds.Count)
+                throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
+
+            kullanici.FirmaId = firmaIds[0];
 
             kullanici.KullaniciMail = kullanici.KullaniciMail.Trim();
 
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
             context.Kullanicilar.Add(kullanici);
+            await context.SaveChangesAsync();
+
+            foreach (var firmaId in firmaIds)
+            {
+                context.KullaniciFirmalari.Add(new KullaniciFirma
+                {
+                    KullaniciId = kullanici.KullaniciId,
+                    FirmaId = firmaId
+                });
+            }
+
             await context.SaveChangesAsync();
             return kullanici;
         }
@@ -306,8 +389,9 @@ namespace EMutabakat.Services
             if (existingKullanici == null)
                 return null;
 
-            if (kullanici.FirmaId <= 0)
-                throw new Exception("Firma seçimi zorunludur.");
+            var firmaIds = NormalizeFirmaIds(kullanici);
+            if (firmaIds.Count == 0)
+                throw new Exception("En az bir firma seçimi zorunludur.");
 
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
                 throw new Exception("Ad zorunludur.");
@@ -318,23 +402,53 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
                 throw new Exception("Mail zorunludur.");
 
+            if (!KullaniciRolleri.IsValid(kullanici.Rol))
+                throw new Exception("Geçerli bir rol seçiniz.");
+
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
-            var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
-            if (!firmaExists)
-                throw new Exception("Seçilen firma bulunamadı.");
+            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
+            if (validFirmaCount != firmaIds.Count)
+                throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
-            existingKullanici.FirmaId = kullanici.FirmaId;
+            existingKullanici.FirmaId = firmaIds[0];
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi;
             existingKullanici.KullaniciMail = kullanici.KullaniciMail;
             existingKullanici.KullaniciGsm = kullanici.KullaniciGsm;
+            existingKullanici.Rol = kullanici.Rol;
             existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif;
 
             if (!string.IsNullOrWhiteSpace(kullanici.Sifre))
             {
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre);
+            }
+
+            var existingMappings = await context.KullaniciFirmalari
+                .Where(x => x.KullaniciId == existingKullanici.KullaniciId)
+                .ToListAsync();
+
+            var mappingsToRemove = existingMappings
+                .Where(x => !firmaIds.Contains(x.FirmaId))
+                .ToList();
+
+            if (mappingsToRemove.Count > 0)
+            {
+                context.KullaniciFirmalari.RemoveRange(mappingsToRemove);
+            }
+
+            var existingFirmaIdSet = existingMappings.Select(x => x.FirmaId).ToHashSet();
+            foreach (var firmaId in firmaIds)
+            {
+                if (!existingFirmaIdSet.Contains(firmaId))
+                {
+                    context.KullaniciFirmalari.Add(new KullaniciFirma
+                    {
+                        KullaniciId = existingKullanici.KullaniciId,
+                        FirmaId = firmaId
+                    });
+                }
             }
 
             await context.SaveChangesAsync();
