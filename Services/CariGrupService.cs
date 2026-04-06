@@ -284,6 +284,7 @@ namespace EMutabakat.Services
                         };
 
                         grup.CariGrupId = grup.CariGrupId.Trim();
+                        grup.CariGrupAdi = grup.CariGrupAdi.Trim();
 
                         if (string.IsNullOrWhiteSpace(grup.CariGrupId))
                         {
@@ -297,7 +298,28 @@ namespace EMutabakat.Services
                             continue;
                         }
 
+                        var normalizedName = grup.CariGrupAdi.Trim().ToLowerInvariant();
+
                         var existing = await context.CariGruplar.FirstOrDefaultAsync(x => x.CariGrupId == grup.CariGrupId);
+                        var sameNameLocal = context.CariGruplar.Local
+                            .FirstOrDefault(x => x.CariGrupAdi != null
+                                && x.CariGrupAdi.Trim().ToLower() == normalizedName);
+
+                        CariGrup? sameNameDb = null;
+                        if (sameNameLocal == null)
+                        {
+                            sameNameDb = await context.CariGruplar
+                                .FirstOrDefaultAsync(x => x.CariGrupAdi.ToLower() == normalizedName);
+                        }
+
+                        var sameNameCariGrupId = sameNameLocal?.CariGrupId ?? sameNameDb?.CariGrupId;
+
+                        if (sameNameCariGrupId != null && !string.Equals(sameNameCariGrupId, grup.CariGrupId, StringComparison.Ordinal))
+                        {
+                            errors.Add($"Satır {r + 1}: CariGrupAdi '{grup.CariGrupAdi}' zaten başka bir ID ile kayıtlı.");
+                            continue;
+                        }
+
                         if (existing == null)
                         {
                             context.CariGruplar.Add(grup);
@@ -305,9 +327,15 @@ namespace EMutabakat.Services
                         }
                         else
                         {
-                            existing.CariGrupAdi = grup.CariGrupAdi;
-                            existing.FirmaId = grup.FirmaId;
-                            updated++;
+                            var hasChange = !string.Equals(existing.CariGrupAdi?.Trim(), grup.CariGrupAdi, StringComparison.Ordinal)
+                                || existing.FirmaId != grup.FirmaId;
+
+                            if (hasChange)
+                            {
+                                existing.CariGrupAdi = grup.CariGrupAdi;
+                                existing.FirmaId = grup.FirmaId;
+                                updated++;
+                            }
                         }
                     }
                     catch (Exception exRow)
