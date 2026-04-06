@@ -3,17 +3,20 @@
         <AuthorizeView>
             <Authorized>
                 <RadzenPanelMenuItem Text="Kontrol Paneli" Path="/" Icon="home" />
-                <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
                 <RadzenPanelMenuItem Text="Cariler" Path="/currents" Icon="account_circle" />
                 <RadzenPanelMenuItem Text="Cari Gruplar" Path="/current-groups" Icon="group_work" />
                 <RadzenPanelMenuItem Text="Mutabakatlar" Path="/reconciliations" Icon="description" />
-                <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
+                <AuthorizeView Roles="Admin" Context="adminContext">
+                    <Authorized>
+                        <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
+                        <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
+                    </Authorized>
+                </AuthorizeView>
                 <RadzenPanelMenuItem Text="Çıkış Yap" Path="/logout" Icon="logout" />
             </Authorized>
 
             <NotAuthorized>
                 <RadzenPanelMenuItem Text="Giriş Yap" Path="/login" Icon="login" />
-                <RadzenPanelMenuItem Text="Kayıt Ol" Path="/register" Icon="person_add" />
             </NotAuthorized>
         </AuthorizeView>
     </RadzenPanelMenu>

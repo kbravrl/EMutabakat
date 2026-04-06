@@ -30,42 +30,20 @@ namespace EMutabakat.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, kullanici.KullaniciId.ToString()),
                 new Claim(ClaimTypes.Name, kullanici.KullaniciMail),
-                new Claim(ClaimTypes.Email, kullanici.KullaniciMail)
+                new Claim(ClaimTypes.Email, kullanici.KullaniciMail),
+                new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(kullanici.Rol) ? KullaniciRolleri.Standart : kullanici.Rol)
             };
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-            return Ok();
-        }
-
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel model)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var yeniKullanici = new Kullanici
+            var firmaIds = (kullanici.KullaniciFirmalari?.Select(x => x.FirmaId).ToList() ?? new List<int>());
+            if (!firmaIds.Contains(kullanici.FirmaId))
             {
-                FirmaId = model.FirmaId,
-                KullaniciAdi = model.KullaniciAdi,
-                KullaniciSoyadi = model.KullaniciSoyadi,
-                KullaniciMail = model.KullaniciMail,
-                KullaniciGsm = model.KullaniciGsm,
-                Sifre = model.Sifre,
-                KullaniciAktifPasif = "1"
-            };
+                firmaIds.Add(kullanici.FirmaId);
+            }
 
-            var result = await _kullaniciService.RegisterAsync(yeniKullanici);
-            if (result == null) return Conflict("Email already exists");
-
-            var claims = new List<Claim>
+            foreach (var firmaId in firmaIds.Distinct())
             {
-                new Claim(ClaimTypes.NameIdentifier, result.KullaniciId.ToString()),
-                new Claim(ClaimTypes.Name, result.KullaniciMail),
-                new Claim(ClaimTypes.Email, result.KullaniciMail)
-            };
+                claims.Add(new Claim("firma_id", firmaId.ToString()));
+            }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
