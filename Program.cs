@@ -67,6 +67,8 @@ for (int i = 0; i < 10; i++)
     }
 }
 
+await AppDbSeeder.SeedAsync(app.Services);
+
 app.UseAuthentication();
 app.UseAuthorization();
 
