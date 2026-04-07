@@ -150,13 +150,13 @@ namespace EMutabakat.Services
     ";
         }
 
-        private static string GetDovizName(int kod)
+        private static string GetDovizName(string? kod)
         {
-            return kod switch
+            return (kod ?? string.Empty).ToUpperInvariant() switch
             {
-                0 => "TL",
-                1 => "USD",
-                2 => "EURO",
+                "TL" => "Türk lirası",
+                "USD" => "Amerikan doları",
+                "EUR" => "Euro",
                 _ => "Tanımsız"
             };
         }

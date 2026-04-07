@@ -1,0 +1,111 @@
+@page "/currency-codes"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IDovizKoduService DovizKoduService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Döviz Kodları</PageTitle>
+
+<RadzenStack Gap="1rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText TextStyle="TextStyle.H4">Döviz Kodları</RadzenText>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenButton Text="Yeni Döviz Kodu" Icon="add_circle" Click="@GoToCreatePage" />
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@dovizKodlari"
+                        TItem="DovizKodu"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
+            <Columns>
+                <RadzenDataGridColumn TItem="DovizKodu" Property="TCMB" Title="TCMB" />
+                <RadzenDataGridColumn TItem="DovizKodu" Property="Name" Title="Ad" />
+
+                <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false" Width="180px">
+                    <Template Context="item">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                            <RadzenButton Icon="edit"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          Click="@(() => GoToEditPage(item.TCMB))" />
+
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Click="@(() => DeleteDovizKodu(item.TCMB, item.Name))" />
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<DovizKodu> dovizKodlari = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        dovizKodlari = await DovizKoduService.GetAllAsync();
+    }
+
+    private void GoToCreatePage()
+    {
+        NavigationManager.NavigateTo("/currency-codes/add");
+    }
+
+    private void GoToEditPage(string tcmb)
+    {
+        NavigationManager.NavigateTo($"/currency-codes/edit/{Uri.EscapeDataString(tcmb)}");
+    }
+
+    private async Task DeleteDovizKodu(string tcmb, string name)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"'{name}' ({tcmb}) kaydını silmek istediğinize emin misiniz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            try
+            {
+                var result = await DovizKoduService.DeleteAsync(tcmb);
+                if (result)
+                {
+                    NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Döviz kodu silindi.");
+                    await LoadAsync();
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Kayıt bulunamadı.");
+                }
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+            }
+        }
+    }
+}

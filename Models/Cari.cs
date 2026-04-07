@@ -39,13 +39,15 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Cari grup seçimi zorunludur.")]
         public string CariGrupId { get; set; } = string.Empty;
 
-        public int? CariDovizKodu { get; set; }
+        [ForeignKey("DovizKodu")]
+        public string CariDovizKodu { get; set; }
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public int CariAktifPasif { get; set; }
 
         public Firma? Firma { get; set; }
         public CariGrup? CariGrup { get; set; }
+        public DovizKodu? DovizKodu { get; set; }
 
         [NotMapped]
         public string OriginalCariId { get; set; } = string.Empty;

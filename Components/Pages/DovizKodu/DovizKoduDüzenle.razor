@@ -1,0 +1,93 @@
+@page "/currency-codes/edit/{tcmb}"
+
+@attribute [Authorize(Roles = "Admin")]
+
+@inject IDovizKoduService DovizKoduService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<PageTitle>Döviz Kodu Düzenle</PageTitle>
+
+@if (model == null)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
+}
+else
+{
+    <RadzenCard Class="p-4" Style="max-width:700px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Döviz Kodu Düzenle</RadzenText>
+        </RadzenStack>
+
+        <RadzenDivider />
+
+        <EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <RadzenRow Gap="16px">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="TCMB *" />
+                    <RadzenTextBox Name="TCMB" @bind-Value="model.TCMB" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="TCMB" Text="TCMB zorunludur." Popup="true" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Ad *" />
+                    <RadzenTextBox Name="Name" @bind-Value="model.Name" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="Name" Text="Ad zorunludur." Popup="true" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
+                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
+                        <RadzenButton Text="Güncelle" Icon="save" ButtonType="ButtonType.Submit" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </EditForm>
+    </RadzenCard>
+}
+
+@code {
+    [Parameter] public string tcmb { get; set; } = string.Empty;
+
+    private DovizKodu? model;
+    private string originalTcmb = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = await DovizKoduService.GetByTcmbAsync(tcmb);
+        if (model != null)
+        {
+            originalTcmb = model.TCMB;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (model == null)
+            return;
+
+        try
+        {
+            var result = await DovizKoduService.UpdateAsync(model, originalTcmb);
+            if (result == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Kayıt bulunamadı.");
+                return;
+            }
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Döviz kodu güncellendi.");
+            NavigationManager.NavigateTo("/currency-codes");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/currency-codes");
+    }
+}

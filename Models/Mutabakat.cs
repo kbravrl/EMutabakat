@@ -23,7 +23,8 @@ namespace EMutabakat.Models
         public string CariId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Döviz kodu zorunludur.")]
-        public int MutabakatDovizKodu { get; set; }
+        [ForeignKey("DovizKodu")]
+        public string MutabakatDovizKodu { get; set; } = "TL";
 
         [Required(ErrorMessage = "Bakiye zorunludur.")]
         public decimal MutabakatBakiye { get; set; }
@@ -58,5 +59,6 @@ namespace EMutabakat.Models
 
         public Firma? Firma { get; set; }
         public Cari? Cari { get; set; }
+        public DovizKodu? DovizKodu { get; set; }
     }
 }

@@ -44,6 +44,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
+                .Include(x => x.DovizKodu)
                 .OrderByDescending(x => x.MutabakatDonemi)
                 .ThenByDescending(x => x.MutabakatId)
                 .ToListAsync();
@@ -57,12 +58,21 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
+                .Include(x => x.DovizKodu)
                 .FirstOrDefaultAsync(x => x.MutabakatId == id);
         }
 
         public async Task<Mutabakat> AddAsync(Mutabakat mutabakat)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
+                throw new Exception("Döviz kodu zorunludur.");
+
+            var dovizExists = await context.DovizKodlari.AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+            if (!dovizExists)
+                throw new Exception("Geçerli bir döviz kodu seçiniz.");
 
             mutabakat.MutabakatDonemi = DateTime.SpecifyKind(
                 mutabakat.MutabakatDonemi,
@@ -96,6 +106,14 @@ namespace EMutabakat.Services
         public async Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
+                throw new Exception("Döviz kodu zorunludur.");
+
+            var dovizExists = await context.DovizKodlari.AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+            if (!dovizExists)
+                throw new Exception("Geçerli bir döviz kodu seçiniz.");
 
             var existingMutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x => x.MutabakatId == mutabakat.MutabakatId);
@@ -282,6 +300,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
+                .Include(x => x.DovizKodu)
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
         }
 
@@ -432,7 +451,7 @@ namespace EMutabakat.Services
                     if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
                 }
 
-                string[] required = new[] { "FirmaId", "CariId", "MutabakatDonemi", "MutabakatTipi", "MutabakatDovizKodu", "MutabakatBakiye", "MutabakatBakiyeTipi" };
+                string[] required = new[] { "FirmaId", "CariId", "MutabakatDonemi", "MutabakatTipi", "TCMP", "MutabakatBakiye", "MutabakatBakiyeTipi" };
                 foreach (var h in required)
                 {
                     if (!headerMap.ContainsKey(h))
@@ -455,7 +474,7 @@ namespace EMutabakat.Services
                         var cariId = (GetStringCell(row, headerMap["CariId"]) ?? string.Empty).Trim();
                         DateTime donem = ParseDateCell(row, headerMap["MutabakatDonemi"]);
                         int tipi = ParseIntCell(row, headerMap["MutabakatTipi"]);
-                        int doviz = ParseIntCell(row, headerMap["MutabakatDovizKodu"]);
+                        var doviz = (GetStringCell(row, headerMap["TCMP"]) ?? string.Empty).Trim().ToUpperInvariant();
                         decimal bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
                         var bakiyeTipi = GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B";
                         var aciklama = headerMap.ContainsKey("MutabakatAciklama") ? GetStringCell(row, headerMap["MutabakatAciklama"]) : string.Empty;
@@ -471,6 +490,13 @@ namespace EMutabakat.Services
                         if (!cariExists)
                         {
                             errors.Add($"Satır {r + 1}: CariId {cariId} seçilen firmada bulunamadı.");
+                            continue;
+                        }
+
+                        var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz);
+                        if (!dovizExists)
+                        {
+                            errors.Add($"Satır {r + 1}: TCMP {doviz} geçerli değil.");
                             continue;
                         }
 

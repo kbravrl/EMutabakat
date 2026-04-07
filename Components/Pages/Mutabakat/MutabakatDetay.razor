@@ -40,7 +40,7 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Döviz:</b> @GetDovizText(mutabakat.MutabakatDovizKodu)
+                    <b>Döviz:</b> @(mutabakat.DovizKodu?.Name ?? mutabakat.MutabakatDovizKodu)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -131,17 +131,6 @@ else
         {
             1 => "TL",
             2 => "Döviz",
-            _ => "Tanımsız"
-        };
-    }
-
-    private string GetDovizText(int kod)
-    {
-        return kod switch
-        {
-            0 => "00 - TL",
-            1 => "01 - USD",
-            2 => "02 - EUR",
             _ => "Tanımsız"
         };
     }

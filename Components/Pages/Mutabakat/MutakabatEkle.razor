@@ -7,6 +7,7 @@
 @inject IMutabakatService MutabakatService
 @inject IFirmaService FirmaService
 @inject ICariService CariService
+@inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
@@ -140,7 +141,7 @@
     {
         MutabakatDonemi = DateTime.Today,
         MutabakatTipi = 1,
-        MutabakatDovizKodu = 0,
+        MutabakatDovizKodu = "TL",
         MutabakatGonderimDurumu = 1,
         MutabakatBakiyeTipi = "B",
         MutabakatDurum = 3
@@ -171,12 +172,7 @@
         new() { Value = 2, Text = "2 - Döviz" }
     };
 
-    private List<SelectOptionInt> dovizKodlari = new()
-    {
-        new() { Value = 0, Text = "00 - TL" },
-        new() { Value = 1, Text = "01 - USD" },
-        new() { Value = 2, Text = "02 - EUR" }
-    };
+    private List<DovizKodu> dovizKodlari = new();
 
     private List<SelectOptionString> bakiyeTipleri = new()
     {
@@ -196,6 +192,7 @@
 
         firmalar = await FirmaService.GetAllAsync();
         cariler = await CariService.GetAllAsync();
+        dovizKodlari = await DovizKoduService.GetAllAsync();
     }
 
     private void OnFirmaChanged(object value)
@@ -215,9 +212,9 @@
 
             if (selectedCari != null 
                 && mutabakat.MutabakatTipi == 2 
-                && mutabakat.MutabakatDovizKodu == 0)
+                && (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu) || mutabakat.MutabakatDovizKodu == "TL"))
             {
-                mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu ?? 0;
+                mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu ?? "TL";
             }
         }
     }
@@ -226,7 +223,7 @@
     {
         if (value is int tip && tip == 1)
         {
-            mutabakat.MutabakatDovizKodu = 0;
+            mutabakat.MutabakatDovizKodu = "TL";
         }
     }
 

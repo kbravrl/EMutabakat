@@ -27,6 +27,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
+                .Include(x => x.DovizKodu)
                 .OrderBy(x => x.CariAdi)
                 .ToListAsync();
         }
@@ -64,6 +65,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
+                .Include(x => x.DovizKodu)
                 .FirstOrDefaultAsync(x => x.CariId == normalizedCariId && x.FirmaId == firmaId);
         }
 
@@ -87,6 +89,7 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             cari.CariId = cari.CariId?.Trim() ?? string.Empty;
+            cari.CariDovizKodu = string.IsNullOrWhiteSpace(cari.CariDovizKodu) ? null : cari.CariDovizKodu.Trim().ToUpperInvariant();
             cari.CariGrupId = cari.CariGrupId?.Trim() ?? string.Empty;
             cari.OriginalCariId = string.IsNullOrWhiteSpace(cari.OriginalCariId) ? cari.CariId : cari.OriginalCariId.Trim();
             cari.OriginalFirmaId = cari.OriginalFirmaId <= 0 ? cari.FirmaId : cari.OriginalFirmaId;
@@ -145,6 +148,7 @@ namespace EMutabakat.Services
                     .AsNoTracking()
                     .Include(x => x.Firma)
                     .Include(x => x.CariGrup)
+                    .Include(x => x.DovizKodu)
                     .FirstOrDefaultAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
             }
 
@@ -254,6 +258,13 @@ namespace EMutabakat.Services
 
             if (cariGrup.FirmaId != cari.FirmaId)
                 throw new Exception("Seçilen cari grup, seçilen firmaya ait değildir.");
+
+            if (!string.IsNullOrWhiteSpace(cari.CariDovizKodu))
+            {
+                var dovizExists = await context.DovizKodlari.AnyAsync(x => x.TCMB == cari.CariDovizKodu);
+                if (!dovizExists)
+                    throw new Exception("Geçerli bir döviz kodu seçiniz.");
+            }
         }
 
         private static string? GetStringCell(IRow row, int idx)
@@ -322,6 +333,7 @@ namespace EMutabakat.Services
                     "CariVergiNumarasi",
                     "CariYetkiliMail",
                     "CariGrupId",
+                    "TCMP",
                     "CariAktifPasif"
                 };
 
@@ -373,9 +385,7 @@ namespace EMutabakat.Services
                         CariYetkiliGsm = headerMap.ContainsKey("CariYetkiliGsm") ? GetStringCell(row, headerMap["CariYetkiliGsm"]) : null,
                         CariYetkiliMail = GetStringCell(row, headerMap["CariYetkiliMail"]) ?? string.Empty,
                         CariGrupId = GetStringCell(row, headerMap["CariGrupId"]) ?? string.Empty,
-                        CariDovizKodu = headerMap.ContainsKey("CariDovizKodu")
-                            ? ParseIntCell(row, headerMap["CariDovizKodu"])
-                            : null,
+                        CariDovizKodu = GetStringCell(row, headerMap["TCMP"]),
                         CariAktifPasif = ParseIntCell(row, headerMap["CariAktifPasif"])
                     };
 

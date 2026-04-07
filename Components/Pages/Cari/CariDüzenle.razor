@@ -5,6 +5,7 @@
 @inject ICariService CariService
 @inject IFirmaService FirmaService
 @inject ICariGrupService CariGrupService
+@inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
@@ -126,8 +127,8 @@ else
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Döviz Kodu" />
                         <RadzenDropDown Data="@dovizKodlari"
-                                        TextProperty="Text"
-                                        ValueProperty="Value"
+                                        TextProperty="Name"
+                                        ValueProperty="TCMB"
                                         @bind-Value="cari.CariDovizKodu"
                                         Style="width:100%;" />
                     </RadzenColumn>
@@ -165,24 +166,13 @@ else
     private List<CariGrup> cariGruplar = new();
     private List<CariGrup> filteredCariGruplar = new();
 
-    private class DovizSecenek
-    {
-        public int Value { get; set; }
-        public string Text { get; set; } = string.Empty;
-    }
-
     private class DurumOption
     {
         public int Value { get; set; }
         public string Text { get; set; } = string.Empty;
     }
 
-    private List<DovizSecenek> dovizKodlari = new()
-    {
-        new() { Value = 0, Text = "00 - TL" },
-        new() { Value = 1, Text = "01 - USD" },
-        new() { Value = 2, Text = "02 - EUR" }
-    };
+    private List<DovizKodu> dovizKodlari = new();
 
     private List<DurumOption> durumlar = new()
     {
@@ -194,6 +184,7 @@ else
     {
         firmalar = await FirmaService.GetAllAsync();
         cariGruplar = await CariGrupService.GetAllAsync();
+        dovizKodlari = await DovizKoduService.GetAllAsync();
         cari = await CariService.GetByIdAsync(id, firmaId);
 
         if (cari != null)

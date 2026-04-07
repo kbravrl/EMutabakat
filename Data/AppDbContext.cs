@@ -15,6 +15,7 @@ namespace EMutabakat.Data
         public DbSet<CariGrup> CariGruplar { get; set; }
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
+        public DbSet<DovizKodu> DovizKodlari { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -63,6 +64,16 @@ namespace EMutabakat.Data
                 .HasForeignKey(c => c.CariGrupId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Cari>()
+                .HasOne(c => c.DovizKodu)
+                .WithMany()
+                .HasForeignKey(c => c.CariDovizKodu)
+                .HasPrincipalKey(d => d.TCMB)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DovizKodu>()
+                .HasAlternateKey(d => d.TCMB);
+
             modelBuilder.Entity<Mutabakat>()
                 .HasOne(m => m.Firma)
                 .WithMany()
@@ -73,6 +84,13 @@ namespace EMutabakat.Data
                 .HasOne(m => m.Cari)
                 .WithMany()
                 .HasForeignKey(m => new { m.CariId, m.FirmaId })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Mutabakat>()
+                .HasOne(m => m.DovizKodu)
+                .WithMany()
+                .HasForeignKey(m => m.MutabakatDovizKodu)
+                .HasPrincipalKey(d => d.TCMB)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

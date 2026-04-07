@@ -13,6 +13,51 @@ namespace EMutabakat.Data
             const string adminMail = "admin@emutabakat.local";
             const string adminPassword = "rp23TE&?";
 
+            var dovizKodlari = new List<DovizKodu>
+            {
+                new() { TCMB = "TL", Name = "Türk lirası" },
+                new() { TCMB = "USD", Name = "Amerikan doları" },
+                new() { TCMB = "EUR", Name = "Euro" }
+            };
+
+            foreach (var doviz in dovizKodlari)
+            {
+                if (!await context.DovizKodlari.AnyAsync(x => x.TCMB == doviz.TCMB))
+                {
+                    context.DovizKodlari.Add(doviz);
+                }
+            }
+
+            await context.SaveChangesAsync();
+
+            var cariler = await context.Cariler.ToListAsync();
+            foreach (var cari in cariler)
+            {
+                cari.CariDovizKodu = (cari.CariDovizKodu ?? string.Empty).Trim() switch
+                {
+                    "0" => "TL",
+                    "1" => "USD",
+                    "2" => "EUR",
+                    var x when string.IsNullOrWhiteSpace(x) => null,
+                    var x => x.ToUpperInvariant()
+                };
+            }
+
+            var mutabakatlar = await context.Mutabakatlar.ToListAsync();
+            foreach (var mutabakat in mutabakatlar)
+            {
+                mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim() switch
+                {
+                    "0" => "TL",
+                    "1" => "USD",
+                    "2" => "EUR",
+                    var x when string.IsNullOrWhiteSpace(x) => "TL",
+                    var x => x.ToUpperInvariant()
+                };
+            }
+
+            await context.SaveChangesAsync();
+
             var defaultFirma = await context.Firmalar.FirstOrDefaultAsync(f => f.FirmaVergiNumarasi == "1111111111");
             if (defaultFirma == null)
             {

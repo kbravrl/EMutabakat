@@ -36,10 +36,7 @@ else
             <RadzenColumn Size="12" SizeMD="6"><b>Yetkili Mail:</b> @cari.CariYetkiliMail</RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6">
                 <b>Döviz Kodu:</b>
-                @(cari.CariDovizKodu == 0 ? "00 - TL"
-                    : cari.CariDovizKodu == 1 ? "01 - USD"
-                    : cari.CariDovizKodu == 2 ? "02 - EUR"
-                    : "Tanımsız")
+                @(string.IsNullOrWhiteSpace(cari.DovizKodu?.Name) ? "-" : cari.DovizKodu!.Name)
             </RadzenColumn>
             <RadzenColumn Size="12" SizeMD="6"><b>Durum:</b> @(cari.CariAktifPasif == 1 ? "Aktif" : "Pasif")</RadzenColumn>
 

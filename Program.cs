@@ -24,6 +24,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 builder.Services.AddScoped<IFirmaService, FirmaService>();
 builder.Services.AddScoped<ICariGrupService, CariGrupService>();
 builder.Services.AddScoped<ICariService, CariService>();
+builder.Services.AddScoped<IDovizKoduService, DovizKoduService>();
 builder.Services.AddScoped<IMutabakatService, MutabakatService>();
 builder.Services.AddScoped<IMutabakatClientService, MutabakatClientService>();
 builder.Services.AddScoped<ISdService, SdService>();
