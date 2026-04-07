@@ -24,6 +24,12 @@
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Cari ID *" />
+                    <RadzenTextBox Name="CariId" @bind-Value="cari.CariId" Style="width:100%;" />
+                    <RadzenRequiredValidator Component="CariId" Text="Cari ID zorunludur." Popup="true" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Firma *" />
                     <RadzenDropDown Name="FirmaId"
                                     Data="@firmalar"
@@ -186,6 +192,7 @@
     {
         firmalar = await FirmaService.GetAllAsync();
         cariGruplar = await CariGrupService.GetAllAsync();
+        cari.CariId = await CariService.GenerateNextCariIdAsync();
     }
 
     private void OnFirmaChanged(object value)

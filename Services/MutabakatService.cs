@@ -452,7 +452,7 @@ namespace EMutabakat.Services
                     try
                     {
                         int firmaId = ParseIntCell(row, headerMap["FirmaId"]);
-                        int cariId = ParseIntCell(row, headerMap["CariId"]);
+                        var cariId = (GetStringCell(row, headerMap["CariId"]) ?? string.Empty).Trim();
                         DateTime donem = ParseDateCell(row, headerMap["MutabakatDonemi"]);
                         int tipi = ParseIntCell(row, headerMap["MutabakatTipi"]);
                         int doviz = ParseIntCell(row, headerMap["MutabakatDovizKodu"]);
@@ -467,10 +467,10 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        var cariExists = await context.Cariler.AnyAsync(c => c.CariId == cariId);
+                        var cariExists = await context.Cariler.AnyAsync(c => c.CariId == cariId && c.FirmaId == firmaId);
                         if (!cariExists)
                         {
-                            errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
+                            errors.Add($"Satır {r + 1}: CariId {cariId} seçilen firmada bulunamadı.");
                             continue;
                         }
 

@@ -6,6 +6,7 @@ using Npgsql;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using System.Text.RegularExpressions;
 
 namespace EMutabakat.Services
 {
@@ -30,15 +31,40 @@ namespace EMutabakat.Services
                 .ToListAsync();
         }
 
-        public async Task<Cari?> GetByIdAsync(int id)
+        public async Task<string> GenerateNextCariIdAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var ids = await context.Cariler
+                .AsNoTracking()
+                .Select(x => x.CariId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToListAsync();
+
+            var maxNumeric = 0;
+            foreach (var id in ids)
+            {
+                var match = Regex.Match(id!, @"\d+");
+                if (match.Success && int.TryParse(match.Value, out var number) && number > maxNumeric)
+                {
+                    maxNumeric = number;
+                }
+            }
+
+            return $"P{maxNumeric + 1}";
+        }
+
+        public async Task<Cari?> GetByIdAsync(string cariId, int firmaId)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var normalizedCariId = cariId?.Trim() ?? string.Empty;
 
             return await context.Cariler
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
-                .FirstOrDefaultAsync(x => x.CariId == id);
+                .FirstOrDefaultAsync(x => x.CariId == normalizedCariId && x.FirmaId == firmaId);
         }
 
         public async Task<Cari> AddAsync(Cari cari)
@@ -46,6 +72,10 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             await ValidateCariAsync(context, cari);
+
+            var exists = await context.Cariler.AnyAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+            if (exists)
+                throw new Exception("Aynı Cari ID ve Firma ile kayıt zaten mevcut.");
 
             context.Cariler.Add(cari);
             await context.SaveChangesAsync();
@@ -56,15 +86,68 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            cari.CariId = cari.CariId?.Trim() ?? string.Empty;
+            cari.CariGrupId = cari.CariGrupId?.Trim() ?? string.Empty;
+            cari.OriginalCariId = string.IsNullOrWhiteSpace(cari.OriginalCariId) ? cari.CariId : cari.OriginalCariId.Trim();
+            cari.OriginalFirmaId = cari.OriginalFirmaId <= 0 ? cari.FirmaId : cari.OriginalFirmaId;
+
             var existingCari = await context.Cariler
-                .FirstOrDefaultAsync(x => x.CariId == cari.CariId);
+                .FirstOrDefaultAsync(x => x.CariId == cari.OriginalCariId && x.FirmaId == cari.OriginalFirmaId);
 
             if (existingCari == null)
                 return null;
 
             await ValidateCariAsync(context, cari);
 
-            existingCari.FirmaId = cari.FirmaId;
+            var keyChanged = !string.Equals(cari.OriginalCariId, cari.CariId, StringComparison.Ordinal)
+                || cari.OriginalFirmaId != cari.FirmaId;
+
+            if (keyChanged)
+            {
+                var keyExists = await context.Cariler.AnyAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+                if (keyExists)
+                    throw new Exception("Aynı Cari ID ve Firma ile kayıt zaten mevcut.");
+
+                var newCari = new Cari
+                {
+                    CariId = cari.CariId,
+                    FirmaId = cari.FirmaId,
+                    CariAdi = cari.CariAdi,
+                    CariUnvan = cari.CariUnvan,
+                    CariAdres = cari.CariAdres,
+                    CariIlce = cari.CariIlce,
+                    CariIl = cari.CariIl,
+                    CariVergiDairesi = cari.CariVergiDairesi,
+                    CariVergiNumarasi = cari.CariVergiNumarasi,
+                    CariWebAdresi = cari.CariWebAdresi,
+                    CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi,
+                    CariYetkiliTelefon = cari.CariYetkiliTelefon,
+                    CariYetkiliGsm = cari.CariYetkiliGsm,
+                    CariYetkiliMail = cari.CariYetkiliMail,
+                    CariGrupId = cari.CariGrupId,
+                    CariDovizKodu = cari.CariDovizKodu,
+                    CariAktifPasif = cari.CariAktifPasif
+                };
+
+                context.Cariler.Add(newCari);
+                await context.SaveChangesAsync();
+
+                await context.Mutabakatlar
+                    .Where(m => m.CariId == cari.OriginalCariId && m.FirmaId == cari.OriginalFirmaId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(m => m.CariId, cari.CariId)
+                        .SetProperty(m => m.FirmaId, cari.FirmaId));
+
+                context.Cariler.Remove(existingCari);
+                await context.SaveChangesAsync();
+
+                return await context.Cariler
+                    .AsNoTracking()
+                    .Include(x => x.Firma)
+                    .Include(x => x.CariGrup)
+                    .FirstOrDefaultAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+            }
+
             existingCari.CariAdi = cari.CariAdi;
             existingCari.CariUnvan = cari.CariUnvan;
             existingCari.CariAdres = cari.CariAdres;
@@ -85,12 +168,14 @@ namespace EMutabakat.Services
             return existingCari;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(string cariId, int firmaId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var normalizedCariId = cariId?.Trim() ?? string.Empty;
+
             var cari = await context.Cariler
-                .FirstOrDefaultAsync(x => x.CariId == id);
+                .FirstOrDefaultAsync(x => x.CariId == normalizedCariId && x.FirmaId == firmaId);
 
             if (cari == null)
                 return false;
@@ -129,6 +214,11 @@ namespace EMutabakat.Services
 
         private async Task ValidateCariAsync(AppDbContext context, Cari cari)
         {
+            cari.CariId = cari.CariId?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(cari.CariId))
+                throw new Exception("Cari ID zorunludur.");
+
             if (cari.FirmaId <= 0)
                 throw new Exception("Firma seçimi zorunludur.");
 
@@ -183,10 +273,11 @@ namespace EMutabakat.Services
             return int.TryParse(cell.ToString(), out var value) ? value : 0;
         }
 
-        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId)
         {
             var errors = new List<string>();
             var created = 0;
+            var updated = 0;
 
             try
             {
@@ -202,14 +293,14 @@ namespace EMutabakat.Services
                 if (sheet == null)
                 {
                     errors.Add("Excel sayfası bulunamadı.");
-                    return (0, errors);
+                    return (0, 0, errors);
                 }
 
                 var headerRow = sheet.GetRow(0);
                 if (headerRow == null)
                 {
                     errors.Add("Excel başlık satırı bulunamadı.");
-                    return (0, errors);
+                    return (0, 0, errors);
                 }
 
                 var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -225,7 +316,7 @@ namespace EMutabakat.Services
 
                 string[] requiredColumns =
                 {
-                    "FirmaId",
+                    "CariId",
                     "CariAdi",
                     "CariVergiDairesi",
                     "CariVergiNumarasi",
@@ -243,11 +334,22 @@ namespace EMutabakat.Services
                 }
 
                 if (errors.Count > 0)
-                    return (0, errors);
-
-                var prepared = new List<Cari>();
+                    return (0, 0, errors);
 
                 await using var context = await _contextFactory.CreateDbContextAsync();
+
+                if (firmaId <= 0)
+                {
+                    errors.Add("Firma seçimi zorunludur.");
+                    return (0, 0, errors);
+                }
+
+                var firmaExists = await context.Firmalar.AnyAsync(x => x.FirmaId == firmaId);
+                if (!firmaExists)
+                {
+                    errors.Add("Seçilen firma bulunamadı.");
+                    return (0, 0, errors);
+                }
 
                 for (int r = 1; r <= sheet.LastRowNum; r++)
                 {
@@ -256,7 +358,8 @@ namespace EMutabakat.Services
 
                     var cari = new Cari
                     {
-                        FirmaId = ParseIntCell(row, headerMap["FirmaId"]),
+                        CariId = GetStringCell(row, headerMap["CariId"]) ?? string.Empty,
+                        FirmaId = firmaId,
                         CariAdi = GetStringCell(row, headerMap["CariAdi"]) ?? string.Empty,
                         CariUnvan = headerMap.ContainsKey("CariUnvan") ? GetStringCell(row, headerMap["CariUnvan"]) : null,
                         CariAdres = headerMap.ContainsKey("CariAdres") ? GetStringCell(row, headerMap["CariAdres"]) : null,
@@ -276,12 +379,59 @@ namespace EMutabakat.Services
                         CariAktifPasif = ParseIntCell(row, headerMap["CariAktifPasif"])
                     };
 
+                    cari.CariId = cari.CariId.Trim();
                     cari.CariGrupId = cari.CariGrupId.Trim();
 
                     try
                     {
                         await ValidateCariAsync(context, cari);
-                        prepared.Add(cari);
+
+                        var existing = await context.Cariler
+                            .FirstOrDefaultAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+
+                        if (existing == null)
+                        {
+                            context.Cariler.Add(cari);
+                            created++;
+                        }
+                        else
+                        {
+                            var hasChange = !string.Equals(existing.CariAdi, cari.CariAdi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariUnvan, cari.CariUnvan, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariAdres, cari.CariAdres, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariIlce, cari.CariIlce, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariIl, cari.CariIl, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariVergiDairesi, cari.CariVergiDairesi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariVergiNumarasi, cari.CariVergiNumarasi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariWebAdresi, cari.CariWebAdresi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariYetkiliAdiSoyadi, cari.CariYetkiliAdiSoyadi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariYetkiliTelefon, cari.CariYetkiliTelefon, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariYetkiliGsm, cari.CariYetkiliGsm, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariYetkiliMail, cari.CariYetkiliMail, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariGrupId, cari.CariGrupId, StringComparison.Ordinal)
+                                || existing.CariDovizKodu != cari.CariDovizKodu
+                                || existing.CariAktifPasif != cari.CariAktifPasif;
+
+                            if (hasChange)
+                            {
+                                existing.CariAdi = cari.CariAdi;
+                                existing.CariUnvan = cari.CariUnvan;
+                                existing.CariAdres = cari.CariAdres;
+                                existing.CariIlce = cari.CariIlce;
+                                existing.CariIl = cari.CariIl;
+                                existing.CariVergiDairesi = cari.CariVergiDairesi;
+                                existing.CariVergiNumarasi = cari.CariVergiNumarasi;
+                                existing.CariWebAdresi = cari.CariWebAdresi;
+                                existing.CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi;
+                                existing.CariYetkiliTelefon = cari.CariYetkiliTelefon;
+                                existing.CariYetkiliGsm = cari.CariYetkiliGsm;
+                                existing.CariYetkiliMail = cari.CariYetkiliMail;
+                                existing.CariGrupId = cari.CariGrupId;
+                                existing.CariDovizKodu = cari.CariDovizKodu;
+                                existing.CariAktifPasif = cari.CariAktifPasif;
+                                updated++;
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -290,18 +440,16 @@ namespace EMutabakat.Services
                 }
 
                 if (errors.Count > 0)
-                    return (0, errors);
+                    return (0, 0, errors);
 
-                context.Cariler.AddRange(prepared);
                 await context.SaveChangesAsync();
 
-                created = prepared.Count;
-                return (created, errors);
+                return (created, updated, errors);
             }
             catch (Exception ex)
             {
                 errors.Add($"İşlem sırasında hata oluştu: {ex.Message}");
-                return (0, errors);
+                return (0, 0, errors);
             }
         }
     }

@@ -20,7 +20,7 @@ namespace EMutabakat.Models
 
         [ForeignKey("Cari")]
         [Required(ErrorMessage = "Cari seçimi zorunludur.")]
-        public int CariId { get; set; }
+        public string CariId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Döviz kodu zorunludur.")]
         public int MutabakatDovizKodu { get; set; }

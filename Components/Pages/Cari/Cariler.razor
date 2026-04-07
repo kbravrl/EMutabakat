@@ -72,20 +72,20 @@
                             <RadzenButton Icon="edit"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
-                                          Click="@(() => GoToEditPage(item.CariId))" />
+                                          Click="@(() => GoToEditPage(item.CariId, item.FirmaId))" />
 
                             <RadzenButton Icon="visibility"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Info"
-                                          Click="@(() => GoToDetailsPage(item.CariId))" />
+                                          Click="@(() => GoToDetailsPage(item.CariId, item.FirmaId))" />
 
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
                                           Disabled="@isSubmitting"
-                                          Click="@(() => DeleteCari(item.CariId, item.CariAdi))" />
+                                          Click="@(() => DeleteCari(item.CariId, item.FirmaId, item.CariAdi))" />
                         </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>
@@ -113,17 +113,17 @@
         NavigationManager.NavigateTo("/currents/add");
     }
 
-    private void GoToEditPage(int id)
+    private void GoToEditPage(string id, int firmaId)
     {
-        NavigationManager.NavigateTo($"/currents/edit/{id}");
+        NavigationManager.NavigateTo($"/currents/edit/{firmaId}/{Uri.EscapeDataString(id)}");
     }
 
-    private void GoToDetailsPage(int id)
+    private void GoToDetailsPage(string id, int firmaId)
     {
-        NavigationManager.NavigateTo($"/currents/detail/{id}");
+        NavigationManager.NavigateTo($"/currents/detail/{firmaId}/{Uri.EscapeDataString(id)}");
     }
 
-    private async Task DeleteCari(int id, string cariAdi)
+    private async Task DeleteCari(string id, int firmaId, string cariAdi)
     {
         var confirmed = await DialogService.Confirm(
             $"'{cariAdi}' kaydını silmek istediğinize emin misiniz?",
@@ -140,7 +140,7 @@
             isSubmitting = true;
             try
             {
-                var result = await CariService.DeleteAsync(id);
+                var result = await CariService.DeleteAsync(id, firmaId);
 
                 if (result)
                 {

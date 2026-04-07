@@ -49,6 +49,9 @@ namespace EMutabakat.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Cari>()
+                .HasKey(c => new { c.CariId, c.FirmaId });
+
+            modelBuilder.Entity<Cari>()
                 .HasOne(c => c.Firma)
                 .WithMany()
                 .HasForeignKey(c => c.FirmaId)
@@ -69,7 +72,7 @@ namespace EMutabakat.Data
             modelBuilder.Entity<Mutabakat>()
                 .HasOne(m => m.Cari)
                 .WithMany()
-                .HasForeignKey(m => m.CariId)
+                .HasForeignKey(m => new { m.CariId, m.FirmaId })
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

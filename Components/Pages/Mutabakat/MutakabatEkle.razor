@@ -203,13 +203,13 @@
         if (value is int firmaId)
         {
             filteredCariler = cariler.Where(x => x.FirmaId == firmaId).ToList();
-            mutabakat.CariId = 0;
+            mutabakat.CariId = string.Empty;
         }
     }
 
     private void OnCariChanged(object value)
     {
-        if (value is int cariId)
+        if (value is string cariId)
         {
             var selectedCari = filteredCariler.FirstOrDefault(x => x.CariId == cariId);
 

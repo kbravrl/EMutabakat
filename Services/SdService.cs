@@ -19,13 +19,13 @@ namespace EMutabakat.Services
         public async Task<string?> SaveMutabakatResponseFileAsync(
             string token,
             DateTime mutabakatDonemi,
-            int cariId,
+            string cariId,
             string? firmaAdi,
             Stream fileStream,
             string originalFileName,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(token) || fileStream == null || string.IsNullOrWhiteSpace(originalFileName))
+            if (string.IsNullOrWhiteSpace(token) || fileStream == null || string.IsNullOrWhiteSpace(originalFileName) || string.IsNullOrWhiteSpace(cariId))
                 return null;
 
             var ext = Path.GetExtension(originalFileName)?.ToLowerInvariant();
@@ -33,7 +33,7 @@ namespace EMutabakat.Services
                 return null;
 
             var donemFolder = mutabakatDonemi.ToString("yyyy-MM");
-            var cariIdFolder = cariId.ToString();
+            var cariIdFolder = SanitizePathSegment(cariId);
             var firmaAdiFolder = SanitizePathSegment(firmaAdi);
 
             var uploadsRoot = Path.Combine(_storageRoot, donemFolder, cariIdFolder, firmaAdiFolder);

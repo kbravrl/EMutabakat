@@ -5,8 +5,8 @@ namespace EMutabakat.Models
 {
     public class Cari
     {
-        [Key]
-        public int CariId { get; set; }
+        [Required(ErrorMessage = "Cari ID zorunludur.")]
+        public string CariId { get; set; } = string.Empty;
 
         [ForeignKey("Firma")]
         [Required(ErrorMessage = "Firma seçimi zorunludur.")]
@@ -46,5 +46,11 @@ namespace EMutabakat.Models
 
         public Firma? Firma { get; set; }
         public CariGrup? CariGrup { get; set; }
+
+        [NotMapped]
+        public string OriginalCariId { get; set; } = string.Empty;
+
+        [NotMapped]
+        public int OriginalFirmaId { get; set; }
     }
 }

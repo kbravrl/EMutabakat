@@ -1,4 +1,4 @@
-﻿@page "/currents/detail/{id:int}"
+﻿@page "/currents/detail/{firmaId:int}/{id}"
 
 @attribute [Authorize]
 
@@ -52,7 +52,7 @@ else
                                   Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
                     <RadzenButton Text="Düzenle"
                                   Icon="edit"
-                                  Click="@(() => NavigationManager.NavigateTo($"/cariler/duzenle/{cari.CariId}"))"
+                                  Click="@(() => NavigationManager.NavigateTo($"/currents/edit/{cari.FirmaId}/{Uri.EscapeDataString(cari.CariId)}"))"
                                   Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
                 </RadzenStack>
             </RadzenColumn>
@@ -62,13 +62,14 @@ else
 }
 
 @code {
-    [Parameter] public int id { get; set; }
+    [Parameter] public string id { get; set; } = string.Empty;
+    [Parameter] public int firmaId { get; set; }
 
     private Cari? cari;
 
     protected override async Task OnInitializedAsync()
     {
-        cari = await CariService.GetByIdAsync(id);
+        cari = await CariService.GetByIdAsync(id, firmaId);
     }
 
     private void BackToList()

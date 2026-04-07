@@ -10,7 +10,7 @@ namespace EMutabakat.Services.Interfaces
         Task<string?> SaveMutabakatResponseFileAsync(
             string token,
             DateTime mutabakatDonemi,
-            int cariId,
+            string cariId,
             string? firmaAdi,
             Stream fileStream,
             string originalFileName,
