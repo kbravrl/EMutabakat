@@ -1,10 +1,21 @@
 @using Components.Pages.Mutabakat
 @inject ICariService CariService
+@inject IFirmaService FirmaService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
 <div class="p-2">
     <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
+
+    <div class="my-3">
+        <RadzenLabel Text="Firma *" Style="width:100%;" />
+        <RadzenDropDown Data="@firmalar"
+                        TextProperty="FirmaAdi"
+                        ValueProperty="FirmaId"
+                        @bind-Value="selectedFirmaId"
+                        Placeholder="Firma seçiniz"
+                        Style="width:100%;" />
+    </div>
 
     <div class="my-4">
         <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
@@ -19,6 +30,13 @@
 @code {
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
+    private int selectedFirmaId;
+    private List<Firma> firmalar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        firmalar = await FirmaService.GetAllAsync();
+    }
 
     private void HandleSelected(InputFileChangeEventArgs e)
     {
@@ -34,6 +52,12 @@
             return;
         }
 
+        if (selectedFirmaId <= 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen bir firma seçin.");
+            return;
+        }
+
         isUploading = true;
 
         try
@@ -42,7 +66,7 @@
             await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
             ms.Position = 0;
 
-            var (createdCount, errors) = await CariService.ImportFromExcelAsync(ms, selectedFile.Name);
+            var (createdCount, updatedCount, errors) = await CariService.ImportFromExcelAsync(ms, selectedFile.Name, selectedFirmaId);
 
             if (errors != null && errors.Count > 0)
             {
@@ -51,7 +75,7 @@
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", $"Oluşturulan kayıt: {createdCount}");
+                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", $"Oluşturulan kayıt: {createdCount}, güncellenen kayıt: {updatedCount}");
             }
 
             DialogService.Close(true);
