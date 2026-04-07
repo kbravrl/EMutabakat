@@ -24,11 +24,7 @@ else
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Dönem:</b> @mutabakat.MutabakatDonemi.ToString("dd.MM.yyyy")
-                </RadzenColumn>
-
-                <RadzenColumn Size="12" SizeMD="6">
-                    <b>Tip:</b> @GetMutabakatTipiText(mutabakat.MutabakatTipi)
+                    <b>Tarih:</b> @mutabakat.MutabakatDonemi.ToString("dd.MM.yyyy")
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -123,16 +119,6 @@ else
     private void BackToList()
     {
         NavigationManager.NavigateTo("/reconciliations");
-    }
-
-    private string GetMutabakatTipiText(int tip)
-    {
-        return tip switch
-        {
-            1 => "TL",
-            2 => "Döviz",
-            _ => "Tanımsız"
-        };
     }
 
     private string GetBakiyeTipiText(string bakiyeTipi)

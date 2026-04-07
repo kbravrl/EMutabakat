@@ -66,7 +66,30 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            mutabakat.CariId = (mutabakat.CariId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(mutabakat.CariId))
+                throw new Exception("Cari seçimi zorunludur.");
+
+            var matchedCariler = await context.Cariler
+                .Where(c => c.CariId == mutabakat.CariId)
+                .Select(c => new { c.CariId, c.FirmaId, c.CariDovizKodu })
+                .ToListAsync();
+
+            if (matchedCariler.Count == 0)
+                throw new Exception("Seçilen cari bulunamadı.");
+
+            if (matchedCariler.Count > 1)
+                throw new Exception("Aynı CariId birden fazla firmada bulundu. Lütfen cari ID'yi benzersiz kullanın.");
+
+            var selectedCari = matchedCariler[0];
+            mutabakat.FirmaId = selectedCari.FirmaId;
+
             mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
+            {
+                mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu ?? "TL";
+            }
+
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
                 throw new Exception("Döviz kodu zorunludur.");
 
@@ -107,7 +130,30 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            mutabakat.CariId = (mutabakat.CariId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(mutabakat.CariId))
+                throw new Exception("Cari seçimi zorunludur.");
+
+            var matchedCariler = await context.Cariler
+                .Where(c => c.CariId == mutabakat.CariId)
+                .Select(c => new { c.CariId, c.FirmaId, c.CariDovizKodu })
+                .ToListAsync();
+
+            if (matchedCariler.Count == 0)
+                throw new Exception("Seçilen cari bulunamadı.");
+
+            if (matchedCariler.Count > 1)
+                throw new Exception("Aynı CariId birden fazla firmada bulundu. Lütfen cari ID'yi benzersiz kullanın.");
+
+            var selectedCari = matchedCariler[0];
+            mutabakat.FirmaId = selectedCari.FirmaId;
+
             mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
+            {
+                mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu ?? "TL";
+            }
+
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
                 throw new Exception("Döviz kodu zorunludur.");
 
@@ -125,12 +171,11 @@ namespace EMutabakat.Services
 
             if (!mailGonderildiMi)
             {
-                existingMutabakat.FirmaId = mutabakat.FirmaId;
+                existingMutabakat.FirmaId = selectedCari.FirmaId;
                 existingMutabakat.CariId = mutabakat.CariId;
                 existingMutabakat.MutabakatDonemi = DateTime.SpecifyKind(
                     mutabakat.MutabakatDonemi,
                     DateTimeKind.Utc);
-                existingMutabakat.MutabakatTipi = mutabakat.MutabakatTipi;
                 existingMutabakat.MutabakatDovizKodu = mutabakat.MutabakatDovizKodu;
                 existingMutabakat.MutabakatBakiye = mutabakat.MutabakatBakiye;
                 existingMutabakat.MutabakatBakiyeTipi = mutabakat.MutabakatBakiyeTipi;
@@ -451,11 +496,17 @@ namespace EMutabakat.Services
                     if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
                 }
 
-                string[] required = new[] { "FirmaId", "CariId", "MutabakatDonemi", "MutabakatTipi", "TCMP", "MutabakatBakiye", "MutabakatBakiyeTipi" };
+                string[] required = new[] { "CariId", "MutabakatTarihi", "DovizKodu", "MutabakatBakiye", "MutabakatBakiyeTipi" };
                 foreach (var h in required)
                 {
                     if (!headerMap.ContainsKey(h))
                     {
+                        if (h == "MutabakatTarihi" && headerMap.ContainsKey("MutabakatDonemi"))
+                            continue;
+
+                        if (h == "DovizKodu" && headerMap.ContainsKey("TCMP"))
+                            continue;
+
                         errors.Add($"Gerekli sütun '{h}' bulunamadı.");
                         return (0, 0, errors);
                     }
@@ -470,33 +521,38 @@ namespace EMutabakat.Services
 
                     try
                     {
-                        int firmaId = ParseIntCell(row, headerMap["FirmaId"]);
                         var cariId = (GetStringCell(row, headerMap["CariId"]) ?? string.Empty).Trim();
-                        DateTime donem = ParseDateCell(row, headerMap["MutabakatDonemi"]);
-                        int tipi = ParseIntCell(row, headerMap["MutabakatTipi"]);
-                        var doviz = (GetStringCell(row, headerMap["TCMP"]) ?? string.Empty).Trim().ToUpperInvariant();
+                        var tarihColumn = headerMap.ContainsKey("MutabakatTarihi") ? "MutabakatTarihi" : "MutabakatDonemi";
+                        DateTime donem = ParseDateCell(row, headerMap[tarihColumn]);
+                        var dovizColumn = headerMap.ContainsKey("DovizKodu") ? "DovizKodu" : "TCMP";
+                        var doviz = (GetStringCell(row, headerMap[dovizColumn]) ?? string.Empty).Trim().ToUpperInvariant();
                         decimal bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
                         var bakiyeTipi = GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B";
                         var aciklama = headerMap.ContainsKey("MutabakatAciklama") ? GetStringCell(row, headerMap["MutabakatAciklama"]) : string.Empty;
 
-                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == firmaId);
-                        if (!firmaExists)
+                        var matchedCariler = await context.Cariler
+                            .Where(c => c.CariId == cariId)
+                            .Select(c => new { c.CariId, c.FirmaId })
+                            .ToListAsync();
+
+                        if (matchedCariler.Count == 0)
                         {
-                            errors.Add($"Satır {r + 1}: FirmaId {firmaId} bulunamadı.");
+                            errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
                             continue;
                         }
 
-                        var cariExists = await context.Cariler.AnyAsync(c => c.CariId == cariId && c.FirmaId == firmaId);
-                        if (!cariExists)
+                        if (matchedCariler.Count > 1)
                         {
-                            errors.Add($"Satır {r + 1}: CariId {cariId} seçilen firmada bulunamadı.");
+                            errors.Add($"Satır {r + 1}: CariId {cariId} birden fazla firmada bulundu. Cari ID benzersiz olmalıdır.");
                             continue;
                         }
+
+                        var firmaId = matchedCariler[0].FirmaId;
 
                         var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz);
                         if (!dovizExists)
                         {
-                            errors.Add($"Satır {r + 1}: TCMP {doviz} geçerli değil.");
+                            errors.Add($"Satır {r + 1}: DovizKodu {doviz} geçerli değil.");
                             continue;
                         }
 
@@ -505,7 +561,6 @@ namespace EMutabakat.Services
                             FirmaId = firmaId,
                             CariId = cariId,
                             MutabakatDonemi = donem,
-                            MutabakatTipi = tipi,
                             MutabakatDovizKodu = doviz,
                             MutabakatBakiye = bakiye,
                             MutabakatBakiyeTipi = bakiyeTipi,

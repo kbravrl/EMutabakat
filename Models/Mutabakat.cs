@@ -8,11 +8,8 @@ namespace EMutabakat.Models
         [Key]
         public int MutabakatId { get; set; }
 
-        [Required(ErrorMessage = "Mutabakat dönemi zorunludur.")]
+        [Required(ErrorMessage = "Mutabakat tarihi zorunludur.")]
         public DateTime MutabakatDonemi { get; set; }
-
-        [Required(ErrorMessage = "Mutabakat tipi zorunludur.")]
-        public int MutabakatTipi { get; set; }
 
         [ForeignKey("Firma")]
         [Required(ErrorMessage = "Firma seçimi zorunludur.")]

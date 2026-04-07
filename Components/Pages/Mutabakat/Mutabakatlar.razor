@@ -41,7 +41,7 @@
             <Columns>
                 <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" />
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Dönem">
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Tarih">
                     <Template Context="item">
                         @item.MutabakatDonemi.ToString("dd.MM.yyyy")
                     </Template>
@@ -55,12 +55,6 @@
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
                     <Template Context="item">
                         @item.Cari?.CariAdi
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Tip">
-                    <Template Context="item">
-                        @GetMutabakatTipiText(item.MutabakatTipi)
                     </Template>
                 </RadzenDataGridColumn>
 
@@ -296,16 +290,6 @@
                 isSubmitting = false;
             }
         }
-    }
-
-    private string GetMutabakatTipiText(int tip)
-    {
-        return tip switch
-        {
-            1 => "TL",
-            2 => "Döviz",
-            _ => "Tanımsız"
-        };
     }
 
     private string GetBakiyeTipiText(string bakiyeTipi)
