@@ -45,9 +45,20 @@
                         @firma.FirmaIl / @firma.FirmaIlce
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="Firma" Title="Durum">
+                <RadzenDataGridColumn TItem="Firma"
+                                      Property="FirmaAktifPasif"
+                                      Title="Durum"
+                                      FilterOperator="FilterOperator.Equals"
+                                      FilterValue="@aktifDurumFiltre">
                     <Template Context="firma">
-                        @(firma.FirmaAktifPasif == 1 ? "Aktif" : "Pasif")
+                        @if (firma.FirmaAktifPasif == 1)
+                        {
+                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                        }
+                        else
+                        {
+                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                        }
                     </Template>
                 </RadzenDataGridColumn>
 
@@ -80,6 +91,7 @@
 
 @code {
     private List<Firma> firmalar = new();
+    private int aktifDurumFiltre = 1;
 
     protected override async Task OnInitializedAsync()
     {

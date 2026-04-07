@@ -29,7 +29,8 @@ namespace EMutabakat.Services
             return await context.CariGruplar
                 .AsNoTracking()
                 .Include(x => x.Firma)
-                .OrderBy(x => x.CariGrupAdi)
+                .OrderByDescending(x => x.CariGrupAktifPasif)
+                .ThenBy(x => x.CariGrupAdi)
                 .ToListAsync();
         }
 
@@ -82,6 +83,9 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
                 throw new Exception("Cari grup adı zorunludur.");
 
+            if (cariGrup.CariGrupAktifPasif != 0 && cariGrup.CariGrupAktifPasif != 1)
+                throw new Exception("Aktif/Pasif bilgisi geçersiz.");
+
             var exists = await context.CariGruplar.AnyAsync(x => x.CariGrupId == cariGrup.CariGrupId);
             if (exists)
                 throw new Exception("Bu cari grup ID zaten kullanılıyor.");
@@ -121,6 +125,9 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(cariGrup.CariGrupAdi))
                 throw new Exception("Cari grup adı zorunludur.");
 
+            if (cariGrup.CariGrupAktifPasif != 0 && cariGrup.CariGrupAktifPasif != 1)
+                throw new Exception("Aktif/Pasif bilgisi geçersiz.");
+
             var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == cariGrup.FirmaId);
             if (!firmaExists)
                 throw new Exception("Seçilen firma bulunamadı.");
@@ -146,7 +153,8 @@ namespace EMutabakat.Services
                 {
                     CariGrupId = cariGrup.CariGrupId,
                     FirmaId = cariGrup.FirmaId,
-                    CariGrupAdi = cariGrup.CariGrupAdi
+                    CariGrupAdi = cariGrup.CariGrupAdi,
+                    CariGrupAktifPasif = cariGrup.CariGrupAktifPasif
                 };
 
                 context.CariGruplar.Add(newCariGrup);
@@ -166,6 +174,7 @@ namespace EMutabakat.Services
 
             existingCariGrup.FirmaId = cariGrup.FirmaId;
             existingCariGrup.CariGrupAdi = cariGrup.CariGrupAdi;
+            existingCariGrup.CariGrupAktifPasif = cariGrup.CariGrupAktifPasif;
 
             await context.SaveChangesAsync();
             return existingCariGrup;
@@ -304,7 +313,10 @@ namespace EMutabakat.Services
                         {
                             CariGrupId = GetStringCell(row, headerMap.GetValueOrDefault("CariGrupId")) ?? string.Empty,
                             FirmaId = firmaId,
-                            CariGrupAdi = GetStringCell(row, headerMap.GetValueOrDefault("CariGrupAdi")) ?? string.Empty
+                            CariGrupAdi = GetStringCell(row, headerMap.GetValueOrDefault("CariGrupAdi")) ?? string.Empty,
+                            CariGrupAktifPasif = headerMap.ContainsKey("CariGrupAktifPasif")
+                                ? ParseIntCell(row, headerMap.GetValueOrDefault("CariGrupAktifPasif"))
+                                : 1
                         };
 
                         grup.CariGrupId = grup.CariGrupId.Trim();
@@ -319,6 +331,12 @@ namespace EMutabakat.Services
                         if (string.IsNullOrWhiteSpace(grup.CariGrupAdi))
                         {
                             errors.Add($"Satır {r + 1}: CariGrupAdi boş olamaz.");
+                            continue;
+                        }
+
+                        if (grup.CariGrupAktifPasif != 0 && grup.CariGrupAktifPasif != 1)
+                        {
+                            errors.Add($"Satır {r + 1}: CariGrupAktifPasif değeri 0 veya 1 olmalıdır.");
                             continue;
                         }
 
@@ -352,12 +370,14 @@ namespace EMutabakat.Services
                         else
                         {
                             var hasChange = !string.Equals(existing.CariGrupAdi?.Trim(), grup.CariGrupAdi, StringComparison.Ordinal)
-                                || existing.FirmaId != grup.FirmaId;
+                                || existing.FirmaId != grup.FirmaId
+                                || existing.CariGrupAktifPasif != grup.CariGrupAktifPasif;
 
                             if (hasChange)
                             {
                                 existing.CariGrupAdi = grup.CariGrupAdi;
                                 existing.FirmaId = grup.FirmaId;
+                                existing.CariGrupAktifPasif = grup.CariGrupAktifPasif;
                                 updated++;
                             }
                         }

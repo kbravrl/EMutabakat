@@ -333,8 +333,7 @@ namespace EMutabakat.Services
                     "CariVergiNumarasi",
                     "CariYetkiliMail",
                     "CariGrupId",
-                    "TCMP",
-                    "CariAktifPasif"
+                    "DovizKodu"
                 };
 
                 foreach (var column in requiredColumns)
@@ -385,8 +384,10 @@ namespace EMutabakat.Services
                         CariYetkiliGsm = headerMap.ContainsKey("CariYetkiliGsm") ? GetStringCell(row, headerMap["CariYetkiliGsm"]) : null,
                         CariYetkiliMail = GetStringCell(row, headerMap["CariYetkiliMail"]) ?? string.Empty,
                         CariGrupId = GetStringCell(row, headerMap["CariGrupId"]) ?? string.Empty,
-                        CariDovizKodu = GetStringCell(row, headerMap["TCMP"]),
-                        CariAktifPasif = ParseIntCell(row, headerMap["CariAktifPasif"])
+                        CariDovizKodu = GetStringCell(row, headerMap["DovizKodu"]),
+                        CariAktifPasif = headerMap.ContainsKey("CariAktifPasif")
+                            ? ParseIntCell(row, headerMap["CariAktifPasif"])
+                            : 1
                     };
 
                     cari.CariId = cari.CariId.Trim();

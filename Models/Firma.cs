@@ -54,7 +54,7 @@ namespace EMutabakat.Models
         public string FirmaSmtpSecure { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
-        public int FirmaAktifPasif { get; set; }
+        public int FirmaAktifPasif { get; set; } = 1;
 
         public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();
     }

@@ -43,7 +43,7 @@ namespace EMutabakat.Models
         public string CariDovizKodu { get; set; }
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
-        public int CariAktifPasif { get; set; }
+        public int CariAktifPasif { get; set; } = 1;
 
         public Firma? Firma { get; set; }
         public CariGrup? CariGrup { get; set; }

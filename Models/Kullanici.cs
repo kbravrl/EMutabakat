@@ -32,7 +32,7 @@ namespace EMutabakat.Models
         public string Rol { get; set; } = KullaniciRolleri.Standart;
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
-        public string KullaniciAktifPasif { get; set; }
+        public string KullaniciAktifPasif { get; set; } = "Aktif";
 
         public Firma? Firma { get; set; }
         public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();

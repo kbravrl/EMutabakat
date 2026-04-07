@@ -59,7 +59,11 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Kullanici" Title="Durum">
+                <RadzenDataGridColumn TItem="Kullanici"
+                                      Property="KullaniciAktifPasif"
+                                      Title="Durum"
+                                      FilterOperator="FilterOperator.Equals"
+                                      FilterValue="@aktifDurumFiltre">
                     <Template Context="item">
                         @if (item.KullaniciAktifPasif == "1")
                         {
@@ -95,6 +99,7 @@
 
 @code {
     private List<Kullanici> kullanicilar = new();
+    private string aktifDurumFiltre = "1";
 
     protected override async Task OnInitializedAsync()
     {

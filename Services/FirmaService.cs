@@ -211,8 +211,7 @@ namespace EMutabakat.Services
                    "FirmaSmtpPort",
                    "FirmaSmtpUser",
                    "FirmaSmtpPassword",
-                   "FirmaSmtpSecure",
-                   "FirmaAktifPasif"
+                   "FirmaSmtpSecure"
                 };
 
                 foreach (var h in required)
@@ -253,7 +252,9 @@ namespace EMutabakat.Services
                             FirmaSmtpUser = GetStringCell(row, headerMap["FirmaSmtpUser"]) ?? string.Empty,
                             FirmaSmtpPassword = GetStringCell(row, headerMap["FirmaSmtpPassword"]) ?? string.Empty,
                             FirmaSmtpSecure = GetStringCell(row, headerMap["FirmaSmtpSecure"]) ?? string.Empty,
-                            FirmaAktifPasif = ParseIntCell(row, headerMap["FirmaAktifPasif"])
+                            FirmaAktifPasif = headerMap.ContainsKey("FirmaAktifPasif")
+                                ? ParseIntCell(row, headerMap["FirmaAktifPasif"])
+                                : 1
                         };
 
 

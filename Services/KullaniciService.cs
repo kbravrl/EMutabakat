@@ -97,8 +97,7 @@ namespace EMutabakat.Services
                    "KullaniciAdi",
                    "KullaniciSoyadi",
                    "KullaniciMail",
-                   "Sifre",
-                   "KullaniciAktifPasif"
+                   "Sifre"
                 };
 
                 foreach (var h in required)
@@ -153,7 +152,13 @@ namespace EMutabakat.Services
 
                         if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                         {
-                            errors.Add($"Satır {r + 1}: Aktif/Pasif bilgisi boş olamaz.");
+                            kullanici.KullaniciAktifPasif = "1";
+                        }
+
+                        kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
+                        if (kullanici.KullaniciAktifPasif != "0" && kullanici.KullaniciAktifPasif != "1")
+                        {
+                            errors.Add($"Satır {r + 1}: Aktif/Pasif değeri 0 veya 1 olmalıdır.");
                             continue;
                         }
 
