@@ -92,6 +92,7 @@
     protected override async Task OnInitializedAsync()
     {
         firmalar = await FirmaService.GetAllAsync();
+        cariGrup.CariGrupId = await CariGrupService.GenerateNextCariGrupIdAsync();
     }
 
     private async Task HandleValidSubmit()

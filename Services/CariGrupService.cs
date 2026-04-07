@@ -9,6 +9,7 @@ using System.IO;
 using System;
 using Npgsql;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace EMutabakat.Services
 {
@@ -40,6 +41,29 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.CariGrupId == id);
+        }
+
+        public async Task<string> GenerateNextCariGrupIdAsync()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var ids = await context.CariGruplar
+                .AsNoTracking()
+                .Select(x => x.CariGrupId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToListAsync();
+
+            var maxNumeric = 0;
+            foreach (var id in ids)
+            {
+                var match = Regex.Match(id!, @"\d+");
+                if (match.Success && int.TryParse(match.Value, out var number) && number > maxNumeric)
+                {
+                    maxNumeric = number;
+                }
+            }
+
+            return $"P{maxNumeric + 1}";
         }
 
         public async Task<CariGrup> AddAsync(CariGrup cariGrup)

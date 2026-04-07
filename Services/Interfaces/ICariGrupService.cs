@@ -6,6 +6,7 @@ namespace EMutabakat.Services.Interfaces
     {
         Task<List<CariGrup>> GetAllAsync();
         Task<CariGrup?> GetByIdAsync(string id);
+        Task<string> GenerateNextCariGrupIdAsync();
         Task<CariGrup> AddAsync(CariGrup cariGrup);
         Task<CariGrup?> UpdateAsync(CariGrup cariGrup);
         Task<bool> DeleteAsync(string id);
