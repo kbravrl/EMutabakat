@@ -19,6 +19,9 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Cari grup adı zorunludur.")]
         public string CariGrupAdi { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
+        public int CariGrupAktifPasif { get; set; } = 1;
+
         public Firma? Firma { get; set; }
     }
 }

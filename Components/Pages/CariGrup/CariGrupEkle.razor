@@ -63,6 +63,20 @@
                                              Popup="true" />
                 </RadzenColumn>
 
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Durum *" Style="width:100%;" />
+                    <RadzenDropDown Name="CariGrupAktifPasif"
+                                    Data="@durumlar"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="cariGrup.CariGrupAktifPasif"
+                                    Placeholder="Durum seçiniz"
+                                    Style="width:100%;" />
+                    <RadzenRequiredValidator Component="CariGrupAktifPasif"
+                                             Text="Aktif/Pasif bilgisi zorunludur."
+                                             Popup="true" />
+                </RadzenColumn>
+
                 <RadzenColumn Size="12">
                     <RadzenStack Orientation="Orientation.Horizontal"
                                  Gap="10px"
@@ -88,11 +102,17 @@
 @code {
     private CariGrup cariGrup = new();
     private List<Firma> firmalar = new();
+    private List<DurumOption> durumlar = new()
+    {
+        new() { Text = "Aktif", Value = 1 },
+        new() { Text = "Pasif", Value = 0 }
+    };
 
     protected override async Task OnInitializedAsync()
     {
         firmalar = await FirmaService.GetAllAsync();
         cariGrup.CariGrupId = await CariGrupService.GenerateNextCariGrupIdAsync();
+        cariGrup.CariGrupAktifPasif = 1;
     }
 
     private async Task HandleValidSubmit()
@@ -120,5 +140,11 @@
     private void Cancel()
     {
         NavigationManager.NavigateTo("/current-groups");
+    }
+
+    private class DurumOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public int Value { get; set; }
     }
 }

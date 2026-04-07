@@ -44,6 +44,23 @@
                     </Template>
                 </RadzenDataGridColumn>
 
+                <RadzenDataGridColumn TItem="CariGrup"
+                                      Property="CariGrupAktifPasif"
+                                      Title="Durum"
+                                      FilterOperator="FilterOperator.Equals"
+                                      FilterValue="@aktifDurumFiltre">
+                    <Template Context="item">
+                        @if (item.CariGrupAktifPasif == 1)
+                        {
+                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                        }
+                        else
+                        {
+                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
                 <RadzenDataGridColumn TItem="CariGrup" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
@@ -69,6 +86,7 @@
 @code {
     private List<CariGrup> cariGruplar = new();
     private bool isSubmitting;
+    private int aktifDurumFiltre = 1;
 
     protected override async Task OnInitializedAsync()
     {

@@ -53,7 +53,11 @@
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="Cari" Property="CariYetkiliMail" Title="Yetkili Mail" />
 
-                <RadzenDataGridColumn TItem="Cari" Title="Durum">
+                <RadzenDataGridColumn TItem="Cari"
+                                      Property="CariAktifPasif"
+                                      Title="Durum"
+                                      FilterOperator="FilterOperator.Equals"
+                                      FilterValue="@aktifDurumFiltre">
                     <Template Context="item">
                         @if (item.CariAktifPasif == 1)
                         {
@@ -97,6 +101,7 @@
 @code {
     private List<Cari> cariler = new();
     private bool isSubmitting;
+    private int aktifDurumFiltre = 1;
 
     protected override async Task OnInitializedAsync()
     {
