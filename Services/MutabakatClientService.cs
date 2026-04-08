@@ -70,7 +70,7 @@ namespace EMutabakat.Services
 
             savedRelativePath = await _sdService.SaveMutabakatResponseFileAsync(
                 token,
-                mutabakat.MutabakatDonemi,
+                mutabakat.MutabakatTarihi,
                 mutabakat.CariId,
                 mutabakat.Firma?.FirmaAdi,
                 fileStream,

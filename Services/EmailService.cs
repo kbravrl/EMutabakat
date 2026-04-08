@@ -71,7 +71,7 @@ namespace EMutabakat.Services
 
         private static string BuildSubject(Mutabakat mutabakat, Firma firma, bool isReminder)
         {
-            var donem = mutabakat.MutabakatDonemi.ToString("MM.yyyy");
+            var donem = mutabakat.MutabakatTarihi.ToString("MM.yyyy");
             var prefix = isReminder ? "[Hatırlatma] " : "";
 
             return $"{prefix}{firma.FirmaAdi} Cari Hesap Mutabakatı - {donem}";
@@ -79,7 +79,7 @@ namespace EMutabakat.Services
 
         private string BuildHtmlBody(Mutabakat mutabakat, Kullanici kullanici, string approveUrl, string rejectUrl)
         {
-            string donem = mutabakat.MutabakatDonemi.ToString("MM.yyyy");
+            string donem = mutabakat.MutabakatTarihi.ToString("MM.yyyy");
             var bakiyeVal = mutabakat.MutabakatBakiye;
             string bakiye = bakiyeVal == Math.Truncate(bakiyeVal)
                 ? ((long)bakiyeVal).ToString()

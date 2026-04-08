@@ -43,7 +43,7 @@
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Tarih">
                     <Template Context="item">
-                        @item.MutabakatDonemi.ToString("dd.MM.yyyy")
+                        @item.MutabakatTarihi.ToString("dd.MM.yyyy")
                     </Template>
                 </RadzenDataGridColumn>
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
@@ -165,12 +165,12 @@
         NavigationManager.NavigateTo("/reconciliations/add");
     }
 
-    private void GoToDetailsPage(int id)
+    private void GoToDetailsPage(string id)
     {
         NavigationManager.NavigateTo($"/reconciliations/detail/{id}");
     }
 
-    private async Task SendMail(int id)
+    private async Task SendMail(string id)
     {
         if (isSubmitting) return;
         isSubmitting = true;
@@ -209,7 +209,7 @@
         }
     }
 
-    private async Task SendReminder(int id)
+    private async Task SendReminder(string id)
     {
         if (isSubmitting) return;
         isSubmitting = true;
@@ -248,7 +248,7 @@
         }
     }
 
-    private async Task DeleteMutabakat(int id)
+    private async Task DeleteMutabakat(string id)
     {
         var confirmed = await DialogService.Confirm(
             "Bu mutabakat kaydını silmek istediğinize emin misiniz?",

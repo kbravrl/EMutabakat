@@ -19,7 +19,7 @@
 
     <RadzenDivider />
 
-    <EditForm EditContext="@editContext" OnValidSubmit="@HandleValidSubmit">
+    <EditForm Model="@mutabakat" OnValidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -28,9 +28,16 @@
 
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenFormField Text="Mutabakat Tarihi" Style="width:100%;">
-                        <RadzenDatePicker @bind-Value="mutabakat.MutabakatDonemi"
+                        <RadzenDatePicker @bind-Value="mutabakat.MutabakatTarihi"
                                           DateFormat="dd.MM.yyyy"
                                           Style="width:100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenFormField Text="Mutabakat ID" Style="width:100%;">
+                        <RadzenTextBox @bind-Value="mutabakat.MutabakatId"
+                                       Style="width:100%;" />
                     </RadzenFormField>
                 </RadzenColumn>
 
@@ -91,7 +98,11 @@
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
+                    <RadzenStack Orientation="Orientation.Horizontal"
+                                 Gap="10px"
+                                 JustifyContent="JustifyContent.End"
+                                 Class="mt-3">
+
                         <RadzenButton Text="İptal"
                                       Icon="close"
                                       ButtonStyle="ButtonStyle.Secondary"
@@ -115,16 +126,15 @@
 @code {
     private Mutabakat mutabakat = new()
     {
-        MutabakatDonemi = DateTime.Today,
+        MutabakatTarihi = DateTime.Today,
         MutabakatDovizKodu = "TL",
         MutabakatGonderimDurumu = 1,
         MutabakatBakiyeTipi = "B",
         MutabakatDurum = 3
     };
 
-    private EditContext editContext = default!;
-
     private List<Cari> cariler = new();
+    private List<DovizKodu> dovizKodlari = new();
     private bool isSubmitting = false;
 
     private class SelectOptionInt
@@ -138,8 +148,6 @@
         public string Value { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
     }
-
-    private List<DovizKodu> dovizKodlari = new();
 
     private List<SelectOptionString> bakiyeTipleri = new()
     {
@@ -155,8 +163,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        editContext = new EditContext(mutabakat);
-
+        mutabakat.MutabakatId = await MutabakatService.GenerateNextMutabakatIdAsync();
         cariler = await CariService.GetAllAsync();
         dovizKodlari = await DovizKoduService.GetAllAsync();
     }
@@ -209,8 +216,6 @@
     {
         if (isSubmitting) return;
 
-        if (!editContext.Validate()) return;
-
         isSubmitting = true;
 
         try
@@ -239,7 +244,7 @@
             NotificationService.Notify(
                 NotificationSeverity.Error,
                 "Hata",
-                "Mail gönderimi başarısız, lütfen bilgileri kontrol ediniz");
+                ex.Message);
         }
         finally
         {

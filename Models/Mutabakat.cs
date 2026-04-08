@@ -6,10 +6,11 @@ namespace EMutabakat.Models
     public class Mutabakat
     {
         [Key]
-        public int MutabakatId { get; set; }
+        [Required(ErrorMessage = "Mutabakat ID zorunludur.")]
+        public string MutabakatId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mutabakat tarihi zorunludur.")]
-        public DateTime MutabakatDonemi { get; set; }
+        public DateTime MutabakatTarihi { get; set; }
 
         [ForeignKey("Firma")]
         [Required(ErrorMessage = "Firma seçimi zorunludur.")]
