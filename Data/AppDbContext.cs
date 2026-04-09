@@ -9,12 +9,14 @@ namespace EMutabakat.Data
             : base(options)
         {
         }
+
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
         public DbSet<KullaniciFirma> KullaniciFirmalari { get; set; }
         public DbSet<CariGrup> CariGruplar { get; set; }
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
+        public DbSet<SilinenMutabakat> SilinenMutabakatlar { get; set; }
         public DbSet<DovizKodu> DovizKodlari { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -75,6 +77,13 @@ namespace EMutabakat.Data
                 .HasAlternateKey(d => d.TCMB);
 
             modelBuilder.Entity<Mutabakat>()
+                .HasKey(m => new { m.FirmaId, m.CariId, m.MutabakatTarihi });
+
+            modelBuilder.Entity<Mutabakat>()
+                .HasIndex(m => m.MutabakatId)
+                .IsUnique();
+
+            modelBuilder.Entity<Mutabakat>()
                 .HasOne(m => m.Firma)
                 .WithMany()
                 .HasForeignKey(m => m.FirmaId)
@@ -92,6 +101,31 @@ namespace EMutabakat.Data
                 .HasForeignKey(m => m.MutabakatDovizKodu)
                 .HasPrincipalKey(d => d.TCMB)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SilinenMutabakat>()
+                .HasKey(sm => sm.Id);
+
+            modelBuilder.Entity<SilinenMutabakat>()
+                .HasOne(sm => sm.Firma)
+                .WithMany()
+                .HasForeignKey(sm => sm.FirmaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SilinenMutabakat>()
+                .HasOne(sm => sm.Cari)
+                .WithMany()
+                .HasForeignKey(sm => new { sm.CariId, sm.FirmaId })
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SilinenMutabakat>()
+                .HasOne(sm => sm.DovizKodu)
+                .WithMany()
+                .HasForeignKey(sm => sm.MutabakatDovizKodu)
+                .HasPrincipalKey(d => d.TCMB)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SilinenMutabakat>()
+                .HasIndex(sm => new { sm.FirmaId, sm.CariId, sm.MutabakatTarihi });
         }
     }
 }

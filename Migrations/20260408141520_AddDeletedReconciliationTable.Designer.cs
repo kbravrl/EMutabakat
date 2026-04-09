@@ -3,6 +3,7 @@ using System;
 using EMutabakat.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EMutabakat.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408141520_AddDeletedReconciliationTable")]
+    partial class AddDeletedReconciliationTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -286,14 +289,15 @@ namespace EMutabakat.Migrations
 
             modelBuilder.Entity("EMutabakat.Models.Mutabakat", b =>
                 {
-                    b.Property<int>("FirmaId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CariId")
+                    b.Property<string>("MutabakatId")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("MutabakatTarihi")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("CariId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("FirmaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("MutabakatAciklama")
                         .HasColumnType("text");
@@ -333,24 +337,24 @@ namespace EMutabakat.Migrations
                     b.Property<DateTime>("MutabakatGonderimTarihSaat")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("MutabakatId")
-                        .HasColumnType("text");
-
                     b.Property<string>("MutabakatReceiveStoragePath")
                         .HasColumnType("text");
+
+                    b.Property<DateTime>("MutabakatTarihi")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MutabakatToken")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("FirmaId", "CariId", "MutabakatTarihi");
+                    b.HasKey("MutabakatId");
 
                     b.HasIndex("MutabakatDovizKodu");
 
-                    b.HasIndex("MutabakatId")
-                        .IsUnique();
-
                     b.HasIndex("CariId", "FirmaId");
+
+                    b.HasIndex("FirmaId", "CariId", "MutabakatTarihi")
+                        .IsUnique();
 
                     b.ToTable("Mutabakatlar");
                 });
@@ -419,6 +423,10 @@ namespace EMutabakat.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("MutabakatToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SilinmeNedeni")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("SilinmeTarihi")

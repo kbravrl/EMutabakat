@@ -18,14 +18,20 @@
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
             <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
-                              Click="@OpenImportDialog" />
+            <RadzenButton Text="Excel İçe Aktar"
+                          Icon="file_upload"
+                          Click="@OpenImportDialog" />
 
-                <RadzenButton Text="Yeni Mutabakat Ekle"
-                              Icon="add_circle"
-                              Click="@GoToCreatePage" />
-            </RadzenStack>
+            <RadzenButton Text="Silinen Mutabakatlar"
+                          Icon="history"
+                          ButtonStyle="ButtonStyle.Secondary"
+                          Click="@GoToDeletedPage" />
+
+            <RadzenButton Text="Yeni Mutabakat Ekle"
+                          Icon="add_circle"
+                          Click="@GoToCreatePage" />
+
+        </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
 
@@ -66,13 +72,21 @@
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
                     <Template Context="item">
-                        @item.MutabakatBakiye.ToString("N2") (@GetBakiyeTipiText(item.MutabakatBakiyeTipi))
+                        @item.MutabakatBakiye.ToString("N2")
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
+                    <Template Context="item">
+                        @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
                     </Template>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim">
                     <Template Context="item">
-                        @GetGonderimDurumuText(item.MutabakatGonderimDurumu)
+                        <RadzenBadge Text="@GetGonderimDurumuText(item.MutabakatGonderimDurumu)"
+                                     BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatGonderimDurumu)" />
+                        
                     </Template>
                 </RadzenDataGridColumn>
 
@@ -89,9 +103,9 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="340px">
+                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="200px">
                     <Template Context="item">
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
                             @if (item.MutabakatDurum != 1 && item.MutabakatDurum != 2)
                             {
@@ -168,6 +182,11 @@
     private void GoToDetailsPage(string id)
     {
         NavigationManager.NavigateTo($"/reconciliations/detail/{id}");
+    }
+
+    private void GoToDeletedPage()
+    {
+        NavigationManager.NavigateTo("/reconciliations/deleted");
     }
 
     private async Task SendMail(string id)

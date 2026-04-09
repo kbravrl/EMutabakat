@@ -1,0 +1,171 @@
+﻿@page "/reconciliations/deleted"
+
+@inject IMutabakatService MutabakatService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<PageTitle>Silinen Mutabakatlar</PageTitle>
+
+<RadzenCard Style="padding:20px;">
+
+    <RadzenStack Orientation="Orientation.Horizontal"
+                 AlignItems="AlignItems.Center"
+                 JustifyContent="JustifyContent.SpaceBetween">
+
+        <RadzenText TextStyle="TextStyle.H4">
+            Silinen Mutabakatlar
+        </RadzenText>
+
+        <RadzenButton Text="Geri Dön"
+                      Icon="arrow_back"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@(()=> NavigationManager.NavigateTo("/reconciliations"))" />
+    </RadzenStack>
+
+    <RadzenDataGrid Data="@items"
+                    TItem="SilinenMutabakat"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    AllowFiltering="true"
+                    PageSize="10"
+                    Style="margin-top:15px">
+
+        <Columns>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Property="MutabakatId" Title="Mutabakat ID" />
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Tarih">
+                <Template Context="item">
+                    @item.MutabakatTarihi.ToString("dd.MM.yyyy")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Firma">
+                <Template Context="item">
+                    @item.Firma?.FirmaAdi
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Cari">
+                <Template Context="item">
+                    @item.Cari?.CariAdi
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Döviz">
+                <Template Context="item">
+                    @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye">
+                <Template Context="item">
+                    @item.MutabakatBakiye.ToString("N2")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye Tipi">
+                <Template Context="item">
+                    @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Gönderim">
+                <Template Context="item">
+                    <RadzenBadge Text="@GetGonderimDurumuText(item.MutabakatGonderimDurumu)"
+                                 BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatGonderimDurumu)" />
+                        
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Durum">
+                <Template Context="item">
+                    <RadzenBadge Text="@GetMutabakatDurumText(item.MutabakatDurum)"
+                                 BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatDurum)" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Silinme Tarihi">
+                <Template Context="item">
+                    @item.SilinmeTarihi.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="İşlem" Sortable="false" Filterable="false" Width="120px">
+                <Template Context="item">
+                    <RadzenButton Text=""
+                                  Icon="visibility"
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => GoDetail(item.Id))" />
+                </Template>
+            </RadzenDataGridColumn>
+
+        </Columns>
+    </RadzenDataGrid>
+
+</RadzenCard>
+
+@code {
+    private List<SilinenMutabakat> items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            items = await MutabakatService.GetAllDeletedAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
+    }
+
+    private void GoDetail(int id)
+    {
+        NavigationManager.NavigateTo($"/reconciliations/deleted/{id}");
+    }
+
+    private string GetBakiyeTipiText(string bakiyeTipi)
+    {
+        return bakiyeTipi switch
+        {
+            "B" => "Borç",
+            "A" => "Alacak",
+            _ => "-"
+        };
+    }
+
+    private string GetGonderimDurumuText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Normal",
+            2 => "Hatırlatma",
+            _ => "-"
+        };
+    }
+
+    private string GetMutabakatDurumText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Mutabık",
+            2 => "Mutabık Değil",
+            3 => "Cevaplanmayan",
+            4 => "Okunmayan",
+            _ => "Tanımsız"
+        };
+    }
+
+    private BadgeStyle GetMutabakatBadgeStyle(int durum)
+    {
+        return durum switch
+        {
+            1 => BadgeStyle.Success,
+            2 => BadgeStyle.Danger,
+            3 => BadgeStyle.Warning,
+            4 => BadgeStyle.Secondary,
+            _ => BadgeStyle.Light
+        };
+    }
+}

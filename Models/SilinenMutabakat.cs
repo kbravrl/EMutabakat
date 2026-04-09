@@ -1,37 +1,38 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EMutabakat.Models
 {
-    public class Mutabakat
+    public class SilinenMutabakat
     {
-        [Required(ErrorMessage = "Mutabakat ID zorunludur.")]
+        [Key]
+        public int Id { get; set; }
+
         public string MutabakatId { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Mutabakat tarihi zorunludur.")]
+        [Required]
         public DateTime MutabakatTarihi { get; set; }
 
+        [Required]
         [ForeignKey("Firma")]
-        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
         public int FirmaId { get; set; }
 
-        [ForeignKey("Cari")]
-        [Required(ErrorMessage = "Cari seçimi zorunludur.")]
+        [Required]
         public string CariId { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Döviz kodu zorunludur.")]
+        [Required]
         [ForeignKey("DovizKodu")]
         public string MutabakatDovizKodu { get; set; } = "TL";
 
-        [Required(ErrorMessage = "Bakiye zorunludur.")]
+        [Required]
         public decimal MutabakatBakiye { get; set; }
 
-        [Required(ErrorMessage = "Bakiye tipi zorunludur.")]
+        [Required]
         public string MutabakatBakiyeTipi { get; set; } = string.Empty;
 
         public string? MutabakatAciklama { get; set; }
 
-        public DateTime MutabakatGonderimTarihSaat { get; set; }
+        public DateTime? MutabakatGonderimTarihSaat { get; set; }
 
         public int MutabakatGonderimDurumu { get; set; }
 
@@ -47,9 +48,11 @@ namespace EMutabakat.Models
 
         public int MutabakatDurum { get; set; }
 
-        public string MutabakatToken { get; set; } = string.Empty;
+        public string? MutabakatToken { get; set; }
 
         public string? MutabakatReceiveStoragePath { get; set; }
+
+        public DateTime SilinmeTarihi { get; set; } = DateTime.UtcNow;
 
         public Firma? Firma { get; set; }
         public Cari? Cari { get; set; }

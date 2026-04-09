@@ -1,0 +1,155 @@
+﻿@page "/reconciliations/deleted/{Id:int}"
+
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+
+@inject IMutabakatService MutabakatService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<PageTitle>Silinen Mutabakat Detayı</PageTitle>
+
+<RadzenCard Style="padding:20px;">
+    <RadzenStack Orientation="Orientation.Horizontal"
+                 AlignItems="AlignItems.Center"
+                 JustifyContent="JustifyContent.SpaceBetween"
+                 Style="margin-bottom:20px;">
+        <RadzenText TextStyle="TextStyle.H4">Silinen Mutabakat Detayı</RadzenText>
+
+        <RadzenButton Text="Listeye Dön"
+                      Icon="arrow_back"
+                      ButtonStyle="ButtonStyle.Secondary"
+                      Click="@GoBack" />
+    </RadzenStack>
+
+    @if (loading)
+    {
+        <RadzenText>Yükleniyor...</RadzenText>
+    }
+    else if (item == null)
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Warning">
+            Kayıt bulunamadı.
+        </RadzenAlert>
+    }
+    else
+    {
+        <RadzenRow Gap="20px">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFieldset Text="Temel Bilgiler">
+                    <div class="mb-3"><b>Mutabakat ID:</b> @item.MutabakatId</div>
+                    <div class="mb-3"><b>Firma:</b> @item.Firma?.FirmaAdi</div>
+                    <div class="mb-3"><b>Cari:</b> @item.Cari?.CariAdi</div>
+                    <div class="mb-3"><b>Tarih:</b> @item.MutabakatTarihi.ToString("dd.MM.yyyy")</div>
+                    <div class="mb-3"><b>Döviz:</b> @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)</div>
+                    <div class="mb-3"><b>Bakiye:</b> @item.MutabakatBakiye.ToString("N2")</div>
+                    <div class="mb-3"><b>Bakiye Tipi:</b> @GetBakiyeTipiText(item.MutabakatBakiyeTipi)</div>
+                    <div class="mb-3">
+                        <b>Durum:</b>
+                        <RadzenBadge Text="@GetMutabakatDurumText(item.MutabakatDurum)"
+                                     BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatDurum)"
+                                     Style="margin-left:8px;" />
+                    </div>
+                    <div class="mb-3"><b>Açıklama:</b> @(string.IsNullOrWhiteSpace(item.MutabakatAciklama) ? "-" : item.MutabakatAciklama)</div>
+                </RadzenFieldset>
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFieldset Text="Gönderim / Cevap Bilgileri">
+                    <div class="mb-3">
+                        <b>Gönderim Tarihi:</b>
+                        @(item.MutabakatGonderimTarihSaat.HasValue
+                            ? item.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            : "-")
+                    </div>
+                    <div class="mb-3"><b>Gönderim Durumu:</b> @GetGonderimDurumuText(item.MutabakatGonderimDurumu)</div>
+                    <div class="mb-3">
+                        <b>Cevap Tarihi:</b>
+                        @(item.MutabakatCevapTarihSaat.HasValue
+                            ? item.MutabakatCevapTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            : "-")
+                    </div>
+                    <div class="mb-3"><b>Cevap Mail:</b> @(string.IsNullOrWhiteSpace(item.MutabakatCevapMail) ? "-" : item.MutabakatCevapMail)</div>
+                    <div class="mb-3"><b>Cevap Ad Soyad:</b> @(string.IsNullOrWhiteSpace(item.MutabakatCevapAdSoyad) ? "-" : item.MutabakatCevapAdSoyad)</div>
+                    <div class="mb-3"><b>Cevap GSM:</b> @(string.IsNullOrWhiteSpace(item.MutabakatCevapGsm) ? "-" : item.MutabakatCevapGsm)</div>
+                    <div class="mb-3"><b>Cevap Açıklama:</b> @(string.IsNullOrWhiteSpace(item.MutabakatCevapAciklama) ? "-" : item.MutabakatCevapAciklama)</div>
+                    <div class="mb-3"><b>Token:</b> @(string.IsNullOrWhiteSpace(item.MutabakatToken) ? "-" : item.MutabakatToken)</div>
+                    <div class="mb-3"><b>Red Dosya Yolu:</b> @(string.IsNullOrWhiteSpace(item.MutabakatReceiveStoragePath) ? "-" : item.MutabakatReceiveStoragePath)</div>
+                </RadzenFieldset>
+            </RadzenColumn>
+        </RadzenRow>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private SilinenMutabakat? item;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            item = await MutabakatService.GetDeletedByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/reconciliations/deleted");
+    }
+
+    private string GetBakiyeTipiText(string bakiyeTipi)
+    {
+        return bakiyeTipi switch
+        {
+            "B" => "Borç",
+            "A" => "Alacak",
+            _ => "-"
+        };
+    }
+
+    private string GetGonderimDurumuText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Normal",
+            2 => "Hatırlatma",
+            _ => "-"
+        };
+    }
+
+    private string GetMutabakatDurumText(int durum)
+    {
+        return durum switch
+        {
+            1 => "Mutabık",
+            2 => "Mutabık Değil",
+            3 => "Cevaplanmayan",
+            4 => "Okunmayan",
+            _ => "Tanımsız"
+        };
+    }
+
+    private BadgeStyle GetMutabakatBadgeStyle(int durum)
+    {
+        return durum switch
+        {
+            1 => BadgeStyle.Success,
+            2 => BadgeStyle.Danger,
+            3 => BadgeStyle.Warning,
+            4 => BadgeStyle.Secondary,
+            _ => BadgeStyle.Light
+        };
+    }
+}

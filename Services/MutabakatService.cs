@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace EMutabakat.Services
@@ -66,6 +66,7 @@ namespace EMutabakat.Services
         public async Task<Mutabakat> AddAsync(Mutabakat mutabakat)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
             mutabakat.CariId = (mutabakat.CariId ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(mutabakat.CariId))
                 throw new Exception("Cari seçimi zorunludur.");
@@ -84,41 +85,63 @@ namespace EMutabakat.Services
             var selectedCari = matchedCariler[0];
             mutabakat.FirmaId = selectedCari.FirmaId;
 
-            mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim().ToUpperInvariant();
+            mutabakat.MutabakatTarihi = DateTime.SpecifyKind(
+                mutabakat.MutabakatTarihi.Date,
+                DateTimeKind.Utc);
+
+            mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
+
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
-            {
                 mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu ?? "TL";
-            }
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
                 throw new Exception("Döviz kodu zorunludur.");
 
-            var dovizExists = await context.DovizKodlari.AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+            var dovizExists = await context.DovizKodlari
+                .AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+
             if (!dovizExists)
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
-
-            mutabakat.MutabakatTarihi = DateTime.SpecifyKind(
-                mutabakat.MutabakatTarihi,
-                DateTimeKind.Utc);
 
             mutabakat.MutabakatAciklama = string.IsNullOrWhiteSpace(mutabakat.MutabakatAciklama)
                 ? null
                 : mutabakat.MutabakatAciklama.Trim();
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
-            {
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
-            }
 
             if (mutabakat.MutabakatDurum == 0)
-            {
                 mutabakat.MutabakatDurum = 3;
-            }
 
             if (mutabakat.MutabakatGonderimDurumu == 0)
-            {
                 mutabakat.MutabakatGonderimDurumu = 1;
+
+            var existingMutabakat = await context.Mutabakatlar
+                .FirstOrDefaultAsync(x =>
+                    x.FirmaId == mutabakat.FirmaId &&
+                    x.CariId == mutabakat.CariId &&
+                    x.MutabakatTarihi == mutabakat.MutabakatTarihi);
+
+            if (existingMutabakat != null)
+            {
+                if (existingMutabakat.MutabakatBakiye == mutabakat.MutabakatBakiye)
+                    throw new Exception("Aynı firma, cari, tarih ve bakiye için kayıt zaten mevcut.");
+
+                await ArchiveDeletedReconciliationAsync(
+                    context,
+                    existingMutabakat);
+
+                context.Mutabakatlar.Remove(existingMutabakat);
+                await context.SaveChangesAsync();
             }
+
+            var duplicateMutabakatId = await context.Mutabakatlar
+                .AnyAsync(x => x.MutabakatId == mutabakat.MutabakatId);
+
+            if (duplicateMutabakatId)
+                throw new Exception("Bu Mutabakat ID zaten mevcut.");
 
             context.Mutabakatlar.Add(mutabakat);
             await context.SaveChangesAsync();
@@ -171,11 +194,20 @@ namespace EMutabakat.Services
 
             if (!mailGonderildiMi)
             {
+                var normalizedDate = DateTime.SpecifyKind(mutabakat.MutabakatTarihi.Date, DateTimeKind.Utc);
+
+                var anotherRecordExists = await context.Mutabakatlar.AnyAsync(x =>
+                    x.MutabakatId != mutabakat.MutabakatId &&
+                    x.FirmaId == selectedCari.FirmaId &&
+                    x.CariId == mutabakat.CariId &&
+                    x.MutabakatTarihi == normalizedDate);
+
+                if (anotherRecordExists)
+                    throw new Exception("Aynı firma, tarih ve cari için başka bir mutabakat kaydı zaten mevcut.");
+
                 existingMutabakat.FirmaId = selectedCari.FirmaId;
                 existingMutabakat.CariId = mutabakat.CariId;
-                existingMutabakat.MutabakatTarihi = DateTime.SpecifyKind(
-                    mutabakat.MutabakatTarihi,
-                    DateTimeKind.Utc);
+                existingMutabakat.MutabakatTarihi = normalizedDate;
                 existingMutabakat.MutabakatDovizKodu = mutabakat.MutabakatDovizKodu;
                 existingMutabakat.MutabakatBakiye = mutabakat.MutabakatBakiye;
                 existingMutabakat.MutabakatBakiyeTipi = mutabakat.MutabakatBakiyeTipi;
@@ -212,6 +244,32 @@ namespace EMutabakat.Services
             return true;
         }
 
+        public async Task<List<SilinenMutabakat>> GetAllDeletedAsync()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.SilinenMutabakatlar
+                .AsNoTracking()
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                .Include(x => x.DovizKodu)
+                .OrderByDescending(x => x.SilinmeTarihi)
+                .ThenByDescending(x => x.Id)
+                .ToListAsync();
+        }
+
+        public async Task<SilinenMutabakat?> GetDeletedByIdAsync(int id)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.SilinenMutabakatlar
+                .AsNoTracking()
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                .Include(x => x.DovizKodu)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
         public async Task<bool> SendMailAsync(string mutabakatId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -231,6 +289,7 @@ namespace EMutabakat.Services
             {
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
             }
+
             var user = _httpContextAccessor.HttpContext?.User;
 
             if (user == null || !user.Identity.IsAuthenticated)
@@ -247,7 +306,6 @@ namespace EMutabakat.Services
 
             if (kullanici.Firma == null)
                 return false;
-
 
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
 
@@ -421,16 +479,6 @@ namespace EMutabakat.Services
             return true;
         }
 
-        // Helper parsers used by Excel import
-        private static int ParseIntCell(IRow row, int idx)
-        {
-            var cell = row.GetCell(idx);
-            if (cell == null) return 0;
-            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
-            var s = cell.ToString();
-            return int.TryParse(s, out var v) ? v : 0;
-        }
-
         private static decimal ParseDecimalCell(IRow row, int idx)
         {
             var cell = row.GetCell(idx);
@@ -459,19 +507,54 @@ namespace EMutabakat.Services
             return cell?.ToString();
         }
 
+        private static async Task ArchiveDeletedReconciliationAsync(
+            AppDbContext context,
+            Mutabakat existing)
+        {
+            var silinen = new SilinenMutabakat
+            {
+                MutabakatId = existing.MutabakatId,
+                MutabakatTarihi = existing.MutabakatTarihi,
+                FirmaId = existing.FirmaId,
+                CariId = existing.CariId,
+                MutabakatDovizKodu = existing.MutabakatDovizKodu,
+                MutabakatBakiye = existing.MutabakatBakiye,
+                MutabakatBakiyeTipi = existing.MutabakatBakiyeTipi,
+                MutabakatAciklama = existing.MutabakatAciklama,
+                MutabakatGonderimTarihSaat = existing.MutabakatGonderimTarihSaat == default(DateTime)
+                    ? null
+                    : existing.MutabakatGonderimTarihSaat,
+                MutabakatGonderimDurumu = existing.MutabakatGonderimDurumu,
+                MutabakatCevapTarihSaat = existing.MutabakatCevapTarihSaat,
+                MutabakatCevapMail = existing.MutabakatCevapMail,
+                MutabakatCevapAdSoyad = existing.MutabakatCevapAdSoyad,
+                MutabakatCevapGsm = existing.MutabakatCevapGsm,
+                MutabakatCevapAciklama = existing.MutabakatCevapAciklama,
+                MutabakatDurum = existing.MutabakatDurum,
+                MutabakatToken = existing.MutabakatToken,
+                MutabakatReceiveStoragePath = existing.MutabakatReceiveStoragePath,
+                SilinmeTarihi = DateTime.UtcNow,
+            };
+
+            await context.SilinenMutabakatlar.AddAsync(silinen);
+        }
+
         public async Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
         {
             var errors = new List<string>();
             var createdCount = 0;
             var mailSentCount = 0;
+
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
             {
                 IWorkbook workbook;
                 var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
-                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
-                else workbook = new HSSFWorkbook(stream);
+                if (ext == ".xlsx")
+                    workbook = new XSSFWorkbook(stream);
+                else
+                    workbook = new HSSFWorkbook(stream);
 
                 var sheet = workbook.GetSheetAt(0);
                 if (sheet == null)
@@ -492,8 +575,10 @@ namespace EMutabakat.Services
                 {
                     var cell = headerRow.GetCell(i);
                     if (cell == null) continue;
+
                     var text = cell.ToString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
+                    if (!string.IsNullOrWhiteSpace(text))
+                        headerMap[text] = i;
                 }
 
                 string[] required = new[] { "CariId", "MutabakatId", "MutabakatTarihi", "DovizKodu", "MutabakatBakiye", "MutabakatBakiyeTipi" };
@@ -512,116 +597,181 @@ namespace EMutabakat.Services
                     }
                 }
 
-                var prepared = new List<(int RowNumber, Mutabakat Entity)>();
-
-                for (int r = 1; r <= sheet.LastRowNum; r++)
-                {
-                    var row = sheet.GetRow(r);
-                    if (row == null) continue;
-
-                    try
-                    {
-                        var cariId = (GetStringCell(row, headerMap["CariId"]) ?? string.Empty).Trim();
-                        var tarihColumn = headerMap.ContainsKey("MutabakatTarihi") ? "MutabakatTarihi" : "MutabakatDonemi";
-                        DateTime donem = ParseDateCell(row, headerMap[tarihColumn]);
-                        var dovizColumn = headerMap.ContainsKey("DovizKodu") ? "DovizKodu" : "TCMP";
-                        var doviz = (GetStringCell(row, headerMap[dovizColumn]) ?? string.Empty).Trim().ToUpperInvariant();
-                        decimal bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
-                        var bakiyeTipi = GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B";
-                        var aciklama = headerMap.ContainsKey("MutabakatAciklama") ? GetStringCell(row, headerMap["MutabakatAciklama"]) : string.Empty;
-
-                        var matchedCariler = await context.Cariler
-                            .Where(c => c.CariId == cariId)
-                            .Select(c => new { c.CariId, c.FirmaId })
-                            .ToListAsync();
-
-                        if (matchedCariler.Count == 0)
-                        {
-                            errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
-                            continue;
-                        }
-
-                        if (matchedCariler.Count > 1)
-                        {
-                            errors.Add($"Satır {r + 1}: CariId {cariId} birden fazla firmada bulundu. Cari ID benzersiz olmalıdır.");
-                            continue;
-                        }
-
-                        var firmaId = matchedCariler[0].FirmaId;
-
-                        var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz);
-                        if (!dovizExists)
-                        {
-                            errors.Add($"Satır {r + 1}: DovizKodu {doviz} geçerli değil.");
-                            continue;
-                        }
-
-                        var mutabakatId = headerMap.ContainsKey("MutabakatId") ? (GetStringCell(row, headerMap["MutabakatId"]) ?? string.Empty).Trim() : string.Empty;
-
-                        if (string.IsNullOrWhiteSpace(mutabakatId))
-                        {
-                            errors.Add($"Satır {r + 1}: MutabakatId boş olamaz.");
-                            continue;
-                        }
-
-                        var exists = await context.Mutabakatlar.AnyAsync(m => m.MutabakatId == mutabakatId);
-                        if (exists)
-                        {
-                            errors.Add($"Satır {r + 1}: MutabakatId {mutabakatId} zaten mevcut.");
-                            continue;
-                        }
-
-                        var mutabakat = new Mutabakat
-                        {
-                            MutabakatId = mutabakatId,
-                            FirmaId = firmaId,
-                            CariId = cariId,
-                            MutabakatTarihi = donem,
-                            MutabakatDovizKodu = doviz,
-                            MutabakatBakiye = bakiye,
-                            MutabakatBakiyeTipi = bakiyeTipi,
-                            MutabakatAciklama = aciklama ?? string.Empty
-                        };
-
-                        prepared.Add((r + 1, mutabakat));
-                    }
-                    catch (Exception exRow)
-                    {
-                        var detail = exRow.Message;
-                        var inner = exRow.InnerException;
-                        while (inner != null)
-                        {
-                            detail += " -> " + inner.Message;
-                            inner = inner.InnerException;
-                        }
-
-                        errors.Add($"Satır {r + 1}: {detail}");
-                    }
-                }
-
-                if (errors.Count > 0)
-                {
-                    return (0, 0, errors);
-                }
-
                 await using var tx = await context.Database.BeginTransactionAsync();
 
                 try
                 {
-                    foreach (var (_, mutabakat) in prepared)
-                    {
-                        mutabakat.MutabakatTarihi = DateTime.SpecifyKind(mutabakat.MutabakatTarihi, DateTimeKind.Utc);
-                        if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken)) mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
-                        if (mutabakat.MutabakatDurum == 0) mutabakat.MutabakatDurum = 3;
-                        if (mutabakat.MutabakatGonderimDurumu == 0) mutabakat.MutabakatGonderimDurumu = 1;
+                    var importedRecords = new List<Mutabakat>();
 
-                        context.Mutabakatlar.Add(mutabakat);
+                    for (int r = 1; r <= sheet.LastRowNum; r++)
+                    {
+                        var row = sheet.GetRow(r);
+                        if (row == null) continue;
+
+                        try
+                        {
+                            var cariId = (GetStringCell(row, headerMap["CariId"]) ?? string.Empty).Trim();
+                            if (string.IsNullOrWhiteSpace(cariId))
+                            {
+                                errors.Add($"Satır {r + 1}: CariId boş olamaz.");
+                                continue;
+                            }
+
+                            var tarihColumn = headerMap.ContainsKey("MutabakatTarihi") ? "MutabakatTarihi" : "MutabakatDonemi";
+                            var dovizColumn = headerMap.ContainsKey("DovizKodu") ? "DovizKodu" : "TCMP";
+
+                            var donem = DateTime.SpecifyKind(
+                                ParseDateCell(row, headerMap[tarihColumn]).Date,
+                                DateTimeKind.Utc);
+
+                            var doviz = (GetStringCell(row, headerMap[dovizColumn]) ?? string.Empty).Trim().ToUpperInvariant();
+                            var bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
+                            var bakiyeTipi = (GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B").Trim();
+                            var aciklama = headerMap.ContainsKey("MutabakatAciklama")
+                                ? GetStringCell(row, headerMap["MutabakatAciklama"])
+                                : string.Empty;
+
+                            var matchedCariler = await context.Cariler
+                                .Where(c => c.CariId == cariId)
+                                .Select(c => new { c.CariId, c.FirmaId })
+                                .ToListAsync();
+
+                            if (matchedCariler.Count == 0)
+                            {
+                                errors.Add($"Satır {r + 1}: CariId {cariId} bulunamadı.");
+                                continue;
+                            }
+
+                            if (matchedCariler.Count > 1)
+                            {
+                                errors.Add($"Satır {r + 1}: CariId {cariId} birden fazla firmada bulundu. Cari ID benzersiz olmalıdır.");
+                                continue;
+                            }
+
+                            var firmaId = matchedCariler[0].FirmaId;
+
+                            var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz);
+                            if (!dovizExists)
+                            {
+                                errors.Add($"Satır {r + 1}: DovizKodu {doviz} geçerli değil.");
+                                continue;
+                            }
+
+                            var mutabakatId = (GetStringCell(row, headerMap["MutabakatId"]) ?? string.Empty).Trim();
+                            if (string.IsNullOrWhiteSpace(mutabakatId))
+                            {
+                                errors.Add($"Satır {r + 1}: MutabakatId boş olamaz.");
+                                continue;
+                            }
+
+                            var existing = await context.Mutabakatlar
+                                        .FirstOrDefaultAsync(m =>
+                                         m.FirmaId == firmaId &&
+                                         m.CariId == cariId &&
+                                         m.MutabakatTarihi == donem);
+
+                            if (existing != null)
+                            {
+                                if (existing.MutabakatBakiye == bakiye)
+                                {
+                                    continue;
+                                }
+
+                                await ArchiveDeletedReconciliationAsync(
+                                    context,
+                                    existing);
+
+                                context.Mutabakatlar.Remove(existing);
+                                await context.SaveChangesAsync();
+                            }
+
+                            var duplicateIdInDb = await context.Mutabakatlar
+                                .AnyAsync(m => m.MutabakatId == mutabakatId);
+
+                            if (duplicateIdInDb)
+                            {
+                                errors.Add($"Satır {r + 1}: MutabakatId {mutabakatId} zaten mevcut.");
+                                continue;
+                            }
+
+                            var duplicateIdInBatch = importedRecords.Any(m => m.MutabakatId == mutabakatId);
+                            if (duplicateIdInBatch)
+                            {
+                                errors.Add($"Satır {r + 1}: Excel içinde aynı MutabakatId birden fazla kez kullanılmış ({mutabakatId}).");
+                                continue;
+                            }
+
+                            var previousImported = importedRecords.FirstOrDefault(m =>
+                                m.FirmaId == firmaId &&
+                                m.CariId == cariId &&
+                                m.MutabakatTarihi == donem);
+
+                            if (previousImported != null)
+                            {
+                                if (previousImported.MutabakatBakiye == bakiye)
+                                {
+                                    continue;
+                                }
+
+                                var previousTracked = await context.Mutabakatlar
+                                    .FirstOrDefaultAsync(m => m.MutabakatId == previousImported.MutabakatId);
+
+                                if (previousTracked != null)
+                                {
+                                    await ArchiveDeletedReconciliationAsync(
+                                        context,
+                                        previousTracked);
+
+                                    context.Mutabakatlar.Remove(previousTracked);
+                                    await context.SaveChangesAsync();
+                                }
+
+                                importedRecords.Remove(previousImported);
+                                createdCount--;
+                            }
+
+                            var mutabakat = new Mutabakat
+                            {
+                                MutabakatId = mutabakatId,
+                                FirmaId = firmaId,
+                                CariId = cariId,
+                                MutabakatTarihi = donem,
+                                MutabakatDovizKodu = doviz,
+                                MutabakatBakiye = bakiye,
+                                MutabakatBakiyeTipi = bakiyeTipi,
+                                MutabakatAciklama = string.IsNullOrWhiteSpace(aciklama) ? null : aciklama.Trim(),
+                                MutabakatToken = Guid.NewGuid().ToString("N"),
+                                MutabakatDurum = 3,
+                                MutabakatGonderimDurumu = 1
+                            };
+
+                            context.Mutabakatlar.Add(mutabakat);
+                            await context.SaveChangesAsync();
+
+                            importedRecords.Add(mutabakat);
+                            createdCount++;
+                        }
+                        catch (Exception exRow)
+                        {
+                            var detail = exRow.Message;
+                            var inner = exRow.InnerException;
+                            while (inner != null)
+                            {
+                                detail += " -> " + inner.Message;
+                                inner = inner.InnerException;
+                            }
+
+                            errors.Add($"Satır {r + 1}: {detail}");
+                        }
                     }
 
-                    await context.SaveChangesAsync();
-                    createdCount = prepared.Count;
+                    if (errors.Count > 0)
+                    {
+                        await tx.RollbackAsync();
+                        return (0, 0, errors);
+                    }
 
-                    foreach (var (_, mutabakat) in prepared)
+                    foreach (var mutabakat in importedRecords)
                     {
                         var full = await context.Mutabakatlar
                             .Include(m => m.Cari)
@@ -630,7 +780,20 @@ namespace EMutabakat.Services
 
                         if (full == null)
                         {
-                            throw new InvalidOperationException($"MutabakatId {mutabakat.MutabakatId}: kayıt kaydedildikten sonra bulunamadı.");
+                            errors.Add($"MutabakatId {mutabakat.MutabakatId}: kayıt daha sonra değiştirildiği için mail gönderim listesine alınmadı.");
+                            continue;
+                        }
+
+                        if (full.Cari == null)
+                        {
+                            errors.Add($"MutabakatId {full.MutabakatId}: cari bilgisi bulunamadı.");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(full.Cari.CariYetkiliMail))
+                        {
+                            errors.Add($"MutabakatId {full.MutabakatId}: cari yetkili mail bilgisi boş.");
+                            continue;
                         }
 
                         var sender = await context.Kullanicilar
@@ -639,7 +802,17 @@ namespace EMutabakat.Services
 
                         if (sender == null)
                         {
-                            sender = new Kullanici { KullaniciMail = full.Firma?.FirmaMail ?? string.Empty, Firma = full.Firma };
+                            sender = new Kullanici
+                            {
+                                KullaniciMail = full.Firma?.FirmaMail ?? string.Empty,
+                                Firma = full.Firma
+                            };
+                        }
+
+                        if (sender.Firma == null)
+                        {
+                            errors.Add($"MutabakatId {full.MutabakatId}: firma bilgisi bulunamadı.");
+                            continue;
                         }
 
                         var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
@@ -649,14 +822,23 @@ namespace EMutabakat.Services
                         var ok = await _emailService.SendMutabakatMailAsync(full, sender, approveUrl, rejectUrl, false);
                         if (!ok)
                         {
-                            throw new InvalidOperationException($"MutabakatId {full.MutabakatId}: Mail gönderilemedi, bilgileri kontrol edin.");
+                            errors.Add($"MutabakatId {full.MutabakatId}: mail gönderilemedi. Cari maili veya firma SMTP bilgilerini kontrol edin.");
+                            continue;
                         }
 
                         full.MutabakatGonderimTarihSaat = DateTime.UtcNow;
                         full.MutabakatGonderimDurumu = 1;
-                        if (full.MutabakatDurum == 0) full.MutabakatDurum = 3;
+
+                        if (full.MutabakatDurum == 0)
+                            full.MutabakatDurum = 3;
 
                         mailSentCount++;
+                    }
+
+                    if (errors.Count > 0)
+                    {
+                        await tx.RollbackAsync();
+                        return (0, 0, errors);
                     }
 
                     await context.SaveChangesAsync();
@@ -668,7 +850,15 @@ namespace EMutabakat.Services
                 {
                     await tx.RollbackAsync();
 
-                    errors.Add("Mail gönderimi başarısız, lütfen bilgileri kontrol ediniz");
+                    var detail = exMailAny.Message;
+                    var inner = exMailAny.InnerException;
+                    while (inner != null)
+                    {
+                        detail += " -> " + inner.Message;
+                        inner = inner.InnerException;
+                    }
+
+                    errors.Add($"Import sırasında hata oluştu: {detail}");
                     return (0, 0, errors);
                 }
             }
