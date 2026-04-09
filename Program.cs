@@ -30,6 +30,7 @@ builder.Services.AddScoped<IMutabakatClientService, MutabakatClientService>();
 builder.Services.AddScoped<ISdService, SdService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IKullaniciService, KullaniciService>();
+builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddAuthorizationCore();
 
 builder.Services.AddHttpContextAccessor();

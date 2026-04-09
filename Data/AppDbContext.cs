@@ -9,7 +9,6 @@ namespace EMutabakat.Data
             : base(options)
         {
         }
-
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
         public DbSet<KullaniciFirma> KullaniciFirmalari { get; set; }
@@ -18,6 +17,7 @@ namespace EMutabakat.Data
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
         public DbSet<SilinenMutabakat> SilinenMutabakatlar { get; set; }
         public DbSet<DovizKodu> DovizKodlari { get; set; }
+        public DbSet<AppLog> AppLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -124,8 +124,23 @@ namespace EMutabakat.Data
                 .HasPrincipalKey(d => d.TCMB)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<SilinenMutabakat>()
+            modelBuilder.Entity<SilinenMutabakat>()   
                 .HasIndex(sm => new { sm.FirmaId, sm.CariId, sm.MutabakatTarihi });
+
+            modelBuilder.Entity<AppLog>()
+                .HasIndex(x => x.CreatedAt);
+
+            modelBuilder.Entity<AppLog>()
+                .Property(x => x.Level)
+                .HasMaxLength(20);
+
+            modelBuilder.Entity<AppLog>()
+                .Property(x => x.Source)
+                .HasMaxLength(150);
+
+            modelBuilder.Entity<AppLog>()
+                .Property(x => x.UserEmail)
+                .HasMaxLength(200);
         }
     }
 }

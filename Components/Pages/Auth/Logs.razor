@@ -1,0 +1,62 @@
+﻿@page "/auth/logs"
+@attribute [Authorize(Roles = "Admin")]
+
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
+@using Microsoft.AspNetCore.Authorization
+@inject ILogService LogService
+@inject NotificationService NotificationService
+
+<PageTitle>Loglar</PageTitle>
+
+<RadzenCard class="p-4">
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" class="mb-3">
+        <RadzenText TextStyle="TextStyle.H5">Sistem Logları</RadzenText>
+
+        <RadzenButton Text="Temizle"
+                      Icon="delete"
+                      ButtonStyle="ButtonStyle.Danger"
+                      Click="@ClearLogs" />
+    </RadzenStack>
+
+    <RadzenDataGrid Data="@logs" TItem="AppLog" AllowPaging="true" PageSize="20" AllowSorting="true" AllowFiltering="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="AppLog" Property="CreatedAt" Title="Tarih" Width="180px">
+                <Template Context="item">
+                    @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="AppLog" Property="Level" Title="Seviye" Width="120px" />
+            <RadzenDataGridColumn TItem="AppLog" Property="Source" Title="Kaynak" Width="180px" />
+            <RadzenDataGridColumn TItem="AppLog" Property="UserEmail" Title="Kullanıcı" Width="220px" />
+            <RadzenDataGridColumn TItem="AppLog" Property="Message" Title="Mesaj" />
+            <RadzenDataGridColumn TItem="AppLog" Property="Details" Title="Detay" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    private List<AppLog> logs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        logs = await LogService.GetRecentAsync(500);
+    }
+
+    private async Task ClearLogs()
+    {
+        await LogService.DeleteAllAsync();
+        await LoadLogs();
+
+        NotificationService.Notify(
+            NotificationSeverity.Success,
+            "Başarılı",
+            "Log kayıtları temizlendi.");
+    }
+}
