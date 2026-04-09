@@ -3,6 +3,7 @@
 @inject IMutabakatService MutabakatService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
+@inject DialogService DialogService
 
 <PageTitle>Silinen Mutabakatlar</PageTitle>
 
@@ -28,7 +29,8 @@
                     AllowSorting="true"
                     AllowFiltering="true"
                     PageSize="10"
-                    Style="margin-top:15px">
+                    Style="margin-top:15px"
+                    EmptyText="Kayıt bulunamadı.">
 
         <Columns>
 
@@ -74,7 +76,6 @@
                 <Template Context="item">
                     <RadzenBadge Text="@GetGonderimDurumuText(item.MutabakatGonderimDurumu)"
                                  BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatGonderimDurumu)" />
-                        
                 </Template>
             </RadzenDataGridColumn>
 
@@ -93,10 +94,18 @@
 
             <RadzenDataGridColumn TItem="SilinenMutabakat" Title="İşlem" Sortable="false" Filterable="false" Width="120px">
                 <Template Context="item">
-                    <RadzenButton Text=""
-                                  Icon="visibility"
-                                  Size="ButtonSize.Small"
-                                  Click="@(() => GoDetail(item.Id))" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
+                        <RadzenButton Text=""
+                                      Icon="visibility"
+                                      Size="ButtonSize.Small"
+                                      Click="@(() => GoDetail(item.Id))" />
+
+                        <RadzenButton Text=""
+                                      Icon="delete"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@(() => DeleteRecord(item))" />
+                    </RadzenStack>
                 </Template>
             </RadzenDataGridColumn>
 
@@ -123,6 +132,42 @@
     private void GoDetail(int id)
     {
         NavigationManager.NavigateTo($"/reconciliations/deleted/{id}");
+    }
+
+    private async Task DeleteRecord(SilinenMutabakat item)
+    {
+        var result = await DialogService.Confirm(
+            "Bu kayıt kalıcı olarak silinecek. Devam etmek istiyor musunuz?",
+            "Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (result != true)
+            return;
+
+        try
+        {
+            var deleted = await MutabakatService.DeleteDeletedAsync(item.Id);
+
+            if (!deleted)
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Kayıt bulunamadı.");
+                return;
+            }
+
+            items = await MutabakatService.GetAllDeletedAsync();
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Kayıt başarıyla silindi.");
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
     }
 
     private string GetBakiyeTipiText(string bakiyeTipi)

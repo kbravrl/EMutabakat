@@ -270,6 +270,61 @@ namespace EMutabakat.Services
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
+        private static async Task ArchiveDeletedReconciliationAsync(
+            AppDbContext context,
+            Mutabakat existing)
+        {
+            var silinen = new SilinenMutabakat
+            {
+                MutabakatId = existing.MutabakatId,
+                MutabakatTarihi = existing.MutabakatTarihi,
+                FirmaId = existing.FirmaId,
+                CariId = existing.CariId,
+                MutabakatDovizKodu = existing.MutabakatDovizKodu,
+                MutabakatBakiye = existing.MutabakatBakiye,
+                MutabakatBakiyeTipi = existing.MutabakatBakiyeTipi,
+                MutabakatAciklama = existing.MutabakatAciklama,
+                MutabakatGonderimTarihSaat = existing.MutabakatGonderimTarihSaat == default(DateTime)
+                    ? null
+                    : existing.MutabakatGonderimTarihSaat,
+                MutabakatGonderimDurumu = existing.MutabakatGonderimDurumu,
+                MutabakatCevapTarihSaat = existing.MutabakatCevapTarihSaat,
+                MutabakatCevapMail = existing.MutabakatCevapMail,
+                MutabakatCevapAdSoyad = existing.MutabakatCevapAdSoyad,
+                MutabakatCevapGsm = existing.MutabakatCevapGsm,
+                MutabakatCevapAciklama = existing.MutabakatCevapAciklama,
+                MutabakatDurum = existing.MutabakatDurum,
+                MutabakatToken = existing.MutabakatToken,
+                MutabakatReceiveStoragePath = existing.MutabakatReceiveStoragePath,
+                SilinmeTarihi = DateTime.UtcNow,
+            };
+
+            await context.SilinenMutabakatlar.AddAsync(silinen);
+        }
+
+        public async Task<bool> DeleteDeletedAsync(int id)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var silinenMutabakat = await context.SilinenMutabakatlar
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (silinenMutabakat == null)
+                return false;
+
+            var filePath = silinenMutabakat.MutabakatReceiveStoragePath;
+
+            context.SilinenMutabakatlar.Remove(silinenMutabakat);
+            await context.SaveChangesAsync();
+
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                await _sdService.DeleteMutabakatResponseFileAsync(filePath);
+            }
+
+            return true;
+        }
+
         public async Task<bool> SendMailAsync(string mutabakatId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -505,38 +560,6 @@ namespace EMutabakat.Services
         {
             var cell = row.GetCell(idx);
             return cell?.ToString();
-        }
-
-        private static async Task ArchiveDeletedReconciliationAsync(
-            AppDbContext context,
-            Mutabakat existing)
-        {
-            var silinen = new SilinenMutabakat
-            {
-                MutabakatId = existing.MutabakatId,
-                MutabakatTarihi = existing.MutabakatTarihi,
-                FirmaId = existing.FirmaId,
-                CariId = existing.CariId,
-                MutabakatDovizKodu = existing.MutabakatDovizKodu,
-                MutabakatBakiye = existing.MutabakatBakiye,
-                MutabakatBakiyeTipi = existing.MutabakatBakiyeTipi,
-                MutabakatAciklama = existing.MutabakatAciklama,
-                MutabakatGonderimTarihSaat = existing.MutabakatGonderimTarihSaat == default(DateTime)
-                    ? null
-                    : existing.MutabakatGonderimTarihSaat,
-                MutabakatGonderimDurumu = existing.MutabakatGonderimDurumu,
-                MutabakatCevapTarihSaat = existing.MutabakatCevapTarihSaat,
-                MutabakatCevapMail = existing.MutabakatCevapMail,
-                MutabakatCevapAdSoyad = existing.MutabakatCevapAdSoyad,
-                MutabakatCevapGsm = existing.MutabakatCevapGsm,
-                MutabakatCevapAciklama = existing.MutabakatCevapAciklama,
-                MutabakatDurum = existing.MutabakatDurum,
-                MutabakatToken = existing.MutabakatToken,
-                MutabakatReceiveStoragePath = existing.MutabakatReceiveStoragePath,
-                SilinmeTarihi = DateTime.UtcNow,
-            };
-
-            await context.SilinenMutabakatlar.AddAsync(silinen);
         }
 
         public async Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
