@@ -87,8 +87,20 @@ else
                     <b>Token:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatToken) ? "-" : mutabakat.MutabakatToken)
                 </RadzenColumn>
 
-                <RadzenColumn Size="12">
-                    <b>Receive Storage Path:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatReceiveStoragePath) ? "-" : mutabakat.MutabakatReceiveStoragePath)
+                <RadzenColumn Size="12"> 
+                    @if (string.IsNullOrWhiteSpace(mutabakat.MutabakatReceiveStoragePath))
+                    {
+                        <b>Red Dosyası: </b>
+                    
+                        <span>-</span>
+                    }
+                    else
+                    {
+                        <RadzenButton Text="Red Dosyasını İndir"
+                                      Icon="download"
+                                      ButtonStyle="ButtonStyle.Info"
+                                      Click="@(() => NavigationManager.NavigateTo(mutabakat.MutabakatReceiveStoragePath!, true))" />
+                    }
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" class="mt-3">
