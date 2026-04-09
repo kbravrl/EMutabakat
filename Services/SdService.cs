@@ -10,6 +10,7 @@ namespace EMutabakat.Services
     public class SdService : ISdService
     {
         private readonly string _storageRoot;
+        private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
         public SdService(IConfiguration configuration)
         {
@@ -25,11 +26,13 @@ namespace EMutabakat.Services
             string originalFileName,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(token) || fileStream == null || string.IsNullOrWhiteSpace(originalFileName) || string.IsNullOrWhiteSpace(cariId))
+            if (string.IsNullOrWhiteSpace(token) ||
+                fileStream == null ||
+                string.IsNullOrWhiteSpace(originalFileName) ||
+                string.IsNullOrWhiteSpace(cariId))
                 return null;
 
-            var ext = Path.GetExtension(originalFileName)?.ToLowerInvariant();
-            if (ext != ".pdf")
+            if (fileStream.CanSeek && fileStream.Length > MaxFileSize)
                 return null;
 
             var donemFolder = mutabakatDonemi.ToString("yyyy-MM");
@@ -39,7 +42,8 @@ namespace EMutabakat.Services
             var uploadsRoot = Path.Combine(_storageRoot, donemFolder, cariIdFolder, firmaAdiFolder);
             Directory.CreateDirectory(uploadsRoot);
 
-            var safeFileName = $"{Guid.NewGuid():N}_{Path.GetFileName(originalFileName)}";
+            var safeOriginalFileName = Path.GetFileName(originalFileName);
+            var safeFileName = $"{Guid.NewGuid():N}_{safeOriginalFileName}";
             var filePath = Path.Combine(uploadsRoot, safeFileName);
 
             await using var fs = File.Create(filePath);

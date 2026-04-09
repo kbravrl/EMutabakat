@@ -36,10 +36,10 @@
                     <RadzenText TextStyle="TextStyle.H4">Mutabakat Cevabı</RadzenText>
 
                     <RadzenAlert AlertStyle="AlertStyle.Light" ShowIcon="true" Variant="Variant.Flat">
-                        Mutabık değilseniz lütfen PDF (.pdf) dosyası yükleyiniz.
+                        Mutabık değilseniz lütfen dosya yükleyiniz. Maksimum dosya boyutu 10 MB olabilir.
                     </RadzenAlert>
 
-                    <InputFile OnChange="OnFileSelected" accept=".pdf" />
+                    <InputFile OnChange="OnFileSelected" />
 
                     <RadzenTextBox Style="width:100%" Placeholder="Cevap e-posta (opsiyonel)" @bind-Value="responseMail" />
                     <RadzenTextBox Style="width:100%" Placeholder="Cevap Ad Soyad (opsiyonel)" @bind-Value="responseName" />
@@ -91,6 +91,8 @@
     private string? responseName;
     private string? responseGsm;
     private string? responseAciklama;
+
+    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,12 +168,9 @@
         if (file == null)
             return;
 
-
-        var extension = Path.GetExtension(file.Name)?.ToLowerInvariant();
-
-        if (extension != ".pdf")
+        if (file.Size > MaxFileSize)
         {
-            fileError = "Sadece PDF (.pdf) dosyası yükleyebilirsiniz.";
+            fileError = "Dosya boyutu en fazla 10 MB olabilir.";
             return;
         }
 
@@ -189,7 +188,13 @@
 
         if (selectedFile == null)
         {
-            fileError = "Lütfen bir PDF dosyası seçiniz.";
+            fileError = "Lütfen bir dosya seçiniz.";
+            return;
+        }
+
+        if (selectedFile.Size > MaxFileSize)
+        {
+            fileError = "Dosya boyutu en fazla 10 MB olabilir.";
             return;
         }
 
@@ -207,7 +212,7 @@
 
         try
         {
-            await using var stream = selectedFile.OpenReadStream(50_000_000);
+            await using var stream = selectedFile.OpenReadStream(MaxFileSize);
 
             var ok = await MutabakatClientService.RejectAsync(
                 token,
