@@ -1,6 +1,7 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -16,12 +17,19 @@ namespace EMutabakat.Services
     public class CariGrupService : ICariGrupService
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
+        private readonly ILogService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CariGrupService(IDbContextFactory<AppDbContext> contextFactory)
+        public CariGrupService(
+            IDbContextFactory<AppDbContext> contextFactory,
+            ILogService logService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _contextFactory = contextFactory;
+            _logService = logService;
+            _httpContextAccessor = httpContextAccessor;
         }
-      
+
         public async Task<List<CariGrup>> GetAllAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -103,6 +111,13 @@ namespace EMutabakat.Services
             context.CariGruplar.Add(cariGrup);
             await context.SaveChangesAsync();
 
+            await _logService.AddAsync(
+                "Bilgi",
+                "CariGrup",
+                $"Yeni cari grup eklendi: Cari Grup Id: {cariGrup.CariGrupId} Cari Grup Adı: {cariGrup.CariGrupAdi}",
+                GetUserEmail()
+            );
+
             return cariGrup;
         }
 
@@ -167,6 +182,13 @@ namespace EMutabakat.Services
                 context.CariGruplar.Remove(existingCariGrup);
                 await context.SaveChangesAsync();
 
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "CariGrup",
+                    $"Cari grup güncellendi (id değişti): {cariGrup.OriginalCariGrupId} -> {cariGrup.CariGrupId}",
+                    GetUserEmail()
+                );
+
                 return await context.CariGruplar
                     .Include(x => x.Firma)
                     .FirstOrDefaultAsync(x => x.CariGrupId == cariGrup.CariGrupId);
@@ -177,6 +199,14 @@ namespace EMutabakat.Services
             existingCariGrup.CariGrupAktifPasif = cariGrup.CariGrupAktifPasif;
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "CariGrup",
+                $"Cari grup güncellendi: Cari Grup Id: {cariGrup.CariGrupId} Cari Grup Adı: {cariGrup.CariGrupAdi}",
+                GetUserEmail()
+            );
+
             return existingCariGrup;
         }
 
@@ -198,19 +228,36 @@ namespace EMutabakat.Services
             {
                 context.CariGruplar.Remove(cariGrup);
                 await context.SaveChangesAsync();
+
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "CariGrup",
+                    $"Cari grup silindi: Cari Grup Id: {cariGrup.CariGrupId} Cari Grup Adı: {cariGrup.CariGrupAdi}",
+                    GetUserEmail()
+                );
+
                 return true;
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException)
             {
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
-                {
-                    throw new Exception("Bu cari grup başka kayıtlarda kullanıldığı için silinemez.");
-                }
+                await _logService.AddAsync(
+                    "Hata",
+                    "CariGrup",
+                    $"Cari grup silinemedi: CariGrupId: {cariGrup.CariGrupId} CariGrupAdı: {cariGrup.CariGrupAdi} - FK hatası",
+                    GetUserEmail()
+                );
 
-                throw new Exception("Cari grup silinirken bir veritabanı hatası oluştu.");
+                throw new Exception("Bu cari grup başka kayıtlarda kullanıldığı için silinemez.");
             }
             catch (InvalidOperationException ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "CariGrup",
+                    $"Cari grup silinemedi: Cari Grup Id: {cariGrup.CariGrupId} Cari Grup Adı: {cariGrup.CariGrupAdi} - ilişki hatası",
+                    GetUserEmail()
+                );
+
                 if (ex.Message.Contains("association between entity types") ||
                     ex.Message.Contains("relationship") ||
                     ex.Message.Contains("severed"))
@@ -220,13 +267,27 @@ namespace EMutabakat.Services
 
                 throw new Exception("Cari grup silinirken bir işlem hatası oluştu.");
             }
-            catch
+            catch (Exception)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "CariGrup",
+                    $"Cari grup silinemedi: CariGrupId: {cariGrup.CariGrupId} CariGrupAdı: {cariGrup.CariGrupAdi} - beklenmeyen hata",
+                    GetUserEmail()
+                );
+
                 throw new Exception("Cari grup silinirken bir hata oluştu.");
             }
         }
 
-        // Helper parsers
+        private string? GetUserEmail()
+        {
+            return _httpContextAccessor.HttpContext?
+                .User?
+                .Identity?
+                .Name;
+        }
+
         private static string? GetStringCell(IRow row, int idx)
         {
             var cell = row.GetCell(idx);
@@ -248,6 +309,13 @@ namespace EMutabakat.Services
             var created = 0;
             var updated = 0;
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "CariGrup",
+                $"Cari grup Excel import başladı. Dosya: {fileName}, FirmaId: {firmaId}",
+                GetUserEmail()
+            );
 
             if (firmaId <= 0)
             {
@@ -324,19 +392,19 @@ namespace EMutabakat.Services
 
                         if (string.IsNullOrWhiteSpace(grup.CariGrupId))
                         {
-                            errors.Add($"Satır {r + 1}: CariGrupId boş olamaz.");
+                            errors.Add($"Satır {r + 1}: Cari Grup Id boş olamaz.");
                             continue;
                         }
 
                         if (string.IsNullOrWhiteSpace(grup.CariGrupAdi))
                         {
-                            errors.Add($"Satır {r + 1}: CariGrupAdi boş olamaz.");
+                            errors.Add($"Satır {r + 1}: Cari Grup Adı boş olamaz.");
                             continue;
                         }
 
                         if (grup.CariGrupAktifPasif != 0 && grup.CariGrupAktifPasif != 1)
                         {
-                            errors.Add($"Satır {r + 1}: CariGrupAktifPasif değeri 0 veya 1 olmalıdır.");
+                            errors.Add($"Satır {r + 1}: Cari Grup Aktif/Pasif değeri 0 veya 1 olmalıdır.");
                             continue;
                         }
 
@@ -358,7 +426,7 @@ namespace EMutabakat.Services
 
                         if (sameNameCariGrupId != null && !string.Equals(sameNameCariGrupId, grup.CariGrupId, StringComparison.Ordinal))
                         {
-                            errors.Add($"Satır {r + 1}: CariGrupAdi '{grup.CariGrupAdi}' zaten başka bir ID ile kayıtlı.");
+                            errors.Add($"Satır {r + 1}: Cari Grup Adı '{grup.CariGrupAdi}' zaten başka bir ID ile kayıtlı.");
                             continue;
                         }
 
@@ -366,6 +434,13 @@ namespace EMutabakat.Services
                         {
                             context.CariGruplar.Add(grup);
                             created++;
+
+                            await _logService.AddAsync(
+                                "Bilgi",
+                                "CariGrup",
+                                $"Cari grup eklendi: Cari Grup Id: {grup.CariGrupId} Cari Grup Adı: {grup.CariGrupAdi}",
+                                GetUserEmail()
+                            );
                         }
                         else
                         {
@@ -379,6 +454,13 @@ namespace EMutabakat.Services
                                 existing.FirmaId = grup.FirmaId;
                                 existing.CariGrupAktifPasif = grup.CariGrupAktifPasif;
                                 updated++;
+
+                                await _logService.AddAsync(
+                                    "Uyarı",
+                                    "CariGrup",
+                                    $"Cari grup güncellendi: Cari Grup Id: {grup.CariGrupId} Cari Grup Adı: {grup.CariGrupAdi}",
+                                    GetUserEmail()
+                                );
                             }
                         }
                     }
@@ -393,15 +475,27 @@ namespace EMutabakat.Services
                         }
 
                         errors.Add($"Satır {r + 1}: {detail}");
+
+                        await _logService.AddAsync(
+                            "Hata",
+                            "CariGrup",
+                            $"Cari grup import satır hatası. Satır: {r + 1}, Hata: {detail}",
+                            GetUserEmail()
+                        );
                     }
                 }
 
                 if (errors.Count > 0)
-                {
                     return (0, 0, errors);
-                }
 
                 await context.SaveChangesAsync();
+
+                await _logService.AddAsync(
+                    "Bilgi",
+                    "CariGrup",
+                    $"Cari grup import tamamlandı. Oluşturulan: {created}, Güncellenen: {updated}",
+                    GetUserEmail()
+                );
 
                 return (created, updated, errors);
             }
@@ -414,6 +508,13 @@ namespace EMutabakat.Services
                     detail += " -> " + inner.Message;
                     inner = inner.InnerException;
                 }
+
+                await _logService.AddAsync(
+                    "Hata",
+                    "CariGrup",
+                    $"Cari grup import genel hata: {detail}",
+                    GetUserEmail()
+                );
 
                 errors.Add($"İşlem sırasında hata oluştu: {detail}");
                 return (0, 0, errors);
