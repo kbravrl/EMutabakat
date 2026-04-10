@@ -1,6 +1,7 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NPOI.SS.UserModel;
@@ -9,16 +10,24 @@ using NPOI.HSSF.UserModel;
 using System.IO;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace EMutabakat.Services
 {
     public class FirmaService : IFirmaService
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
+        private readonly ILogService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public FirmaService(IDbContextFactory<AppDbContext> contextFactory)
+        public FirmaService(
+            IDbContextFactory<AppDbContext> contextFactory,
+            ILogService logService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _contextFactory = contextFactory;
+            _logService = logService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Firma>> GetAllAsync()
@@ -44,65 +53,93 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
+            try
             {
-                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
-            }
+                context.Firmalar.Add(firma);
+                await context.SaveChangesAsync();
 
-            var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
-            if (smtpSecure != "true" && smtpSecure != "false")
+                await _logService.AddAsync(
+                    "Bilgi",
+                    "Firma",
+                    $"Yeni firma eklendi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
+                    GetUserEmail()
+                );
+
+                return firma;
+            }
+            catch (Exception ex)
             {
-                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
-            }
+                await _logService.AddAsync(
+                    "Hata",
+                    "Firma",
+                    $"Firma ekleme hatası. Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
+                    GetUserEmail()
+                );
 
-            firma.FirmaSmtpSecure = smtpSecure;
-            context.Firmalar.Add(firma);
-            await context.SaveChangesAsync();
-            return firma;
+                throw;
+            }
         }
 
         public async Task<Firma?> UpdateAsync(Firma firma)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
+            try
             {
-                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
-            }
 
-            var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
-            if (smtpSecure != "true" && smtpSecure != "false")
+                var existingFirma = await context.Firmalar
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.FirmaId == firma.FirmaId);
+
+                if (existingFirma == null)
+                    return null;
+
+                var updated = await context.Firmalar
+                    .Where(x => x.FirmaId == firma.FirmaId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.FirmaAdi, firma.FirmaAdi)
+                        .SetProperty(x => x.FirmaUnvan, firma.FirmaUnvan)
+                        .SetProperty(x => x.FirmaAdres, firma.FirmaAdres)
+                        .SetProperty(x => x.FirmaIlce, firma.FirmaIlce)
+                        .SetProperty(x => x.FirmaIl, firma.FirmaIl)
+                        .SetProperty(x => x.FirmaVergiDairesi, firma.FirmaVergiDairesi)
+                        .SetProperty(x => x.FirmaVergiNumarasi, firma.FirmaVergiNumarasi)
+                        .SetProperty(x => x.FirmaMersisNumarasi, firma.FirmaMersisNumarasi)
+                        .SetProperty(x => x.FirmaWebAdresi, firma.FirmaWebAdresi)
+                        .SetProperty(x => x.FirmaYetkiliAdiSoyadi, firma.FirmaYetkiliAdiSoyadi)
+                        .SetProperty(x => x.FirmaMail, firma.FirmaMail)
+                        .SetProperty(x => x.FirmaTelefon, firma.FirmaTelefon)
+                        .SetProperty(x => x.FirmaGsm, firma.FirmaGsm)
+                        .SetProperty(x => x.FirmaSmtpHost, firma.FirmaSmtpHost)
+                        .SetProperty(x => x.FirmaSmtpPort, firma.FirmaSmtpPort)
+                        .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser)
+                        .SetProperty(x => x.FirmaSmtpPassword, firma.FirmaSmtpPassword)
+                        .SetProperty(x => x.FirmaSmtpSecure, firma.FirmaSmtpSecure)
+                        .SetProperty(x => x.FirmaAktifPasif, firma.FirmaAktifPasif));
+
+                if (updated == 0)
+                    return null;
+
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Firma",
+                    $"Firma güncellendi. Firma Id: {firma.FirmaId}, Firma Adı: {existingFirma.FirmaAdi} -> {firma.FirmaAdi}",
+                    GetUserEmail()
+                );
+
+                return await GetByIdAsync(firma.FirmaId);
+            }
+            catch (Exception ex)
             {
-                throw new Exception("SMTP Secure değeri 'true' veya 'false' olmalıdır.");
+                await _logService.AddAsync(
+                    "Hata",
+                    "Firma",
+                    $"Firma güncelleme hatası. Firma Id: {firma.FirmaId}, Hata: {ex.Message}",
+                    GetUserEmail()
+                );
+
+                throw;
             }
-
-            var updated = await context.Firmalar
-                .Where(x => x.FirmaId == firma.FirmaId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.FirmaAdi, firma.FirmaAdi)
-                    .SetProperty(x => x.FirmaUnvan, firma.FirmaUnvan)
-                    .SetProperty(x => x.FirmaAdres, firma.FirmaAdres)
-                    .SetProperty(x => x.FirmaIlce, firma.FirmaIlce)
-                    .SetProperty(x => x.FirmaIl, firma.FirmaIl)
-                    .SetProperty(x => x.FirmaVergiDairesi, firma.FirmaVergiDairesi)
-                    .SetProperty(x => x.FirmaVergiNumarasi, firma.FirmaVergiNumarasi)
-                    .SetProperty(x => x.FirmaMersisNumarasi, firma.FirmaMersisNumarasi)
-                    .SetProperty(x => x.FirmaWebAdresi, firma.FirmaWebAdresi)
-                    .SetProperty(x => x.FirmaYetkiliAdiSoyadi, firma.FirmaYetkiliAdiSoyadi)
-                    .SetProperty(x => x.FirmaMail, firma.FirmaMail)
-                    .SetProperty(x => x.FirmaTelefon, firma.FirmaTelefon)
-                    .SetProperty(x => x.FirmaGsm, firma.FirmaGsm)
-                    .SetProperty(x => x.FirmaSmtpHost, firma.FirmaSmtpHost)
-                    .SetProperty(x => x.FirmaSmtpPort, firma.FirmaSmtpPort)
-                    .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser)
-                    .SetProperty(x => x.FirmaSmtpPassword, firma.FirmaSmtpPassword)
-                    .SetProperty(x => x.FirmaSmtpSecure, smtpSecure)
-                    .SetProperty(x => x.FirmaAktifPasif, firma.FirmaAktifPasif));
-
-            if (updated == 0)
-                return null;
-
-            return await GetByIdAsync(firma.FirmaId);
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -119,10 +156,25 @@ namespace EMutabakat.Services
             {
                 context.Firmalar.Remove(firma);
                 await context.SaveChangesAsync();
+
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Firma",
+                    $"Firma silindi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
+                    GetUserEmail()
+                );
+
                 return true;
             }
             catch (DbUpdateException ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Firma",
+                    $"Firma silinemedi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.InnerException?.Message ?? ex.Message}",
+                    GetUserEmail()
+                );
+
                 if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
                 {
                     throw new Exception("Bu firma başka kayıtlarda kullanıldığı için silinemez.");
@@ -132,6 +184,13 @@ namespace EMutabakat.Services
             }
             catch (InvalidOperationException ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Firma",
+                    $"Firma silme işlem hatası. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
+                    GetUserEmail()
+                );
+
                 if (ex.Message.Contains("association between entity types") ||
                     ex.Message.Contains("relationship") ||
                     ex.Message.Contains("severed"))
@@ -141,248 +200,25 @@ namespace EMutabakat.Services
 
                 throw new Exception("Firma silinirken bir işlem hatası oluştu.");
             }
-            catch
+            catch (Exception ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Firma",
+                    $"Firma silme genel hatası. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
+                    GetUserEmail()
+                );
+
                 throw new Exception("Firma silinirken bir hata oluştu.");
             }
         }
 
-        // Helper parsers
-        private static string? GetStringCell(IRow row, int idx)
+        private string? GetUserEmail()
         {
-            var cell = row.GetCell(idx);
-            return cell?.ToString();
-        }
-
-        private static int ParseIntCell(IRow row, int idx)
-        {
-            var cell = row.GetCell(idx);
-            if (cell == null) return 0;
-            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
-            var s = cell.ToString();
-            return int.TryParse(s, out var v) ? v : 0;
-        }
-
-        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
-        {
-            var errors = new List<string>();
-            var created = 0;
-            await using var context = await _contextFactory.CreateDbContextAsync();
-
-            try
-            {
-                IWorkbook workbook;
-                var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
-                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
-                else workbook = new HSSFWorkbook(stream);
-
-                var sheet = workbook.GetSheetAt(0);
-                if (sheet == null)
-                {
-                    errors.Add("Excel sayfası bulunamadı.");
-                    return (0, errors);
-                }
-
-                var headerRow = sheet.GetRow(0);
-                if (headerRow == null)
-                {
-                    errors.Add("Excel başlık satırı bulunamadı.");
-                    return (0, errors);
-                }
-
-                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < headerRow.LastCellNum; i++)
-                {
-                    var cell = headerRow.GetCell(i);
-                    if (cell == null) continue;
-                    var text = cell.ToString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
-                }
-
-                string[] required = new[]
-                {
-                   "FirmaAdi",
-                   "FirmaVergiDairesi",
-                   "FirmaVergiNumarasi",
-                   "FirmaYetkiliAdiSoyadi",
-                   "FirmaMail",
-                   "FirmaTelefon",
-                   "FirmaSmtpHost",
-                   "FirmaSmtpPort",
-                   "FirmaSmtpUser",
-                   "FirmaSmtpPassword",
-                   "FirmaSmtpSecure"
-                };
-
-                foreach (var h in required)
-                {
-                    if (!headerMap.ContainsKey(h))
-                    {
-                        errors.Add($"Gerekli sütun '{h}' bulunamadı.");
-                        return (0, errors);
-                    }
-                }
-
-                var prepared = new List<(int RowNumber, Firma Entity)>();
-
-                for (int r = 1; r <= sheet.LastRowNum; r++)
-                {
-                    var row = sheet.GetRow(r);
-                    if (row == null) continue;
-
-                    try
-                    {
-                        var firma = new Firma
-                        {
-                            FirmaAdi = GetStringCell(row, headerMap["FirmaAdi"]) ?? string.Empty,
-                            FirmaUnvan = headerMap.ContainsKey("FirmaUnvan") ? GetStringCell(row, headerMap["FirmaUnvan"]) : null,
-                            FirmaAdres = headerMap.ContainsKey("FirmaAdres") ? GetStringCell(row, headerMap["FirmaAdres"]) : null,
-                            FirmaIlce = headerMap.ContainsKey("FirmaIlce") ? GetStringCell(row, headerMap["FirmaIlce"]) : null,
-                            FirmaIl = headerMap.ContainsKey("FirmaIl") ? GetStringCell(row, headerMap["FirmaIl"]) : null,
-                            FirmaVergiDairesi = GetStringCell(row, headerMap["FirmaVergiDairesi"]) ?? string.Empty,
-                            FirmaVergiNumarasi = GetStringCell(row, headerMap["FirmaVergiNumarasi"]) ?? string.Empty,
-                            FirmaMersisNumarasi = headerMap.ContainsKey("FirmaMersisNumarasi") ? GetStringCell(row, headerMap["FirmaMersisNumarasi"]) : null,
-                            FirmaWebAdresi = headerMap.ContainsKey("FirmaWebAdresi") ? GetStringCell(row, headerMap["FirmaWebAdresi"]) : null,
-                            FirmaYetkiliAdiSoyadi = GetStringCell(row, headerMap["FirmaYetkiliAdiSoyadi"]) ?? string.Empty,
-                            FirmaMail = GetStringCell(row, headerMap["FirmaMail"]) ?? string.Empty,
-                            FirmaTelefon = GetStringCell(row, headerMap["FirmaTelefon"]) ?? string.Empty,
-                            FirmaGsm = headerMap.ContainsKey("FirmaGsm") ? GetStringCell(row, headerMap["FirmaGsm"]) : null,
-                            FirmaSmtpHost = GetStringCell(row, headerMap["FirmaSmtpHost"]) ?? string.Empty,
-                            FirmaSmtpPort = ParseIntCell(row, headerMap["FirmaSmtpPort"]),
-                            FirmaSmtpUser = GetStringCell(row, headerMap["FirmaSmtpUser"]) ?? string.Empty,
-                            FirmaSmtpPassword = GetStringCell(row, headerMap["FirmaSmtpPassword"]) ?? string.Empty,
-                            FirmaSmtpSecure = GetStringCell(row, headerMap["FirmaSmtpSecure"]) ?? string.Empty,
-                            FirmaAktifPasif = headerMap.ContainsKey("FirmaAktifPasif")
-                                ? ParseIntCell(row, headerMap["FirmaAktifPasif"])
-                                : 1
-                        };
-
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaAdi))
-                        {
-                            errors.Add($"Satır {r + 1}: Firma adı boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaVergiDairesi))
-                        {
-                            errors.Add($"Satır {r + 1}: Vergi dairesi boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaVergiNumarasi))
-                        {
-                            errors.Add($"Satır {r + 1}: Vergi numarası boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaYetkiliAdiSoyadi))
-                        {
-                            errors.Add($"Satır {r + 1}: Yetkili adı soyadı boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaMail))
-                        {
-                            errors.Add($"Satır {r + 1}: Mail adresi boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaTelefon))
-                        {
-                            errors.Add($"Satır {r + 1}: Telefon boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpHost))
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP Host boş olamaz.");
-                            continue;
-                        }
-
-                        if (firma.FirmaSmtpPort <= 0)
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP Port geçerli bir değer olmalıdır.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpUser))
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP kullanıcı adı boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpPassword))
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP şifresi boş olamaz.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(firma.FirmaSmtpSecure))
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP Secure bilgisi boş olamaz.");
-                            continue;
-                        }
-
-                        var smtpSecure = firma.FirmaSmtpSecure.Trim().ToLowerInvariant();
-                        if (smtpSecure != "true" && smtpSecure != "false")
-                        {
-                            errors.Add($"Satır {r + 1}: SMTP Secure değeri 'true' veya 'false' olmalıdır.");
-                            continue;
-                        }
-
-                        firma.FirmaSmtpSecure = smtpSecure;
-
-                        if (firma.FirmaAktifPasif != 0 && firma.FirmaAktifPasif != 1)
-                        {
-                            errors.Add($"Satır {r + 1}: Aktif/Pasif değeri 0 veya 1 olmalıdır.");
-                            continue;
-                        }
-
-                        prepared.Add((r + 1, firma));
-                    }
-                    catch (Exception exRow)
-                    {
-                        var detail = exRow.Message;
-                        var inner = exRow.InnerException;
-                        while (inner != null)
-                        {
-                            detail += " -> " + inner.Message;
-                            inner = inner.InnerException;
-                        }
-
-                        errors.Add($"Satır {r + 1}: {detail}");
-                    }
-                }
-
-                if (errors.Count > 0)
-                {
-                    return (0, errors);
-                }
-
-                foreach (var (_, firma) in prepared)
-                {
-                    context.Firmalar.Add(firma);
-                }
-
-                await context.SaveChangesAsync();
-                created = prepared.Count;
-
-                return (created, errors);
-            }
-            catch (Exception ex)
-            {
-                var detail = ex.Message;
-                var inner = ex.InnerException;
-                while (inner != null)
-                {
-                    detail += " -> " + inner.Message;
-                    inner = inner.InnerException;
-                }
-
-                errors.Add($"İşlem sırasında hata oluştu: {detail}");
-                return (0, errors);
-            }
+            return _httpContextAccessor.HttpContext?
+                .User?
+                .Identity?
+                .Name;
         }
     }
 }

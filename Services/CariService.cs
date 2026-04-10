@@ -81,63 +81,23 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            cari.CariId = cari.CariId?.Trim() ?? string.Empty;
-            cari.CariGrupId = cari.CariGrupId?.Trim() ?? string.Empty;
-            cari.CariDovizKodu = string.IsNullOrWhiteSpace(cari.CariDovizKodu)
-                ? null
-                : cari.CariDovizKodu.Trim().ToUpperInvariant();
-
-            if (string.IsNullOrWhiteSpace(cari.CariId))
-            {
-                cari.CariId = await GenerateNextCariIdAsync();
-            }
-
             await ValidateCariAsync(context, cari);
 
-            var existing = await context.Cariler
-                .FirstOrDefaultAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+            var exists = await context.Cariler.AnyAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
+            if (exists)
+                throw new Exception("Aynı Cari ID ve Firma ile kayıt zaten mevcut.");
 
-            if (existing == null)
-            {
-                context.Cariler.Add(cari);
-                await context.SaveChangesAsync();
-
-                await _logService.AddAsync(
-                    "Bilgi",
-                    "Cari",
-                    $"Yeni cari eklendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
-                    GetUserEmail()
-                );
-
-                return cari;
-            }
-
-            existing.CariAdi = cari.CariAdi;
-            existing.CariUnvan = cari.CariUnvan;
-            existing.CariAdres = cari.CariAdres;
-            existing.CariIlce = cari.CariIlce;
-            existing.CariIl = cari.CariIl;
-            existing.CariVergiDairesi = cari.CariVergiDairesi;
-            existing.CariVergiNumarasi = cari.CariVergiNumarasi;
-            existing.CariWebAdresi = cari.CariWebAdresi;
-            existing.CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi;
-            existing.CariYetkiliTelefon = cari.CariYetkiliTelefon;
-            existing.CariYetkiliGsm = cari.CariYetkiliGsm;
-            existing.CariYetkiliMail = cari.CariYetkiliMail;
-            existing.CariGrupId = cari.CariGrupId;
-            existing.CariDovizKodu = cari.CariDovizKodu;
-            existing.CariAktifPasif = cari.CariAktifPasif;
-
+            context.Cariler.Add(cari);
             await context.SaveChangesAsync();
 
             await _logService.AddAsync(
-                "Uyarı",
+                "Bilgi",
                 "Cari",
-                $"Mevcut cari yeni verilerle değiştirildi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                $"Yeni cari eklendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
                 GetUserEmail()
             );
 
-            return existing;
+            return cari;
         }
 
         public async Task<Cari?> UpdateAsync(Cari cari)
@@ -488,32 +448,22 @@ namespace EMutabakat.Services
                         }
                         else
                         {
-                            existing.CariAdi = cari.CariAdi;
-                            existing.CariUnvan = cari.CariUnvan;
-                            existing.CariAdres = cari.CariAdres;
-                            existing.CariIlce = cari.CariIlce;
-                            existing.CariIl = cari.CariIl;
-                            existing.CariVergiDairesi = cari.CariVergiDairesi;
-                            existing.CariVergiNumarasi = cari.CariVergiNumarasi;
-                            existing.CariWebAdresi = cari.CariWebAdresi;
-                            existing.CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi;
-                            existing.CariYetkiliTelefon = cari.CariYetkiliTelefon;
-                            existing.CariYetkiliGsm = cari.CariYetkiliGsm;
-                            existing.CariYetkiliMail = cari.CariYetkiliMail;
-                            existing.CariGrupId = cari.CariGrupId;
-                            existing.CariDovizKodu = string.IsNullOrWhiteSpace(cari.CariDovizKodu)
-                                ? null
-                                : cari.CariDovizKodu.Trim().ToUpperInvariant();
-                            existing.CariAktifPasif = cari.CariAktifPasif;
+                            var hasChange = !string.Equals(existing.CariAdi, cari.CariAdi, StringComparison.Ordinal)
+                                || !string.Equals(existing.CariVergiNumarasi, cari.CariVergiNumarasi, StringComparison.Ordinal);
 
-                            updated++;
+                            if (hasChange)
+                            {
+                                existing.CariAdi = cari.CariAdi;
+                                existing.CariVergiNumarasi = cari.CariVergiNumarasi;
+                                updated++;
 
-                            await _logService.AddAsync(
-                                "Uyarı",
-                                "Cari",
-                                $"Excel importta mevcut cari yeni verilerle değiştirildi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
-                                GetUserEmail()
-                            );
+                                await _logService.AddAsync(
+                                    "Uyarı",
+                                    "Cari",
+                                    $"Cari güncellendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                                    GetUserEmail()
+                                );
+                            }
                         }
                     }
                     catch (Exception ex)
