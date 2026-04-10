@@ -434,13 +434,6 @@ namespace EMutabakat.Services
                         {
                             context.CariGruplar.Add(grup);
                             created++;
-
-                            await _logService.AddAsync(
-                                "Bilgi",
-                                "CariGrup",
-                                $"Cari grup eklendi: Cari Grup Id: {grup.CariGrupId} Cari Grup Adı: {grup.CariGrupAdi}",
-                                GetUserEmail()
-                            );
                         }
                         else
                         {

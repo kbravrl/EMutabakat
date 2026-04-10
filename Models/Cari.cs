@@ -40,7 +40,7 @@ namespace EMutabakat.Models
         public string CariGrupId { get; set; } = string.Empty;
 
         [ForeignKey("DovizKodu")]
-        public string CariDovizKodu { get; set; }
+        public string CariDovizKodu { get; set; } = "TL";
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public int CariAktifPasif { get; set; } = 1;

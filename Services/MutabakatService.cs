@@ -660,6 +660,13 @@ namespace EMutabakat.Services
             var createdCount = 0;
             var mailSentCount = 0;
 
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Excel import başladı. Dosya: {fileName}",
+                GetUserEmail()
+            );
+
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
