@@ -11,7 +11,7 @@ namespace EMutabakat.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
-        public string Level { get; set; } = "Info"; // Info, Warning, Error
+        public string Level { get; set; } = string.Empty;
 
         [Required]
         public string Source { get; set; } = string.Empty;
@@ -21,6 +21,5 @@ namespace EMutabakat.Models
         [Required]
         public string Message { get; set; } = string.Empty;
 
-        public string? Details { get; set; }
     }
 }

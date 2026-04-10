@@ -13,10 +13,17 @@ namespace EMutabakat.Services
     public class CariService : ICariService
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
+        private readonly ILogService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CariService(IDbContextFactory<AppDbContext> contextFactory)
+        public CariService(
+            IDbContextFactory<AppDbContext> contextFactory,
+            ILogService logService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _contextFactory = contextFactory;
+            _logService = logService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<Cari>> GetAllAsync()
@@ -81,6 +88,14 @@ namespace EMutabakat.Services
 
             context.Cariler.Add(cari);
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Cari",
+                $"Yeni cari eklendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                GetUserEmail()
+            );
+
             return cari;
         }
 
@@ -144,6 +159,13 @@ namespace EMutabakat.Services
                 context.Cariler.Remove(existingCari);
                 await context.SaveChangesAsync();
 
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Cari",
+                    $"Cari güncellendi (anahtar değişti): {cari.OriginalCariId}/{cari.OriginalFirmaId} -> {cari.CariId}/{cari.FirmaId}",
+                    GetUserEmail()
+                );
+
                 return await context.Cariler
                     .AsNoTracking()
                     .Include(x => x.Firma)
@@ -169,6 +191,14 @@ namespace EMutabakat.Services
             existingCari.CariAktifPasif = cari.CariAktifPasif;
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Cari",
+                $"Cari güncellendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                GetUserEmail()
+            );
+
             return existingCari;
         }
 
@@ -188,19 +218,36 @@ namespace EMutabakat.Services
             {
                 context.Cariler.Remove(cari);
                 await context.SaveChangesAsync();
+
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Cari",
+                    $"Cari silindi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi} ",
+                    GetUserEmail()
+                );
+
                 return true;
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
-                {
-                    throw new Exception("Bu cari kaydı başka kayıtlarda kullanıldığı için silinemez.");
-                }
+                await _logService.AddAsync(
+                    "Hata",
+                    "Cari",
+                    $"Cari silinemedi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi} - FK hatası",
+                    GetUserEmail()
+                );
 
-                throw new Exception("Cari silinirken bir veritabanı hatası oluştu.");
+                throw new Exception("Bu cari kaydı başka kayıtlarda kullanıldığı için silinemez.");
             }
             catch (InvalidOperationException ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Cari",
+                    $"Cari silinemedi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi} - ilişki hatası",
+                    GetUserEmail()
+                );
+
                 if (ex.Message.Contains("association between entity types") ||
                     ex.Message.Contains("relationship") ||
                     ex.Message.Contains("severed"))
@@ -210,10 +257,25 @@ namespace EMutabakat.Services
 
                 throw new Exception("Cari silinirken bir işlem hatası oluştu.");
             }
-            catch
+            catch (Exception)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Cari",
+                    $"Cari silinemedi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi} - beklenmeyen hata",
+                    GetUserEmail()
+                );
+
                 throw new Exception("Cari silinirken bir hata oluştu.");
             }
+        }
+
+        private string? GetUserEmail()
+        {
+            return _httpContextAccessor.HttpContext?
+                .User?
+                .Identity?
+                .Name;
         }
 
         private async Task ValidateCariAsync(AppDbContext context, Cari cari)
@@ -290,6 +352,13 @@ namespace EMutabakat.Services
             var created = 0;
             var updated = 0;
 
+            await _logService.AddAsync(
+                "Bilgi",
+                "Cari",
+                $"Excel import başladı. Dosya: {fileName}, FirmaId: {firmaId}",
+                GetUserEmail()
+            );
+
             try
             {
                 IWorkbook workbook;
@@ -327,14 +396,14 @@ namespace EMutabakat.Services
 
                 string[] requiredColumns =
                 {
-                    "CariId",
-                    "CariAdi",
-                    "CariVergiDairesi",
-                    "CariVergiNumarasi",
-                    "CariYetkiliMail",
-                    "CariGrupId",
-                    "DovizKodu"
-                };
+            "CariId",
+            "CariAdi",
+            "CariVergiDairesi",
+            "CariVergiNumarasi",
+            "CariYetkiliMail",
+            "CariGrupId",
+            "DovizKodu"
+        };
 
                 foreach (var column in requiredColumns)
                 {
@@ -404,49 +473,44 @@ namespace EMutabakat.Services
                         {
                             context.Cariler.Add(cari);
                             created++;
+
+                            await _logService.AddAsync(
+                                "Bilgi",
+                                "Cari",
+                                $"Cari eklendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                                GetUserEmail()
+                            );
                         }
                         else
                         {
                             var hasChange = !string.Equals(existing.CariAdi, cari.CariAdi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariUnvan, cari.CariUnvan, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariAdres, cari.CariAdres, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariIlce, cari.CariIlce, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariIl, cari.CariIl, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariVergiDairesi, cari.CariVergiDairesi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariVergiNumarasi, cari.CariVergiNumarasi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariWebAdresi, cari.CariWebAdresi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariYetkiliAdiSoyadi, cari.CariYetkiliAdiSoyadi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariYetkiliTelefon, cari.CariYetkiliTelefon, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariYetkiliGsm, cari.CariYetkiliGsm, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariYetkiliMail, cari.CariYetkiliMail, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariGrupId, cari.CariGrupId, StringComparison.Ordinal)
-                                || existing.CariDovizKodu != cari.CariDovizKodu
-                                || existing.CariAktifPasif != cari.CariAktifPasif;
+                                || !string.Equals(existing.CariVergiNumarasi, cari.CariVergiNumarasi, StringComparison.Ordinal);
 
                             if (hasChange)
                             {
                                 existing.CariAdi = cari.CariAdi;
-                                existing.CariUnvan = cari.CariUnvan;
-                                existing.CariAdres = cari.CariAdres;
-                                existing.CariIlce = cari.CariIlce;
-                                existing.CariIl = cari.CariIl;
-                                existing.CariVergiDairesi = cari.CariVergiDairesi;
                                 existing.CariVergiNumarasi = cari.CariVergiNumarasi;
-                                existing.CariWebAdresi = cari.CariWebAdresi;
-                                existing.CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi;
-                                existing.CariYetkiliTelefon = cari.CariYetkiliTelefon;
-                                existing.CariYetkiliGsm = cari.CariYetkiliGsm;
-                                existing.CariYetkiliMail = cari.CariYetkiliMail;
-                                existing.CariGrupId = cari.CariGrupId;
-                                existing.CariDovizKodu = cari.CariDovizKodu;
-                                existing.CariAktifPasif = cari.CariAktifPasif;
                                 updated++;
+
+                                await _logService.AddAsync(
+                                    "Uyarı",
+                                    "Cari",
+                                    $"Cari güncellendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                                    GetUserEmail()
+                                );
                             }
                         }
                     }
                     catch (Exception ex)
                     {
                         errors.Add($"Satır {r + 1}: {ex.Message}");
+
+                        await _logService.AddAsync(
+                            "Hata",
+                            "Cari",
+                            $"Satır {r + 1} hatası: {ex.Message}",
+                            GetUserEmail()
+                        );
                     }
                 }
 
@@ -455,10 +519,24 @@ namespace EMutabakat.Services
 
                 await context.SaveChangesAsync();
 
+                await _logService.AddAsync(
+                    "Bilgi",
+                    "Cari",
+                    $"Import tamamlandı. Oluşturulan: {created}, Güncellenen: {updated}",
+                    GetUserEmail()
+                );
+
                 return (created, updated, errors);
             }
             catch (Exception ex)
             {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Cari",
+                    $"Import genel hata: {ex.Message}",
+                    GetUserEmail()
+                );
+
                 errors.Add($"İşlem sırasında hata oluştu: {ex.Message}");
                 return (0, 0, errors);
             }

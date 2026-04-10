@@ -35,7 +35,7 @@ namespace EMutabakat.Services
                 .ToListAsync();
         }
 
-        public async Task AddAsync(string level, string source, string message, string? details = null, string? userEmail = null)
+        public async Task AddAsync(string level, string source, string message, string? userEmail = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -45,7 +45,6 @@ namespace EMutabakat.Services
                 Level = string.IsNullOrWhiteSpace(level) ? "Info" : level.Trim(),
                 Source = string.IsNullOrWhiteSpace(source) ? "System" : source.Trim(),
                 Message = string.IsNullOrWhiteSpace(message) ? "Log message is empty." : message.Trim(),
-                Details = string.IsNullOrWhiteSpace(details) ? null : details.Trim(),
                 UserEmail = string.IsNullOrWhiteSpace(userEmail) ? null : userEmail.Trim()
             };
 
