@@ -22,19 +22,22 @@ namespace EMutabakat.Services
         private readonly ISdService _sdService;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogService _logService;
 
         public MutabakatService(
             IDbContextFactory<AppDbContext> contextFactory,
             IEmailService emailService,
             ISdService sdService,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogService logService)
         {
             _contextFactory = contextFactory;
             _emailService = emailService;
             _sdService = sdService;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
+            _logService = logService;
         }
 
         public async Task<List<Mutabakat>> GetAllAsync()
@@ -133,6 +136,13 @@ namespace EMutabakat.Services
                     context,
                     existingMutabakat);
 
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Mutabakat",
+                    $"Eski mutabakat arşivlendi ve silindi. MutabakatId: {existingMutabakat.MutabakatId}, CariId: {existingMutabakat.CariId}, FirmaId: {existingMutabakat.FirmaId}",
+                    GetUserEmail()
+                );
+
                 context.Mutabakatlar.Remove(existingMutabakat);
                 await context.SaveChangesAsync();
             }
@@ -145,6 +155,13 @@ namespace EMutabakat.Services
 
             context.Mutabakatlar.Add(mutabakat);
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Yeni mutabakat eklendi. MutabakatId: {mutabakat.MutabakatId}, CariId: {mutabakat.CariId}, FirmaId: {mutabakat.FirmaId}, Tarih: {mutabakat.MutabakatTarihi:yyyy-MM-dd}, Bakiye: {mutabakat.MutabakatBakiye}",
+                GetUserEmail()
+            );
 
             return mutabakat;
         }
@@ -190,6 +207,11 @@ namespace EMutabakat.Services
             if (existingMutabakat == null)
                 return null;
 
+            var oldCariId = existingMutabakat.CariId;
+            var oldFirmaId = existingMutabakat.FirmaId;
+            var oldTarih = existingMutabakat.MutabakatTarihi;
+            var oldBakiye = existingMutabakat.MutabakatBakiye;
+
             var mailGonderildiMi = existingMutabakat.MutabakatGonderimTarihSaat != default(DateTime);
 
             if (!mailGonderildiMi)
@@ -218,6 +240,14 @@ namespace EMutabakat.Services
                 : mutabakat.MutabakatAciklama.Trim();
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Mutabakat",
+                $"Mutabakat güncellendi. MutabakatId: {existingMutabakat.MutabakatId}, CariId: {oldCariId}->{existingMutabakat.CariId}, FirmaId: {oldFirmaId}->{existingMutabakat.FirmaId}, Tarih: {oldTarih:yyyy-MM-dd}->{existingMutabakat.MutabakatTarihi:yyyy-MM-dd}, Bakiye: {oldBakiye}->{existingMutabakat.MutabakatBakiye}",
+                GetUserEmail()
+            );
+
             return existingMutabakat;
         }
 
@@ -240,6 +270,13 @@ namespace EMutabakat.Services
             {
                 await _sdService.DeleteMutabakatResponseFileAsync(filePath);
             }
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Mutabakat",
+                $"Mutabakat silindi. MutabakatId: {mutabakat.MutabakatId}, CariId: {mutabakat.CariId}, FirmaId: {mutabakat.FirmaId}",
+                GetUserEmail()
+            );
 
             return true;
         }
@@ -322,6 +359,13 @@ namespace EMutabakat.Services
                 await _sdService.DeleteMutabakatResponseFileAsync(filePath);
             }
 
+            await _logService.AddAsync(
+                "Uyarı",
+                "SilinenMutabakat",
+                $"Silinen mutabakat kaydı kalıcı olarak silindi. Id: {silinenMutabakat.Id}, MutabakatId: {silinenMutabakat.MutabakatId}",
+                GetUserEmail()
+            );
+
             return true;
         }
 
@@ -375,7 +419,16 @@ namespace EMutabakat.Services
                 false);
 
             if (!ok)
+            {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Mutabakat",
+                    $"Mutabakat mail gönderimi başarısız. MutabakatId: {mutabakat.MutabakatId}, CariMail: {mutabakat.Cari?.CariYetkiliMail}",
+                    GetUserEmail()
+                );
+
                 return false;
+            }
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatGonderimDurumu = 1;
@@ -386,6 +439,13 @@ namespace EMutabakat.Services
             }
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Mutabakat maili gönderildi. MutabakatId: {mutabakat.MutabakatId}, CariId: {mutabakat.CariId}",
+                GetUserEmail()
+            );
 
             return true;
         }
@@ -440,12 +500,28 @@ namespace EMutabakat.Services
                 true);
 
             if (!ok)
+            {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Mutabakat",
+                    $"Mutabakat hatırlatma maili gönderilemedi. MutabakatId: {mutabakat.MutabakatId}, CariMail: {mutabakat.Cari?.CariYetkiliMail}",
+                    GetUserEmail()
+                );
+
                 return false;
+            }
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatGonderimDurumu = 2;
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Mutabakat hatırlatma maili gönderildi. MutabakatId: {mutabakat.MutabakatId}, CariId: {mutabakat.CariId}",
+                GetUserEmail()
+            );
 
             return true;
         }
@@ -482,6 +558,14 @@ namespace EMutabakat.Services
             mutabakat.MutabakatCevapGsm = gsm;
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Mutabakat onaylandı. MutabakatId: {mutabakat.MutabakatId}, CevapMail: {mail}",
+                mail
+            );
+
             return true;
         }
 
@@ -531,6 +615,14 @@ namespace EMutabakat.Services
             }
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Mutabakat",
+                $"Mutabakat reddedildi. MutabakatId: {mutabakat.MutabakatId}, CevapMail: {mail}, Dosya: {filePath}",
+                mail
+            );
+
             return true;
         }
 
@@ -684,6 +776,7 @@ namespace EMutabakat.Services
                             if (string.IsNullOrWhiteSpace(mutabakatId))
                             {
                                 errors.Add($"Satır {r + 1}: MutabakatId boş olamaz.");
+
                                 continue;
                             }
 
@@ -700,9 +793,14 @@ namespace EMutabakat.Services
                                     continue;
                                 }
 
-                                await ArchiveDeletedReconciliationAsync(
-                                    context,
-                                    existing);
+                                await ArchiveDeletedReconciliationAsync(context, existing);
+
+                                await _logService.AddAsync(
+                                    "Uyarı",
+                                    "Mutabakat",
+                                    $"Excel import sırasında eski kayıt arşivlendi. MutabakatId: {existing.MutabakatId}, CariId: {existing.CariId}, FirmaId: {existing.FirmaId}",
+                                    GetUserEmail()
+                                );
 
                                 context.Mutabakatlar.Remove(existing);
                                 await context.SaveChangesAsync();
@@ -741,9 +839,7 @@ namespace EMutabakat.Services
 
                                 if (previousTracked != null)
                                 {
-                                    await ArchiveDeletedReconciliationAsync(
-                                        context,
-                                        previousTracked);
+                                    await ArchiveDeletedReconciliationAsync(context, previousTracked);
 
                                     context.Mutabakatlar.Remove(previousTracked);
                                     await context.SaveChangesAsync();
@@ -791,6 +887,14 @@ namespace EMutabakat.Services
                     if (errors.Count > 0)
                     {
                         await tx.RollbackAsync();
+
+                        await _logService.AddAsync(
+                            "Hata",
+                            "Mutabakat",
+                            $"Excel import rollback oldu. Dosya: {fileName}, Hata sayısı: {errors.Count}",
+                            GetUserEmail()
+                        );
+
                         return (0, 0, errors);
                     }
 
@@ -861,11 +965,26 @@ namespace EMutabakat.Services
                     if (errors.Count > 0)
                     {
                         await tx.RollbackAsync();
+
+                        await _logService.AddAsync(
+                            "Hata",
+                            "Mutabakat",
+                            $"Excel import mail aşamasında rollback oldu. Dosya: {fileName}, Hata sayısı: {errors.Count}",
+                            GetUserEmail()
+                        );
+
                         return (0, 0, errors);
                     }
 
                     await context.SaveChangesAsync();
                     await tx.CommitAsync();
+
+                    await _logService.AddAsync(
+                        "Bilgi",
+                        "Mutabakat",
+                        $"Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {createdCount}, Gönderilen Mail: {mailSentCount}",
+                        GetUserEmail()
+                    );
 
                     return (createdCount, mailSentCount, errors);
                 }
@@ -882,6 +1001,14 @@ namespace EMutabakat.Services
                     }
 
                     errors.Add($"Import sırasında hata oluştu: {detail}");
+
+                    await _logService.AddAsync(
+                        "Hata",
+                        "Mutabakat",
+                        $"Excel import genel işlem hatası: {detail}",
+                        GetUserEmail()
+                    );
+
                     return (0, 0, errors);
                 }
             }
@@ -896,6 +1023,14 @@ namespace EMutabakat.Services
                 }
 
                 errors.Add($"İşlem sırasında hata oluştu: {detail}");
+
+                await _logService.AddAsync(
+                    "Hata",
+                    "Mutabakat",
+                    $"Mutabakat import dış hata: {detail}",
+                    GetUserEmail()
+                );
+
                 return (0, 0, errors);
             }
         }
@@ -921,6 +1056,14 @@ namespace EMutabakat.Services
             }
 
             return $"P{maxNumeric + 1}";
+        }
+
+        private string? GetUserEmail()
+        {
+            return _httpContextAccessor.HttpContext?
+                .User?
+                .Identity?
+                .Name;
         }
     }
 }
