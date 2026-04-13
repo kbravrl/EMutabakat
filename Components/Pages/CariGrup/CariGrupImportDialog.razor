@@ -2,6 +2,7 @@
 @inject IFirmaService FirmaService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@inject NavigationManager NavigationManager
 
 <div class="p-2">
     <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
@@ -20,7 +21,14 @@
         <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
     </div>
 
+    <div class="my-2">
+        <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true">
+            Örnek Excel dosyasını aşağıdan indirip kullanabilirsiniz.
+        </RadzenAlert>
+    </div>
+
     <div class="rz-text-align-right">
+        <RadzenButton Text="Örnek Excel Dosyası" Icon="download" ButtonStyle="ButtonStyle.Success" Click="DownloadTemplate" />
         <RadzenButton Text="Yükle" Icon="file_upload" Click="Upload" Disabled="@isUploading" />
         <RadzenButton Text="İptal" Icon="close" Click="Cancel" ButtonStyle="ButtonStyle.Secondary" />
     </div>
@@ -42,9 +50,15 @@
         selectedFile = e.File;
     }
 
+    private void DownloadTemplate()
+    {
+        NavigationManager.NavigateTo("/templates/CariGrupTemplate.xlsx", forceLoad: true);
+    }
+
     private async Task Upload()
     {
         if (isUploading) return;
+
         if (selectedFile == null)
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen bir dosya seçin.");
@@ -70,11 +84,18 @@
             if (errors != null && errors.Count > 0)
             {
                 var parameters = new Dictionary<string, object?> { ["Errors"] = errors };
-                await DialogService.OpenAsync(string.Empty, typeof(ImportErrors), parameters, new DialogOptions { Width = "700px", Height = "400px" });
+                await DialogService.OpenAsync(
+                    string.Empty,
+                    typeof(ImportErrors),
+                    parameters,
+                    new DialogOptions { Width = "700px", Height = "400px" });
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", $"Oluşturulan kayıt: {createdCount}, güncellenen kayıt: {updatedCount}");
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    $"Oluşturulan kayıt: {createdCount}, güncellenen kayıt: {updatedCount}");
             }
 
             DialogService.Close(true);

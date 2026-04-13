@@ -3,6 +3,7 @@
 @inject IFirmaService FirmaService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@inject NavigationManager NavigationManager
 
 <div class="p-2">
     <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
@@ -21,7 +22,14 @@
         <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
     </div>
 
+    <div class="my-2">
+        <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true">
+            Örnek Excel dosyasını aşağıdan indirip kullanabilirsiniz.
+        </RadzenAlert>
+    </div>
+
     <div class="rz-text-align-right">
+        <RadzenButton Text="Örnek Excel Dosyası" Icon="download" ButtonStyle="ButtonStyle.Success" Click="DownloadTemplate" />
         <RadzenButton Text="Yükle" Icon="file_upload" Click="Upload" Disabled="@isUploading" />
         <RadzenButton Text="İptal" Icon="close" Click="Cancel" ButtonStyle="ButtonStyle.Secondary" />
     </div>
@@ -41,6 +49,11 @@
     private void HandleSelected(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
+    }
+    
+    private void DownloadTemplate()
+    {
+        NavigationManager.NavigateTo("/templates/CariTemplate.xlsx", forceLoad: true);
     }
 
     private async Task Upload()
