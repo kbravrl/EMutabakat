@@ -306,6 +306,13 @@ namespace EMutabakat.Services
             var errors = new List<string>();
             var created = 0;
 
+            await _logService.AddAsync(
+                "Bilgi",
+                "Kullanici",
+                $"Excel import başladı. Dosya: {fileName}",
+                GetUserEmail()
+
+            );
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
