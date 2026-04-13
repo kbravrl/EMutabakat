@@ -17,10 +17,17 @@ namespace EMutabakat.Services
     {
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
         private readonly PasswordHasher<Kullanici> _passwordHasher;
+        private readonly ILogService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public KullaniciService(IDbContextFactory<AppDbContext> contextFactory)
+        public KullaniciService(
+            IDbContextFactory<AppDbContext> contextFactory,
+            ILogService logService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _contextFactory = contextFactory;
+            _logService = logService;
+            _httpContextAccessor = httpContextAccessor;
             _passwordHasher = new PasswordHasher<Kullanici>();
         }
 
@@ -37,195 +44,6 @@ namespace EMutabakat.Services
             }
 
             return firmaIds;
-        }
-
-        // Helper parsers
-        private static string? GetStringCell(IRow row, int idx)
-        {
-            var cell = row.GetCell(idx);
-            return cell?.ToString();
-        }
-
-        private static int ParseIntCell(IRow row, int idx)
-        {
-            var cell = row.GetCell(idx);
-            if (cell == null) return 0;
-            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
-            var s = cell.ToString();
-            return int.TryParse(s, out var v) ? v : 0;
-        }
-
-        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
-        {
-            var errors = new List<string>();
-            var created = 0;
-            await using var context = await _contextFactory.CreateDbContextAsync();
-
-            try
-            {
-                IWorkbook workbook;
-                var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
-                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
-                else workbook = new HSSFWorkbook(stream);
-
-                var sheet = workbook.GetSheetAt(0);
-                if (sheet == null)
-                {
-                    errors.Add("Excel sayfası bulunamadı.");
-                    return (0, errors);
-                }
-
-                var headerRow = sheet.GetRow(0);
-                if (headerRow == null)
-                {
-                    errors.Add("Excel başlık satırı bulunamadı.");
-                    return (0, errors);
-                }
-
-                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < headerRow.LastCellNum; i++)
-                {
-                    var cell = headerRow.GetCell(i);
-                    if (cell == null) continue;
-                    var text = cell.ToString()?.Trim();
-                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
-                }
-
-                string[] required = new[]
-                {
-                   "FirmaId",
-                   "KullaniciAdi",
-                   "KullaniciSoyadi",
-                   "KullaniciMail",
-                   "Sifre"
-                };
-
-                foreach (var h in required)
-                {
-                    if (!headerMap.ContainsKey(h))
-                    {
-                        errors.Add($"Gerekli sütun '{h}' bulunamadı.");
-                        return (0, errors);
-                    }
-                }
-
-                var prepared = new List<(int RowNumber, Kullanici Entity)>();
-
-                for (int r = 1; r <= sheet.LastRowNum; r++)
-                {
-                    var row = sheet.GetRow(r);
-                    if (row == null) continue;
-
-                    try
-                    {
-                        var firmaId = ParseIntCell(row, headerMap.GetValueOrDefault("FirmaId"));
-                        var kullanici = new Kullanici
-                        {
-                            FirmaId = firmaId,
-                            KullaniciAdi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciAdi")) ?? string.Empty,
-                            KullaniciSoyadi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciSoyadi")) ?? string.Empty,
-                            KullaniciMail = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciMail")) ?? string.Empty,
-                            KullaniciGsm = headerMap.ContainsKey("KullaniciGsm") ? GetStringCell(row, headerMap["KullaniciGsm"]) ?? string.Empty : string.Empty,
-                            Sifre = GetStringCell(row, headerMap.GetValueOrDefault("Sifre")) ?? string.Empty,
-                            Rol = headerMap.ContainsKey("Rol") ? GetStringCell(row, headerMap["Rol"]) ?? KullaniciRolleri.Standart : KullaniciRolleri.Standart,
-                            KullaniciAktifPasif = headerMap.ContainsKey("KullaniciAktifPasif") ? GetStringCell(row, headerMap["KullaniciAktifPasif"]) ?? "1" : "1"
-                        };
-
-                        if (kullanici.FirmaId <= 0)
-                        {
-                            errors.Add($"Satır {r + 1}: FirmaId geçerli olmalıdır.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi) || string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi) || string.IsNullOrWhiteSpace(kullanici.KullaniciMail) || string.IsNullOrWhiteSpace(kullanici.Sifre))
-                        {
-                            errors.Add($"Satır {r + 1}: Zorunlu alanlar boş olamaz (Ad, Soyad, Mail, Şifre).");
-                            continue;
-                        }
-
-                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
-                        if (!firmaExists)
-                        {
-                            errors.Add($"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.");
-                            continue;
-                        }
-
-                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
-                        {
-                            kullanici.KullaniciAktifPasif = "1";
-                        }
-
-                        kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
-                        if (kullanici.KullaniciAktifPasif != "0" && kullanici.KullaniciAktifPasif != "1")
-                        {
-                            errors.Add($"Satır {r + 1}: Aktif/Pasif değeri 0 veya 1 olmalıdır.");
-                            continue;
-                        }
-
-                        if (!KullaniciRolleri.IsValid(kullanici.Rol))
-                        {
-                            errors.Add($"Satır {r + 1}: Rol yalnızca '{KullaniciRolleri.Standart}' veya '{KullaniciRolleri.Admin}' olabilir.");
-                            continue;
-                        }
-
-                        // Hash password now
-                        kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
-
-                        prepared.Add((r + 1, kullanici));
-                    }
-                    catch (Exception exRow)
-                    {
-                        var detail = exRow.Message;
-                        var inner = exRow.InnerException;
-                        while (inner != null)
-                        {
-                            detail += " -> " + inner.Message;
-                            inner = inner.InnerException;
-                        }
-
-                        errors.Add($"Satır {r + 1}: {detail}");
-                    }
-                }
-
-                if (errors.Count > 0)
-                {
-                    return (0, errors);
-                }
-
-                foreach (var (_, kullanici) in prepared)
-                {
-                    context.Kullanicilar.Add(kullanici);
-                }
-
-                await context.SaveChangesAsync();
-
-                foreach (var (_, kullanici) in prepared)
-                {
-                    context.KullaniciFirmalari.Add(new KullaniciFirma
-                    {
-                        KullaniciId = kullanici.KullaniciId,
-                        FirmaId = kullanici.FirmaId
-                    });
-                }
-
-                await context.SaveChangesAsync();
-                created = prepared.Count;
-
-                return (created, errors);
-            }
-            catch (Exception ex)
-            {
-                var detail = ex.Message;
-                var inner = ex.InnerException;
-                while (inner != null)
-                {
-                    detail += " -> " + inner.Message;
-                    inner = inner.InnerException;
-                }
-
-                errors.Add($"İşlem sırasında hata oluştu: {detail}");
-                return (0, errors);
-            }
         }
 
         public async Task<List<Kullanici>> GetAllAsync()
@@ -276,37 +94,18 @@ namespace EMutabakat.Services
             if (mevcutKullanici != null)
                 return null;
 
-            var firmaIds = NormalizeFirmaIds(kullanici);
-            if (firmaIds.Count == 0)
-                throw new Exception("En az bir firma seçimi zorunludur.");
-
-            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
-            if (validFirmaCount != firmaIds.Count)
-                throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
-
-            if (!KullaniciRolleri.IsValid(kullanici.Rol))
-            {
-                kullanici.Rol = KullaniciRolleri.Standart;
-            }
-
-            kullanici.FirmaId = firmaIds[0];
-
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
-            kullanici.KullaniciAktifPasif ??= "1";
 
             context.Kullanicilar.Add(kullanici);
             await context.SaveChangesAsync();
 
-            foreach (var firmaId in firmaIds)
-            {
-                context.KullaniciFirmalari.Add(new KullaniciFirma
-                {
-                    KullaniciId = kullanici.KullaniciId,
-                    FirmaId = firmaId
-                });
-            }
+            await _logService.AddAsync(
+                "Bilgi",
+                "Kullanıcı",
+                $"Yeni kayıt (register): {kullanici.KullaniciMail}",
+                GetUserEmail()
+            );
 
-            await context.SaveChangesAsync();
             return kullanici;
         }
 
@@ -315,8 +114,6 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var kullanici = await context.Kullanicilar
-                .Include(x => x.Firma)
-                .Include(x => x.KullaniciFirmalari)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == mail && x.KullaniciAktifPasif == "1");
 
             if (kullanici == null)
@@ -324,7 +121,28 @@ namespace EMutabakat.Services
 
             var result = _passwordHasher.VerifyHashedPassword(kullanici, kullanici.Sifre, sifre);
 
-            return result == PasswordVerificationResult.Success ? kullanici : null;
+            if (result == PasswordVerificationResult.Success)
+            {
+                await _logService.AddAsync(
+                    "Bilgi",
+                    "Kullanıcı",
+                    $"Başarılı login: {mail}",
+                    mail
+                );
+
+                return kullanici;
+            }
+            else
+            {
+                await _logService.AddAsync(
+                    "Hata",
+                    "Kullanıcı",
+                    $"Başarısız login: {mail}",
+                    mail
+                );
+
+                return null;
+            }
         }
 
         public async Task<Kullanici> AddAsync(Kullanici kullanici)
@@ -363,9 +181,7 @@ namespace EMutabakat.Services
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
             kullanici.FirmaId = firmaIds[0];
-
             kullanici.KullaniciMail = kullanici.KullaniciMail.Trim();
-
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
             context.Kullanicilar.Add(kullanici);
@@ -381,6 +197,14 @@ namespace EMutabakat.Services
             }
 
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Kullanıcı",
+                $"Yeni kullanıcı eklendi: {kullanici.KullaniciAdi} {kullanici.KullaniciSoyadi}",
+                GetUserEmail()
+            );
+
             return kullanici;
         }
 
@@ -398,25 +222,6 @@ namespace EMutabakat.Services
             if (firmaIds.Count == 0)
                 throw new Exception("En az bir firma seçimi zorunludur.");
 
-            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
-                throw new Exception("Ad zorunludur.");
-
-            if (string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi))
-                throw new Exception("Soyad zorunludur.");
-
-            if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
-                throw new Exception("Mail zorunludur.");
-
-            if (!KullaniciRolleri.IsValid(kullanici.Rol))
-                throw new Exception("Geçerli bir rol seçiniz.");
-
-            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
-                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
-
-            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
-            if (validFirmaCount != firmaIds.Count)
-                throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
-
             existingKullanici.FirmaId = firmaIds[0];
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi;
@@ -430,33 +235,15 @@ namespace EMutabakat.Services
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre);
             }
 
-            var existingMappings = await context.KullaniciFirmalari
-                .Where(x => x.KullaniciId == existingKullanici.KullaniciId)
-                .ToListAsync();
-
-            var mappingsToRemove = existingMappings
-                .Where(x => !firmaIds.Contains(x.FirmaId))
-                .ToList();
-
-            if (mappingsToRemove.Count > 0)
-            {
-                context.KullaniciFirmalari.RemoveRange(mappingsToRemove);
-            }
-
-            var existingFirmaIdSet = existingMappings.Select(x => x.FirmaId).ToHashSet();
-            foreach (var firmaId in firmaIds)
-            {
-                if (!existingFirmaIdSet.Contains(firmaId))
-                {
-                    context.KullaniciFirmalari.Add(new KullaniciFirma
-                    {
-                        KullaniciId = existingKullanici.KullaniciId,
-                        FirmaId = firmaId
-                    });
-                }
-            }
-
             await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Kullanıcı",
+                $"Kullanıcı güncellendi: Id: {kullanici.KullaniciId}",
+                GetUserEmail()
+            );
+
             return existingKullanici;
         }
 
@@ -474,31 +261,297 @@ namespace EMutabakat.Services
             {
                 context.Kullanicilar.Remove(kullanici);
                 await context.SaveChangesAsync();
+
+                await _logService.AddAsync(
+                    "Uyarı",
+                    "Kullancı",
+                    $"Kullanıcı silindi: Id: {id}",
+                    GetUserEmail()
+                );
+
                 return true;
             }
-            catch (DbUpdateException ex)
+            catch (Exception)
             {
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
+                await _logService.AddAsync(
+                    "Hata",
+                    "Kullanıcı",
+                    $"Kullanıcı silinemedi: Id: {id}",
+                    GetUserEmail()
+                );
+
+                throw;
+            }
+        }
+
+        private string? GetUserEmail()
+        {
+            return _httpContextAccessor.HttpContext?
+                .User?
+                .Identity?
+                .Name;
+        }
+
+        // Helper parsers
+        private static string? GetStringCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            return cell?.ToString();
+        }
+
+        private static int ParseIntCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return 0;
+            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
+            var s = cell.ToString();
+            return int.TryParse(s, out var v) ? v : 0;
+        }
+
+        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        {
+            var errors = new List<string>();
+            var created = 0;
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            try
+            {
+                IWorkbook workbook;
+                var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
+                if (ext == ".xlsx") workbook = new XSSFWorkbook(stream);
+                else workbook = new HSSFWorkbook(stream);
+
+                var sheet = workbook.GetSheetAt(0);
+                if (sheet == null)
                 {
-                    throw new Exception("Bu kullanıcı başka kayıtlarda kullanıldığı için silinemez.");
+                    errors.Add("Excel sayfası bulunamadı.");
+                    return (0, errors);
                 }
 
-                throw new Exception("Kullanıcı silinirken bir veritabanı hatası oluştu.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                if (ex.Message.Contains("association between entity types") ||
-                    ex.Message.Contains("relationship") ||
-                    ex.Message.Contains("severed"))
+                var headerRow = sheet.GetRow(0);
+                if (headerRow == null)
                 {
-                    throw new Exception("Bu kullanıcı başka kayıtlarda kullanıldığı için silinemez.");
+                    errors.Add("Excel başlık satırı bulunamadı.");
+                    return (0, errors);
                 }
 
-                throw new Exception("Kullanıcı silinirken bir işlem hatası oluştu.");
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < headerRow.LastCellNum; i++)
+                {
+                    var cell = headerRow.GetCell(i);
+                    if (cell == null) continue;
+                    var text = cell.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(text)) headerMap[text] = i;
+                }
+
+                string[] required = new[]
+                {
+            "FirmaId",
+            "KullaniciAdi",
+            "KullaniciSoyadi",
+            "KullaniciMail",
+            "Sifre"
+        };
+
+                foreach (var h in required)
+                {
+                    if (!headerMap.ContainsKey(h))
+                    {
+                        var message = $"Gerekli sütun '{h}' bulunamadı.";
+                        errors.Add(message);
+
+                        return (0, errors);
+                    }
+                }
+
+                var prepared = new List<(int RowNumber, Kullanici Entity)>();
+
+                for (int r = 1; r <= sheet.LastRowNum; r++)
+                {
+                    var row = sheet.GetRow(r);
+                    if (row == null) continue;
+
+                    try
+                    {
+                        var firmaId = ParseIntCell(row, headerMap.GetValueOrDefault("FirmaId"));
+                        var kullanici = new Kullanici
+                        {
+                            FirmaId = firmaId,
+                            KullaniciAdi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciAdi")) ?? string.Empty,
+                            KullaniciSoyadi = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciSoyadi")) ?? string.Empty,
+                            KullaniciMail = GetStringCell(row, headerMap.GetValueOrDefault("KullaniciMail")) ?? string.Empty,
+                            KullaniciGsm = headerMap.ContainsKey("KullaniciGsm")
+                                ? GetStringCell(row, headerMap["KullaniciGsm"]) ?? string.Empty
+                                : string.Empty,
+                            Sifre = GetStringCell(row, headerMap.GetValueOrDefault("Sifre")) ?? string.Empty,
+                            Rol = headerMap.ContainsKey("Rol")
+                                ? GetStringCell(row, headerMap["Rol"]) ?? KullaniciRolleri.Standart
+                                : KullaniciRolleri.Standart,
+                            KullaniciAktifPasif = headerMap.ContainsKey("KullaniciAktifPasif")
+                                ? GetStringCell(row, headerMap["KullaniciAktifPasif"]) ?? "1"
+                                : "1"
+                        };
+
+                        if (kullanici.FirmaId <= 0)
+                        {
+                            var message = $"Satır {r + 1}: FirmaId geçerli olmalıdır.";
+                            errors.Add(message);
+
+                            await _logService.AddAsync(
+                                "Hata",
+                                "Kullanıcı",
+                                message,
+                                GetUserEmail()
+                            );
+
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi) ||
+                            string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi) ||
+                            string.IsNullOrWhiteSpace(kullanici.KullaniciMail) ||
+                            string.IsNullOrWhiteSpace(kullanici.Sifre))
+                        {
+                            var message = $"Satır {r + 1}: Zorunlu alanlar boş olamaz (Ad, Soyad, Mail, Şifre).";
+                            errors.Add(message);
+
+                            await _logService.AddAsync(
+                                "Hata",
+                                "Kullanıcı",
+                                message,
+                                GetUserEmail()
+                            );
+
+                            continue;
+                        }
+
+                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
+                        if (!firmaExists)
+                        {
+                            var message = $"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.";
+                            errors.Add(message);
+
+                            await _logService.AddAsync(
+                                "Hata",
+                                "Kullanıcı",
+                                message,
+                                GetUserEmail()
+                            );
+
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                        {
+                            kullanici.KullaniciAktifPasif = "1";
+                        }
+
+                        kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
+                        if (kullanici.KullaniciAktifPasif != "0" && kullanici.KullaniciAktifPasif != "1")
+                        {
+                            var message = $"Satır {r + 1}: Aktif/Pasif değeri 0 veya 1 olmalıdır.";
+                            errors.Add(message);
+
+                            await _logService.AddAsync(
+                                "Hata",
+                                "Kullanıcı",
+                                message,
+                                GetUserEmail()
+                            );
+
+                            continue;
+                        }
+
+                        if (!KullaniciRolleri.IsValid(kullanici.Rol))
+                        {
+                            var message = $"Satır {r + 1}: Rol yalnızca '{KullaniciRolleri.Standart}' veya '{KullaniciRolleri.Admin}' olabilir.";
+                            errors.Add(message);
+
+                            await _logService.AddAsync(
+                                "Hata",
+                                "Kullanıcı",
+                                message,
+                                GetUserEmail()
+                            );
+
+                            continue;
+                        }
+
+                        // Hash password
+                        kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
+
+                        prepared.Add((r + 1, kullanici));
+                    }
+                    catch (Exception exRow)
+                    {
+                        var detail = exRow.Message;
+                        var inner = exRow.InnerException;
+                        while (inner != null)
+                        {
+                            detail += " -> " + inner.Message;
+                            inner = inner.InnerException;
+                        }
+
+                        var message = $"Satır {r + 1}: {detail}";
+                        errors.Add(message);
+
+                        await _logService.AddAsync(
+                            "Hata",
+                            "Kullanıcı",
+                            message,
+                            GetUserEmail()
+                        );
+                    }
+                }
+
+                if (errors.Count > 0)
+                {
+
+                    return (0, errors);
+                }
+
+                foreach (var (_, kullanici) in prepared)
+                {
+                    context.Kullanicilar.Add(kullanici);
+                }
+
+                await context.SaveChangesAsync();
+
+                foreach (var (_, kullanici) in prepared)
+                {
+                    context.KullaniciFirmalari.Add(new KullaniciFirma
+                    {
+                        KullaniciId = kullanici.KullaniciId,
+                        FirmaId = kullanici.FirmaId
+                    });
+                }
+
+                await context.SaveChangesAsync();
+                created = prepared.Count;
+
+                await _logService.AddAsync(
+                    "Bilgi",
+                    "Kullanıcı",
+                    $"Excel import tamamlandı. Dosya: {fileName}, Eklenen kullanıcı sayısı: {created}",
+                    GetUserEmail()
+                );
+
+                return (created, errors);
             }
-            catch
+            catch (Exception ex)
             {
-                throw new Exception("Kullanıcı silinirken bir hata oluştu.");
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null)
+                {
+                    detail += " -> " + inner.Message;
+                    inner = inner.InnerException;
+                }
+
+                errors.Add($"İşlem sırasında hata oluştu: {detail}");
+
+                return (0, errors);
             }
         }
     }
