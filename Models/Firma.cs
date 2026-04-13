@@ -56,6 +56,6 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         public int FirmaAktifPasif { get; set; } = 1;
 
-        public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();
+        public ICollection<Kullanici> Kullanicilar { get; set; } = new List<Kullanici>();
     }
 }

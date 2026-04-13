@@ -34,22 +34,70 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.CariGruplar
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var query = context.CariGruplar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .OrderByDescending(x => x.CariGrupAktifPasif)
                 .ThenBy(x => x.CariGrupAdi)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return new List<CariGrup>();
+
+                query = query.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<CariGrup?> GetByIdAsync(string id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.CariGruplar
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var cariGrup = await context.CariGruplar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .FirstOrDefaultAsync(x => x.CariGrupId == id);
+
+            if (cariGrup == null) return null;
+
+            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(cariGrup.FirmaId))
+                return null;
+
+            return cariGrup;
+        }
+
+        private async Task<List<int>?> GetAllowedFirmaIdsAsync(AppDbContext context)
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null || !user.Identity?.IsAuthenticated == true)
+                return null;
+
+            var mail = user.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            var kullanici = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            if (kullanici == null)
+                return null;
+
+            if (kullanici.Rol == Models.KullaniciRolleri.Admin)
+                return null;
+
+            var ids = new List<int>();
+            if (kullanici.FirmaId > 0) ids.Add(kullanici.FirmaId);
+            ids.AddRange(kullanici.Firmalar.Select(uf => uf.FirmaId));
+
+            return ids.Distinct().Where(i => i > 0).ToList();
         }
 
         public async Task<string> GenerateNextCariGrupIdAsync()

@@ -183,7 +183,7 @@ else
 
             if (kullanici != null)
             {
-                selectedFirmaIds = (kullanici.KullaniciFirmalari?.Select(x => x.FirmaId).Distinct().ToList() ?? new List<int>());
+                selectedFirmaIds = (kullanici.Firmalar?.Select(x => x.FirmaId).Distinct().ToList() ?? new List<int>());
                 if (selectedFirmaIds.Count == 0 && kullanici.FirmaId > 0)
                 {
                     selectedFirmaIds.Add(kullanici.FirmaId);

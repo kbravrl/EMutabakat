@@ -1,4 +1,5 @@
 ﻿using EMutabakat.Models;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
 namespace EMutabakat.Data
@@ -11,7 +12,6 @@ namespace EMutabakat.Data
         }
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
-        public DbSet<KullaniciFirma> KullaniciFirmalari { get; set; }
         public DbSet<CariGrup> CariGruplar { get; set; }
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
@@ -29,21 +29,21 @@ namespace EMutabakat.Data
                 .HasForeignKey(k => k.FirmaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<KullaniciFirma>()
-                .HasIndex(kf => new { kf.KullaniciId, kf.FirmaId })
-                .IsUnique();
-
-            modelBuilder.Entity<KullaniciFirma>()
-                .HasOne(kf => kf.Kullanici)
-                .WithMany(k => k.KullaniciFirmalari)
-                .HasForeignKey(kf => kf.KullaniciId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<KullaniciFirma>()
-                .HasOne(kf => kf.Firma)
-                .WithMany(f => f.KullaniciFirmalari)
-                .HasForeignKey(kf => kf.FirmaId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Kullanici>()
+                .HasMany(k => k.Firmalar)
+                .WithMany(f => f.Kullanicilar)
+                .UsingEntity<Dictionary<string, object>>(
+                    "KullaniciFirmalar",
+                    j => j.HasOne<Firma>().WithMany().HasForeignKey("FirmaId").OnDelete(DeleteBehavior.Restrict),
+                    j => j.HasOne<Kullanici>().WithMany().HasForeignKey("KullaniciId").OnDelete(DeleteBehavior.Cascade),
+                    j =>
+                    {
+                        j.Property<int>("KullaniciFirmaId").HasColumnName("KullaniciFirmaId").ValueGeneratedOnAdd();
+                        j.HasKey("KullaniciFirmaId");
+                        j.HasIndex("KullaniciId", "FirmaId").IsUnique();
+                        j.ToTable("KullaniciFirmalar");
+                    }
+                );
 
             modelBuilder.Entity<CariGrup>()
                 .HasOne(cg => cg.Firma)

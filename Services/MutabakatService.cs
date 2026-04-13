@@ -44,26 +44,47 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Mutabakatlar
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var query = context.Mutabakatlar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .Include(x => x.DovizKodu)
                 .OrderByDescending(x => x.MutabakatTarihi)
                 .ThenByDescending(x => x.MutabakatId)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return new List<Mutabakat>();
+
+                query = query.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<Mutabakat?> GetByIdAsync(string id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Mutabakatlar
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var mutabakat = await context.Mutabakatlar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .Include(x => x.DovizKodu)
                 .FirstOrDefaultAsync(x => x.MutabakatId == id);
+
+            if (mutabakat == null) return null;
+
+            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(mutabakat.FirmaId))
+                return null;
+
+            return mutabakat;
         }
 
         public async Task<Mutabakat> AddAsync(Mutabakat mutabakat)
@@ -398,6 +419,7 @@ namespace EMutabakat.Services
 
             var kullanici = await context.Kullanicilar
                .Include(x => x.Firma)
+               .Include(x => x.Firmalar)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
@@ -530,12 +552,48 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Mutabakatlar
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var mutabakat = await context.Mutabakatlar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .Include(x => x.DovizKodu)
                 .FirstOrDefaultAsync(x => x.MutabakatToken == token);
+
+            if (mutabakat == null) return null;
+
+            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(mutabakat.FirmaId))
+                return null;
+
+            return mutabakat;
+        }
+
+        private async Task<List<int>?> GetAllowedFirmaIdsAsync(AppDbContext context)
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null || !user.Identity?.IsAuthenticated == true)
+                return null;
+
+            var mail = user.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            var kullanici = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            if (kullanici == null)
+                return null;
+
+            if (kullanici.Rol == Models.KullaniciRolleri.Admin)
+                return null;
+
+            var ids = new List<int>();
+            if (kullanici.FirmaId > 0) ids.Add(kullanici.FirmaId);
+            ids.AddRange(kullanici.Firmalar.Select(uf => uf.FirmaId));
+
+            return ids.Distinct().Where(i => i > 0).ToList();
         }
 
         public async Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm)
@@ -652,6 +710,15 @@ namespace EMutabakat.Services
         {
             var cell = row.GetCell(idx);
             return cell?.ToString();
+        }
+
+        private static int ParseIntCell(IRow row, int idx)
+        {
+            var cell = row.GetCell(idx);
+            if (cell == null) return 0;
+            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
+            var s = cell.ToString();
+            return int.TryParse(s, out var v) ? v : 0;
         }
 
         public async Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
@@ -856,6 +923,19 @@ namespace EMutabakat.Services
                                 createdCount--;
                             }
 
+                            // determine gonderim durumu from optional columns
+                            int gonderimDurumu = 1;
+                            if (headerMap.ContainsKey("MutabakatGonderimDurumu"))
+                            {
+                                gonderimDurumu = ParseIntCell(row, headerMap["MutabakatGonderimDurumu"]);
+                            }
+                            else if (headerMap.ContainsKey("GonderimDurumu"))
+                            {
+                                gonderimDurumu = ParseIntCell(row, headerMap["GonderimDurumu"]);
+                            }
+
+                            if (gonderimDurumu <= 0) gonderimDurumu = 1;
+
                             var mutabakat = new Mutabakat
                             {
                                 MutabakatId = mutabakatId,
@@ -868,7 +948,7 @@ namespace EMutabakat.Services
                                 MutabakatAciklama = string.IsNullOrWhiteSpace(aciklama) ? null : aciklama.Trim(),
                                 MutabakatToken = Guid.NewGuid().ToString("N"),
                                 MutabakatDurum = 3,
-                                MutabakatGonderimDurumu = 1
+                                MutabakatGonderimDurumu = gonderimDurumu
                             };
 
                             context.Mutabakatlar.Add(mutabakat);

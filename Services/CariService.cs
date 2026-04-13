@@ -31,13 +31,52 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.Cariler
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var query = context.Cariler
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.CariGrup)
                 .Include(x => x.DovizKodu)
                 .OrderBy(x => x.CariAdi)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return new List<Cari>();
+
+                query = query.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            return await query.ToListAsync();
+        }
+
+        private async Task<List<int>?> GetAllowedFirmaIdsAsync(AppDbContext context)
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            if (user == null || !user.Identity?.IsAuthenticated == true)
+                return null;
+
+            var mail = user.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            var kullanici = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            if (kullanici == null)
+                return null;
+
+            if (kullanici.Rol == Models.KullaniciRolleri.Admin)
+                return null;
+
+            var ids = new List<int>();
+            if (kullanici.FirmaId > 0) ids.Add(kullanici.FirmaId);
+            ids.AddRange(kullanici.Firmalar.Select(uf => uf.FirmaId));
+
+            return ids.Distinct().Where(i => i > 0).ToList();
         }
 
         public async Task<string> GenerateNextCariIdAsync()
@@ -68,6 +107,11 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var normalizedCariId = cariId?.Trim() ?? string.Empty;
+
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(firmaId))
+                return null;
 
             return await context.Cariler
                 .AsNoTracking()

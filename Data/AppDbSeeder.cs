@@ -123,14 +123,10 @@ namespace EMutabakat.Data
                 await context.SaveChangesAsync();
             }
 
-            if (!await context.KullaniciFirmalari.AnyAsync(kf => kf.KullaniciId == admin.KullaniciId && kf.FirmaId == defaultFirma.FirmaId))
+            await context.Entry(admin).Collection(a => a.Firmalar).LoadAsync();
+            if (!admin.Firmalar.Any(f => f.FirmaId == defaultFirma.FirmaId))
             {
-                context.KullaniciFirmalari.Add(new KullaniciFirma
-                {
-                    KullaniciId = admin.KullaniciId,
-                    FirmaId = defaultFirma.FirmaId
-                });
-
+                admin.Firmalar.Add(defaultFirma);
                 await context.SaveChangesAsync();
             }
 
@@ -150,13 +146,18 @@ namespace EMutabakat.Data
 
             foreach (var user in users)
             {
-                if (!await context.KullaniciFirmalari.AnyAsync(kf => kf.KullaniciId == user.KullaniciId && kf.FirmaId == user.FirmaId))
+                var u = await context.Kullanicilar.FindAsync(user.KullaniciId);
+                if (u != null)
                 {
-                    context.KullaniciFirmalari.Add(new KullaniciFirma
+                    await context.Entry(u).Collection(x => x.Firmalar).LoadAsync();
+                    if (!u.Firmalar.Any(f => f.FirmaId == user.FirmaId))
                     {
-                        KullaniciId = user.KullaniciId,
-                        FirmaId = user.FirmaId
-                    });
+                        var f = await context.Firmalar.FindAsync(user.FirmaId);
+                        if (f != null)
+                        {
+                            u.Firmalar.Add(f);
+                        }
+                    }
                 }
             }
 

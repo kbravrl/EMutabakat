@@ -34,7 +34,7 @@ namespace EMutabakat.Controllers
                 new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(kullanici.Rol) ? KullaniciRolleri.Standart : kullanici.Rol)
             };
 
-            var firmaIds = (kullanici.KullaniciFirmalari?.Select(x => x.FirmaId).ToList() ?? new List<int>());
+            var firmaIds = (kullanici.Firmalar?.Select(x => x.FirmaId).ToList() ?? new List<int>());
             if (!firmaIds.Contains(kullanici.FirmaId))
             {
                 firmaIds.Add(kullanici.FirmaId);

@@ -35,9 +35,9 @@ namespace EMutabakat.Models
         public string KullaniciAktifPasif { get; set; } = "Aktif";
 
         public Firma? Firma { get; set; }
-        public ICollection<KullaniciFirma> KullaniciFirmalari { get; set; } = new List<KullaniciFirma>();
+        public ICollection<Firma> Firmalar { get; set; } = new List<Firma>();
 
         [NotMapped]
         public List<int> FirmaIds { get; set; } = new();
     }
-}
+} 

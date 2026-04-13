@@ -52,7 +52,7 @@
                 <RadzenDataGridColumn TItem="Kullanici" Title="Firmalar">
                     <Template Context="item">
                         @string.Join(", ",
-                            (item.KullaniciFirmalari?.Select(x => x.Firma?.FirmaAdi)
+                            (item.Firmalar?.Select(x => x.FirmaAdi)
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
                                 .Distinct()
                                 .ToList() ?? new List<string>()))

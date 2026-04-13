@@ -26,7 +26,6 @@ namespace EMutabakat.Services
         public async Task<List<DovizKodu>> GetAllAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
-
             return await context.DovizKodlari
                 .AsNoTracking()
                 .OrderBy(x => x.Name)
@@ -38,11 +37,12 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var normalized = (tcmb ?? string.Empty).Trim().ToUpperInvariant();
-
             return await context.DovizKodlari
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TCMB == normalized);
         }
+
+
 
         public async Task<DovizKodu> AddAsync(DovizKodu dovizKodu)
         {
