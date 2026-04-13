@@ -134,13 +134,6 @@ namespace EMutabakat.Services
             }
             else
             {
-                await _logService.AddAsync(
-                    "Hata",
-                    "Kullanıcı",
-                    $"Başarısız login: {mail}",
-                    mail
-                );
-
                 return null;
             }
         }
@@ -478,7 +471,6 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        // Hash password
                         kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
                         prepared.Add((r + 1, kullanici));
