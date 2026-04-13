@@ -155,15 +155,9 @@
 
     private async Task OpenImportDialog()
     {
-        var options = new DialogOptions() { Width = "600px", Height = "260px" };
-        RenderFragment content = builder =>
-        {
-            builder.OpenComponent(0, typeof(MutabakatImportDialog));
-            builder.CloseComponent();
-        };
-
-        var result = await DialogService.OpenAsync<MutabakatImportDialog>("Excel İçe Aktar", null, options);
-        if (result is bool b && b)
+        var parameters = new Dictionary<string, object?>();
+        var result = await DialogService.OpenAsync("Excel İçe Aktar", typeof(Components.Pages.Mutabakat.MutabakatImportDialog), parameters, new DialogOptions { Width = "600px" });
+        if (result == true)
         {
             await LoadMutabakatlarAsync();
         }
