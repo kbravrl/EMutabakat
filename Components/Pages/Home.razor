@@ -7,6 +7,7 @@
 @inject ICariGrupService CariGrupService
 @inject IMutabakatService MutabakatService
 @inject IKullaniciService KullaniciService
+@inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
@@ -16,15 +17,19 @@
     <RadzenText TextStyle="TextStyle.H4">Kontrol Paneli</RadzenText>
 
     <RadzenRow Gap="16px">
-        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
-            <RadzenCard>
-                <RadzenStack Gap="0.5rem">
-                    <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
-                    <RadzenButton Text="Firmalara Git" Icon="business" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
-                </RadzenStack>
-            </RadzenCard>
-        </RadzenColumn>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+                    <RadzenCard>
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
+                            <RadzenButton Text="Firmalara Git" Icon="business" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+            </Authorized>
+        </AuthorizeView>
 
         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
             <RadzenCard>
@@ -59,12 +64,26 @@
         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
             <RadzenCard>
                 <RadzenStack Gap="0.5rem">
-                    <RadzenText TextStyle="TextStyle.Subtitle2">Kullanıcılar</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H5">@kullaniciCount</RadzenText>
-                    <RadzenButton Text="Kullanıcılara Git" Icon="people" Click='@(() => NavigationManager.NavigateTo("/users"))' />
+                    <RadzenText TextStyle="TextStyle.Subtitle2">Döviz Kodları</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H5">@dovizCount</RadzenText>
+                    <RadzenButton Text="Döviz Kodlarına Git" Icon="currency_exchange" Click='@(() => NavigationManager.NavigateTo("/currency-codes"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
+
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+                    <RadzenCard>
+                        <RadzenStack Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.Subtitle2">Kullanıcılar</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H5">@kullaniciCount</RadzenText>
+                            <RadzenButton Text="Kullanıcılara Git" Icon="people" Click='@(() => NavigationManager.NavigateTo("/users"))' />
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+            </Authorized>
+        </AuthorizeView>
     </RadzenRow>
 
     <RadzenCard>
@@ -92,6 +111,7 @@
     private int firmaCount;
     private int cariCount;
     private int cariGrupCount;
+    private int dovizCount;
     private int mutabakatCount;
     private int kullaniciCount;
     private int mutabikCount;
@@ -112,11 +132,13 @@
             var cariler = await CariService.GetAllAsync();
             var cariGruplar = await CariGrupService.GetAllAsync();
             var mutabakatlar = await MutabakatService.GetAllAsync();
+            var dovizler = await DovizKoduService.GetAllAsync();
             var kullanicilar = await KullaniciService.GetAllAsync();
 
             firmaCount = firmalar.Count;
             cariCount = cariler.Count;
             cariGrupCount = cariGruplar.Count;
+            dovizCount = dovizler.Count;
             mutabakatCount = mutabakatlar.Count;
             kullaniciCount = kullanicilar.Count;
 
