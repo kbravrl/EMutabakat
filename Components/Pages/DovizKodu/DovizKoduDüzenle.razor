@@ -1,5 +1,7 @@
 @page "/currency-codes/edit/{tcmb}"
 
+@attribute [Authorize]
+
 @inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
