@@ -122,14 +122,22 @@
 
         if (mutabakat.MutabakatDurum == 1)
         {
-            successMessage = "Cevabınız başarı ile kaydedildi.";
+            if (durum == "approve")
+                successMessage = "Cevabınız başarı ile kaydedildi.";
+            else
+                errorMessage = "Bu mutabakata cevap önceden verildi.";
+
             isLoading = false;
             return;
         }
 
         if (mutabakat.MutabakatDurum == 2)
         {
-            successMessage = "Dosya gönderildi.";
+            if (durum == "reject")
+                successMessage = "Dosya gönderildi.";
+            else
+                errorMessage = "Bu mutabakata cevap önceden verildi.";
+
             isLoading = false;
             return;
         }
@@ -141,7 +149,7 @@
             if (ok)
                 successMessage = "Cevabınız başarı ile kaydedildi.";
             else
-                errorMessage = "Bu link daha önce kullanılmış olabilir.";
+                errorMessage = "Bu mutabakata cevap önceden verildi.";
 
             isLoading = false;
             return;
@@ -230,7 +238,7 @@
             }
             else
             {
-                errorMessage = "Bu link daha önce kullanılmış olabilir veya dosya gönderilemedi.";
+                errorMessage = "Bu mutabakata cevap önceden verildi.";
             }
         }
         catch
