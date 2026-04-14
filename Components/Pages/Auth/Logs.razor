@@ -35,6 +35,8 @@
                         PageSize="20"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
+                <RadzenDataGridColumn TItem="AppLog" Property="Id" Title="ID" Width="120px" />
+
                 <RadzenDataGridColumn TItem="AppLog" Property="CreatedAt" Title="Tarih" Width="190px">
                     <Template Context="item">
                         @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
