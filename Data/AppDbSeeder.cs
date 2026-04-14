@@ -30,34 +30,6 @@ namespace EMutabakat.Data
 
             await context.SaveChangesAsync();
 
-            var cariler = await context.Cariler.ToListAsync();
-            foreach (var cari in cariler)
-            {
-                cari.CariDovizKodu = (cari.CariDovizKodu ?? string.Empty).Trim() switch
-                {
-                    "0" => "TL",
-                    "1" => "USD",
-                    "2" => "EUR",
-                    var x when string.IsNullOrWhiteSpace(x) => null,
-                    var x => x.ToUpperInvariant()
-                };
-            }
-
-            var mutabakatlar = await context.Mutabakatlar.ToListAsync();
-            foreach (var mutabakat in mutabakatlar)
-            {
-                mutabakat.MutabakatDovizKodu = (mutabakat.MutabakatDovizKodu ?? string.Empty).Trim() switch
-                {
-                    "0" => "TL",
-                    "1" => "USD",
-                    "2" => "EUR",
-                    var x when string.IsNullOrWhiteSpace(x) => "TL",
-                    var x => x.ToUpperInvariant()
-                };
-            }
-
-            await context.SaveChangesAsync();
-
             var defaultFirma = await context.Firmalar.FirstOrDefaultAsync(f => f.FirmaVergiNumarasi == "1111111111");
             if (defaultFirma == null)
             {
@@ -90,10 +62,12 @@ namespace EMutabakat.Data
 
             var hasher = new PasswordHasher<Kullanici>();
             var admin = await context.Kullanicilar.FirstOrDefaultAsync(k => k.KullaniciMail == adminMail);
+
             if (admin == null)
             {
                 admin = new Kullanici
                 {
+                    KullaniciId = "1",
                     FirmaId = defaultFirma.FirmaId,
                     KullaniciAdi = "Sistem",
                     KullaniciSoyadi = "Yöneticisi",
@@ -111,6 +85,11 @@ namespace EMutabakat.Data
             }
             else
             {
+                if (string.IsNullOrWhiteSpace(admin.KullaniciId))
+                {
+                    admin.KullaniciId = "P1";
+                }
+
                 admin.Rol = KullaniciRolleri.Admin;
                 admin.KullaniciAktifPasif = "1";
 

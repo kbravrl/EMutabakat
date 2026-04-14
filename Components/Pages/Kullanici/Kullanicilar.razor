@@ -116,12 +116,12 @@
         NavigationManager.NavigateTo("/users/add");
     }
 
-    private void GoToEditPage(int id)
+    private void GoToEditPage(string id)
     {
         NavigationManager.NavigateTo($"/users/edit/{id}");
     }
 
-    private async Task DeleteKullanici(int id, string ad, string soyad)
+    private async Task DeleteKullanici(string id, string ad, string soyad)
     {
         var confirmed = await DialogService.Confirm(
             $"'{ad} {soyad}' kaydını silmek istediğinize emin misiniz?",

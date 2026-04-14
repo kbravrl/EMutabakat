@@ -25,6 +25,16 @@
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Kullanıcı ID *" />
+                    <RadzenTextBox Name="KullaniciId"
+                                   @bind-Value="kullanici.KullaniciId"
+                                   Style="width:100%;" />
+                    <RadzenRequiredValidator Component="KullaniciId"
+                                             Text="Kullanıcı ID zorunludur."
+                                             Popup="true" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Firmalar *" />
                     <RadzenDropDown Name="FirmaIds"
                                     Data="@firmalar"
@@ -171,6 +181,7 @@
     {
         firmalar = await FirmaService.GetAllAsync();
         selectedFirmaIds = new List<int>();
+        kullanici.KullaniciId = await KullaniciService.GenerateNextKullaniciIdAsync();
     }
 
     private async Task HandleValidSubmit()

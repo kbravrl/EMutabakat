@@ -1,4 +1,4 @@
-@page "/users/edit/{id:int}"
+@page "/users/edit/{id}"
 
 @attribute [Authorize(Roles = "Admin")]
 
@@ -33,6 +33,14 @@ else
 
             <RadzenFieldset Text="Kullanıcı Bilgileri" Style="margin-bottom:16px">
                 <RadzenRow Gap="16px">
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Kullanıcı ID *" />
+                        <RadzenTextBox Name="KullaniciId"
+                                       @bind-Value="kullanici.KullaniciId"
+                                       Style="width:100%;"
+                                       Disabled="true" />
+                    </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Firmalar *" />
@@ -120,10 +128,10 @@ else
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Şifre" />
+                        <RadzenLabel Text="Yeni Şifre" />
                         <RadzenPassword Name="Sifre"
-                                        @bind-Value="yeniSifre"
-                                        Placeholder="Yeni şifre giriniz (opsiyonel)"
+                                        @bind-Value="kullanici.Sifre"
+                                        Placeholder="Boş bırakırsanız değişmez"
                                         Style="width:100%;" />
                     </RadzenColumn>
 
@@ -139,13 +147,11 @@ else
                         <RadzenButton Text="İptal"
                                       Icon="close"
                                       ButtonStyle="ButtonStyle.Secondary"
-                                      Click="@Cancel"
-                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                                      Click="@Cancel" />
 
                         <RadzenButton Text="Güncelle"
                                       Icon="save"
-                                      ButtonType="ButtonType.Submit"
-                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
+                                      ButtonType="ButtonType.Submit" />
                     </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
@@ -154,10 +160,9 @@ else
 }
 
 @code {
-    [Parameter] public int id { get; set; }
+    [Parameter] public string id { get; set; } = string.Empty;
 
     private Kullanici? kullanici;
-    private string? yeniSifre;
     private bool isLoading = true;
     private List<Firma> firmalar = new();
     private List<int> selectedFirmaIds = new();
@@ -183,14 +188,15 @@ else
 
             if (kullanici != null)
             {
-                selectedFirmaIds = (kullanici.Firmalar?.Select(x => x.FirmaId).Distinct().ToList() ?? new List<int>());
+                selectedFirmaIds = kullanici.Firmalar?.Select(x => x.FirmaId).ToList() ?? new List<int>();
+
                 if (selectedFirmaIds.Count == 0 && kullanici.FirmaId > 0)
                 {
                     selectedFirmaIds.Add(kullanici.FirmaId);
                 }
 
-                kullanici.Sifre = "__UNCHANGED__";
-                yeniSifre = string.Empty;
+                // mevcut şifreyi boşaltıyoruz ki düzenleme ekranında hash görünmesin
+                kullanici.Sifre = string.Empty;
             }
         }
         finally
@@ -214,33 +220,15 @@ else
 
             kullanici.FirmaIds = selectedFirmaIds.Distinct().ToList();
             kullanici.FirmaId = kullanici.FirmaIds.First();
-            kullanici.Sifre = string.IsNullOrWhiteSpace(yeniSifre) ? string.Empty : yeniSifre;
 
-            var result = await KullaniciService.UpdateAsync(kullanici);
+            await KullaniciService.UpdateAsync(kullanici);
 
-            if (result != null)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Kullanıcı kaydı güncellendi.");
-
-                NavigationManager.NavigateTo("/users");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Kullanıcı kaydı bulunamadı.");
-            }
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Kullanıcı güncellendi.");
+            NavigationManager.NavigateTo("/users");
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(
-                NotificationSeverity.Warning,
-                "Uyarı",
-                ex.Message);
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
         }
     }
 

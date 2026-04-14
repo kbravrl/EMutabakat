@@ -7,7 +7,8 @@ namespace EMutabakat.Models
     public class Kullanici
     {
         [Key]
-        public int KullaniciId { get; set; }
+        [Required(ErrorMessage = "Kullanıcı ID zorunludur.")]
+        public string KullaniciId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Firma seçimi zorunludur.")]
         [ForeignKey("Firma")]
