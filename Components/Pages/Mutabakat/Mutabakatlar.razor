@@ -116,6 +116,11 @@
                                               Click="@(() => SendMail(item.MutabakatId))"
                                               Disabled="@isSubmitting" />
 
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Warning"
+                                              Click="@(() => EditMutabakat(item.MutabakatId))" />
+
                                 <RadzenButton Icon="refresh"
                                               Size="ButtonSize.Small"
                                               Variant="Variant.Flat"
@@ -155,11 +160,21 @@
 
     private async Task OpenImportDialog()
     {
-        var parameters = new Dictionary<string, object?>();
-        var result = await DialogService.OpenAsync("Excel İçe Aktar", typeof(Components.Pages.Mutabakat.MutabakatImportDialog), parameters, new DialogOptions { Width = "600px" });
-        if (result == true)
+        var result = await DialogService.OpenAsync<MutabakatImportDialog>(
+            "Mutabakat Excel Yükleme",
+            null,
+            new DialogOptions
+            {
+                Width = "830px",
+                Height = "350px",
+                Resizable = true,
+                Draggable = true
+            });
+
+        if (result is bool ok && ok)
         {
-            await LoadMutabakatlarAsync();
+            mutabakatlar = await MutabakatService.GetAllAsync();
+            StateHasChanged();
         }
     }
 
@@ -176,6 +191,11 @@
     private void GoToDetailsPage(string id)
     {
         NavigationManager.NavigateTo($"/reconciliations/detail/{id}");
+    }
+
+    private void EditMutabakat(string id)
+    {
+        NavigationManager.NavigateTo($"/reconciliations/edit/{id}");
     }
 
     private void GoToDeletedPage()

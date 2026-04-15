@@ -27,14 +27,6 @@
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenFormField Text="Mutabakat Tarihi" Style="width:100%;">
-                        <RadzenDatePicker @bind-Value="mutabakat.MutabakatTarihi"
-                                          DateFormat="dd.MM.yyyy"
-                                          Style="width:100%;" />
-                    </RadzenFormField>
-                </RadzenColumn>
-
-                <RadzenColumn Size="12" SizeMD="6">
                     <RadzenFormField Text="Mutabakat ID" Style="width:100%;">
                         <RadzenTextBox @bind-Value="mutabakat.MutabakatId"
                                        Style="width:100%;" />
@@ -49,6 +41,14 @@
                                         @bind-Value="mutabakat.CariId"
                                         Change="@OnCariChanged"
                                         Style="width:100%;" />
+                    </RadzenFormField>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenFormField Text="Mutabakat Tarihi" Style="width:100%;">
+                        <RadzenDatePicker @bind-Value="mutabakat.MutabakatTarihi"
+                                          DateFormat="dd.MM.yyyy"
+                                          Style="width:100%;" />
                     </RadzenFormField>
                 </RadzenColumn>
 
@@ -109,10 +109,17 @@
                                       Click="@Cancel"
                                       Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
 
+                        <RadzenButton Text="Kaydet"
+                                      Icon="save"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Click="@(_ => HandleValidSubmit())"
+                                      Disabled="@isSubmitting"
+                                      Style="border-radius:8px;padding:8px 14px;" />
+
                         <RadzenButton Text="Kaydet ve Mail Gönder"
                                       Icon="mail"
                                       ButtonStyle="ButtonStyle.Primary"
-                                      Click="@SaveAndSendMail"
+                                      Click="@(_ => SaveAndSendMail())"
                                       Disabled="@isSubmitting"
                                       Style="background:#d7e6ff;color:#0b57d0;border:1px solid #b5cfff;border-radius:8px;padding:8px 14px;" />
                     </RadzenStack>

@@ -8,6 +8,9 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Mutabakat ID zorunludur.")]
         public string MutabakatId { get; set; } = string.Empty;
 
+        [NotMapped]
+        public string OriginalMutabakatId { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "Mutabakat tarihi zorunludur.")]
         public DateTime MutabakatTarihi { get; set; }
 
