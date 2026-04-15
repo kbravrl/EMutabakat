@@ -38,6 +38,8 @@ namespace EMutabakat.Models
 
         public int MutabakatGonderimDurumu { get; set; }
 
+        public bool MutabakatMailGonderildi { get; set; } = false;
+
         public DateTime? MutabakatCevapTarihSaat { get; set; }
 
         public string? MutabakatCevapMail { get; set; }

@@ -517,6 +517,7 @@ namespace EMutabakat.Services
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatGonderimDurumu = 1;
+            mutabakat.MutabakatMailGonderildi = true;
 
             if (mutabakat.MutabakatDurum == 0)
             {
@@ -598,6 +599,7 @@ namespace EMutabakat.Services
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatGonderimDurumu = 2;
+            mutabakat.MutabakatMailGonderildi = true;
 
             await context.SaveChangesAsync();
 
@@ -609,6 +611,56 @@ namespace EMutabakat.Services
             );
 
             return true;
+        }
+
+        public async Task<(int successCount, int failCount, List<string> errors)> SendPendingMailsAsync()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var errors = new List<string>();
+            var successCount = 0;
+            var failCount = 0;
+
+            var pendingMutabakatlar = await context.Mutabakatlar
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                .Where(x =>
+                    !x.MutabakatMailGonderildi &&
+                    x.MutabakatDurum != 1 &&
+                    x.MutabakatDurum != 2)
+                .ToListAsync();
+
+            foreach (var item in pendingMutabakatlar)
+            {
+                try
+                {
+                    var result = await SendMailAsync(item.MutabakatId);
+
+                    if (result)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                        errors.Add($"MutabakatId {item.MutabakatId}: mail gönderilemedi.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failCount++;
+                    errors.Add($"MutabakatId {item.MutabakatId}: {ex.Message}");
+                }
+            }
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Toplu gönderim tamamlandı. Başarılı: {successCount}, Hatalı: {failCount}",
+                GetUserEmail()
+            );
+
+            return (successCount, failCount, errors);
         }
 
         public async Task<Mutabakat?> GetByTokenAsync(string token)

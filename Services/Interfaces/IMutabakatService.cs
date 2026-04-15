@@ -11,6 +11,7 @@ namespace EMutabakat.Services.Interfaces
         Task<bool> DeleteAsync(string id);
         Task<bool> SendMailAsync(string mutabakatId);
         Task<bool> SendReminderAsync(string mutabakatId);
+        Task<(int successCount, int failCount, List<string> errors)> SendPendingMailsAsync();
         Task<Mutabakat?> GetByTokenAsync(string token);
         Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm);
         Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? aciklama, string? filePath);

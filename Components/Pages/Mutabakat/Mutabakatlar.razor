@@ -22,6 +22,11 @@
                           Icon="file_upload"
                           Click="@OpenImportDialog" />
 
+            <RadzenButton Text="Gönderilmemişleri Toplu Gönder"
+                          Icon="send"
+                          ButtonStyle="ButtonStyle.Success"
+                          Click="@SendPendingMails" />
+
             <RadzenButton Text="Silinen Mutabakatlar"
                           Icon="history"
                           ButtonStyle="ButtonStyle.Secondary"
@@ -79,6 +84,13 @@
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
                     <Template Context="item">
                         @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Mail Durumu">
+                    <Template Context="item">
+                        <RadzenBadge Text="@(item.MutabakatMailGonderildi ? "Gönderildi" : "Gönderilmedi")"
+                                     BadgeStyle="@(item.MutabakatMailGonderildi ? BadgeStyle.Success : BadgeStyle.Warning)" />
                     </Template>
                 </RadzenDataGridColumn>
 
@@ -322,6 +334,45 @@
             {
                 isSubmitting = false;
             }
+        }
+    }
+
+    private async Task SendPendingMails()
+    {
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        try
+        {
+            var result = await MutabakatService.SendPendingMailsAsync();
+
+            if (result.failCount == 0)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    $"{result.successCount} adet mutabakat maili gönderildi.");
+            }
+            else
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    $"{result.successCount} adet gönderildi, {result.failCount} adet hata oluştu.");
+            }
+
+            await LoadMutabakatlarAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
+        }
+        finally
+        {
+            isSubmitting = false;
         }
     }
 
