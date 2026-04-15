@@ -663,6 +663,60 @@ namespace EMutabakat.Services
             return (successCount, failCount, errors);
         }
 
+        public async Task<(int successCount, int failCount, List<string> errors)> SendSelectedMailsAsync(List<string> mutabakatIds)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var errors = new List<string>();
+            var successCount = 0;
+            var failCount = 0;
+
+            if (mutabakatIds == null || !mutabakatIds.Any())
+                return (0, 0, errors);
+
+            var selectedMutabakatlar = await context.Mutabakatlar
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                .Where(x =>
+                    mutabakatIds.Contains(x.MutabakatId) &&
+                    !x.MutabakatMailGonderildi &&
+                    x.MutabakatDurum != 1 &&
+                    x.MutabakatDurum != 2)
+                .ToListAsync();
+
+            foreach (var item in selectedMutabakatlar)
+            {
+                try
+                {
+                    var result = await SendMailAsync(item.MutabakatId);
+
+                    if (result)
+                    {
+                        successCount++;
+                    }
+                    else
+                    {
+                        failCount++;
+                        errors.Add($"MutabakatId {item.MutabakatId}: mail gönderilemedi.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failCount++;
+                    errors.Add($"MutabakatId {item.MutabakatId}: {ex.Message}");
+                }
+            }
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Seçili mutabakatların toplu gönderimi tamamlandı. Başarılı: {successCount}, Hatalı: {failCount}",
+                GetUserEmail()
+            );
+
+            return (successCount, failCount, errors);
+        }
+
         public async Task<Mutabakat?> GetByTokenAsync(string token)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
