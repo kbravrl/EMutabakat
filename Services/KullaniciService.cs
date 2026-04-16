@@ -76,15 +76,14 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            var Ids = await context.Kullanicilar
-                .AsNoTracking()
-                .Select(x => x.KullaniciId)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToListAsync();
- 
-            var maxNumeric = 0;
+            var ids = await context.Kullanicilar
+               .AsNoTracking()
+               .Select(x => x.KullaniciId)
+               .Where(x => !string.IsNullOrWhiteSpace(x))
+               .ToListAsync();
 
-            foreach (var id in Ids)
+            var maxNumeric = 0;
+            foreach (var id in ids)
             {
                 var match = Regex.Match(id!, @"\d+");
                 if (match.Success && int.TryParse(match.Value, out var number) && number > maxNumeric)
@@ -94,7 +93,6 @@ namespace EMutabakat.Services
             }
 
             return $"P{maxNumeric + 1}";
-
         }
 
         public async Task<Kullanici?> GetByMailAsync(string mail)
