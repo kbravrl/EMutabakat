@@ -96,7 +96,7 @@
             await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
             ms.Position = 0;
 
-            var (createdCount, errors) = await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name, selectedFirmaIds);
+            var (createdCount, updatedCount, errors) = await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name, selectedFirmaIds);
 
             if (errors != null && errors.Count > 0)
             {
@@ -116,7 +116,7 @@
                 NotificationService.Notify(
                     NotificationSeverity.Success,
                     "Başarılı",
-                    $"Oluşturulan kayıt sayısı: {createdCount}");
+                    $"Oluşturulan kayıt: {createdCount}, güncellenen kayıt: {updatedCount}");
             }
 
             DialogService.Close(true);
