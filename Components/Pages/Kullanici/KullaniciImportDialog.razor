@@ -1,5 +1,8 @@
-@using Components.Pages.Mutabakat
+@using Microsoft.AspNetCore.Components.Forms
+@using EMutabakat.Models
+@using EMutabakat.Services.Interfaces
 @inject IKullaniciService KullaniciService
+@inject IFirmaService FirmaService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 @inject NavigationManager NavigationManager
@@ -7,10 +10,22 @@
 <div class="p-2">
     <RadzenText TextStyle="TextStyle.H6">Excel Dosyası Seç</RadzenText>
 
+    <div class="my-3">
+        <RadzenLabel Text="Firmalar *" Style="width:100%;" />
+        <RadzenDropDown Data="@firmalar"
+                        TextProperty="FirmaAdi"
+                        ValueProperty="FirmaId"
+                        @bind-Value="selectedFirmaIds"
+                        Multiple="true"
+                        AllowClear="true"
+                        Placeholder="Firma seçiniz"
+                        Style="width:100%;" />
+    </div>
+
     <div class="my-4">
         <InputFile OnChange="HandleSelected" Accept=".xls,.xlsx" />
     </div>
-    
+
     <div class="my-2">
         <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true">
             Örnek Excel dosyasını aşağıdan indirip kullanabilirsiniz.
@@ -18,15 +33,33 @@
     </div>
 
     <div class="rz-text-align-right">
-        <RadzenButton Text="Örnek Excel Dosyası" Icon="download" ButtonStyle="ButtonStyle.Success" Click="DownloadTemplate" />
-        <RadzenButton Text="Yükle" Icon="file_upload" Click="Upload" Disabled="@isUploading" />
-        <RadzenButton Text="İptal" Icon="close" Click="Cancel" ButtonStyle="ButtonStyle.Secondary" />
+        <RadzenButton Text="Örnek Excel Dosyası"
+                      Icon="download"
+                      ButtonStyle="ButtonStyle.Success"
+                      Click="DownloadTemplate" />
+
+        <RadzenButton Text="Yükle"
+                      Icon="file_upload"
+                      Click="Upload"
+                      Disabled="@isUploading" />
+
+        <RadzenButton Text="İptal"
+                      Icon="close"
+                      Click="Cancel"
+                      ButtonStyle="ButtonStyle.Secondary" />
     </div>
 </div>
 
 @code {
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
+    private List<int> selectedFirmaIds = new();
+    private List<Firma> firmalar = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        firmalar = await FirmaService.GetAllAsync();
+    }
 
     private void HandleSelected(InputFileChangeEventArgs e)
     {
@@ -36,14 +69,22 @@
     private void DownloadTemplate()
     {
         NavigationManager.NavigateTo("/templates/KullaniciTemplate.xlsx", forceLoad: true);
-
     }
+
     private async Task Upload()
     {
-        if (isUploading) return;
+        if (isUploading)
+            return;
+
         if (selectedFile == null)
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen bir dosya seçin.");
+            return;
+        }
+
+        if (selectedFirmaIds == null || !selectedFirmaIds.Any())
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen en az bir firma seçin.");
             return;
         }
 
@@ -55,16 +96,27 @@
             await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
             ms.Position = 0;
 
-            var (createdCount, errors) = await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name);
+            var (createdCount, errors) = await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name, selectedFirmaIds);
 
             if (errors != null && errors.Count > 0)
             {
-                var parameters = new Dictionary<string, object?> { ["Errors"] = errors };
-                await DialogService.OpenAsync(string.Empty, typeof(ImportErrors), parameters, new DialogOptions { Width = "700px", Height = "400px" });
+                var parameters = new Dictionary<string, object?>
+                {
+                    ["Errors"] = errors
+                };
+
+                await DialogService.OpenAsync(
+                    string.Empty,
+                    typeof(ImportErrors),
+                    parameters,
+                    new DialogOptions { Width = "700px", Height = "400px" });
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Başarılı", $"Oluşturulan kayıt: {createdCount}");
+                NotificationService.Notify(
+                    NotificationSeverity.Success,
+                    "Başarılı",
+                    $"Oluşturulan kayıt sayısı: {createdCount}");
             }
 
             DialogService.Close(true);

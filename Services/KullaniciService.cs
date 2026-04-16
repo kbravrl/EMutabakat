@@ -3,14 +3,9 @@ using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-using Org.BouncyCastle.Crypto;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
 
 namespace EMutabakat.Services
@@ -77,10 +72,10 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var ids = await context.Kullanicilar
-               .AsNoTracking()
-               .Select(x => x.KullaniciId)
-               .Where(x => !string.IsNullOrWhiteSpace(x))
-               .ToListAsync();
+                .AsNoTracking()
+                .Select(x => x.KullaniciId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToListAsync();
 
             var maxNumeric = 0;
             foreach (var id in ids)
@@ -154,10 +149,7 @@ namespace EMutabakat.Services
 
                 return kullanici;
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
         public async Task<Kullanici> AddAsync(Kullanici kullanici)
@@ -235,7 +227,6 @@ namespace EMutabakat.Services
             if (firmaIds.Count == 0)
                 throw new Exception("En az bir firma seçimi zorunludur.");
 
-            // Validate provided firma ids exist
             var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
             if (validFirmaCount != firmaIds.Count)
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
@@ -320,23 +311,13 @@ namespace EMutabakat.Services
                 .Name;
         }
 
-        // Helper parsers
         private static string? GetStringCell(IRow row, int idx)
         {
             var cell = row.GetCell(idx);
             return cell?.ToString();
         }
 
-        private static int ParseIntCell(IRow row, int idx)
-        {
-            var cell = row.GetCell(idx);
-            if (cell == null) return 0;
-            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
-            var s = cell.ToString();
-            return int.TryParse(s, out var v) ? v : 0;
-        }
-
-        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName)
+        public async Task<(int created, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, List<int> firmaIds)
         {
             var errors = new List<string>();
             var created = 0;
@@ -352,6 +333,30 @@ namespace EMutabakat.Services
 
             try
             {
+                if (firmaIds == null || !firmaIds.Any())
+                {
+                    errors.Add("En az bir firma seçilmelidir.");
+                    return (0, errors);
+                }
+
+                firmaIds = firmaIds
+                    .Where(x => x > 0)
+                    .Distinct()
+                    .ToList();
+
+                if (!firmaIds.Any())
+                {
+                    errors.Add("Geçerli firma seçimi yapılmadı.");
+                    return (0, errors);
+                }
+
+                var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
+                if (validFirmaCount != firmaIds.Count)
+                {
+                    errors.Add("Seçilen firmalardan biri veya birkaçı bulunamadı.");
+                    return (0, errors);
+                }
+
                 IWorkbook workbook;
                 var ext = Path.GetExtension(fileName)?.ToLowerInvariant() ?? string.Empty;
 
@@ -394,13 +399,12 @@ namespace EMutabakat.Services
 
                 string[] required = new[]
                 {
-            "KullaniciId",
-            "FirmaId",
-            "KullaniciAdi",
-            "KullaniciSoyadi",
-            "KullaniciMail",
-            "Sifre"
-        };
+                    "KullaniciId",
+                    "KullaniciAdi",
+                    "KullaniciSoyadi",
+                    "KullaniciMail",
+                    "Sifre"
+                };
 
                 foreach (var h in required)
                 {
@@ -430,8 +434,8 @@ namespace EMutabakat.Services
                     try
                     {
                         var kullaniciId = GetStringCell(row, headerMap["KullaniciId"])?.Trim() ?? string.Empty;
-                        var firmaId = ParseIntCell(row, headerMap["FirmaId"]);
                         var kullaniciMail = GetStringCell(row, headerMap["KullaniciMail"])?.Trim() ?? string.Empty;
+
                         var rol = headerMap.ContainsKey("Rol")
                             ? (GetStringCell(row, headerMap["Rol"])?.Trim() ?? KullaniciRolleri.Standart)
                             : KullaniciRolleri.Standart;
@@ -443,7 +447,8 @@ namespace EMutabakat.Services
                         var kullanici = new Kullanici
                         {
                             KullaniciId = kullaniciId,
-                            FirmaId = firmaId,
+                            FirmaId = firmaIds[0],
+                            FirmaIds = firmaIds.ToList(),
                             KullaniciAdi = GetStringCell(row, headerMap["KullaniciAdi"])?.Trim() ?? string.Empty,
                             KullaniciSoyadi = GetStringCell(row, headerMap["KullaniciSoyadi"])?.Trim() ?? string.Empty,
                             KullaniciMail = kullaniciMail,
@@ -460,28 +465,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: KullaniciId boş olamaz.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
-                            continue;
-                        }
-
-                        if (kullanici.FirmaId <= 0)
-                        {
-                            var message = $"Satır {r + 1}: FirmaId geçerli olmalıdır.";
-                            errors.Add(message);
-
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -493,29 +477,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: Zorunlu alanlar boş olamaz (KullaniciAdi, KullaniciSoyadi, KullaniciMail, Sifre).";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
-                            continue;
-                        }
-
-                        var firmaExists = await context.Firmalar.AnyAsync(f => f.FirmaId == kullanici.FirmaId);
-                        if (!firmaExists)
-                        {
-                            var message = $"Satır {r + 1}: FirmaId {kullanici.FirmaId} bulunamadı.";
-                            errors.Add(message);
-
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -524,13 +486,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: KullaniciAktifPasif değeri yalnızca 0 veya 1 olabilir.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -539,13 +495,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: Rol yalnızca '{KullaniciRolleri.Standart}' veya '{KullaniciRolleri.Admin}' olabilir.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -557,13 +507,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: '{kullanici.KullaniciId}' değeri Excel içinde tekrar ediyor.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -575,13 +519,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: '{kullanici.KullaniciId}' ID'li kullanıcı zaten mevcut.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -593,13 +531,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: '{kullanici.KullaniciMail}' mail adresi Excel içinde tekrar ediyor.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -611,13 +543,7 @@ namespace EMutabakat.Services
                             var message = $"Satır {r + 1}: '{kullanici.KullaniciMail}' mail adresi zaten kayıtlı.";
                             errors.Add(message);
 
-                            await _logService.AddAsync(
-                                "Hata",
-                                "Kullanıcı",
-                                message,
-                                GetUserEmail()
-                            );
-
+                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -639,12 +565,7 @@ namespace EMutabakat.Services
                         var message = $"Satır {r + 1}: {detail}";
                         errors.Add(message);
 
-                        await _logService.AddAsync(
-                            "Hata",
-                            "Kullanıcı",
-                            message,
-                            GetUserEmail()
-                        );
+                        await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                     }
                 }
 
@@ -667,10 +588,13 @@ namespace EMutabakat.Services
 
                 await context.SaveChangesAsync();
 
+                var selectedFirmalar = await context.Firmalar
+                    .Where(f => firmaIds.Contains(f.FirmaId))
+                    .ToListAsync();
+
                 foreach (var (_, kullanici) in prepared)
                 {
-                    var firma = await context.Firmalar.FindAsync(kullanici.FirmaId);
-                    if (firma != null)
+                    foreach (var firma in selectedFirmalar)
                     {
                         kullanici.Firmalar.Add(firma);
                     }
