@@ -55,6 +55,9 @@ namespace EMutabakat.Services
 
             try
             {
+                firma.FirmaMail = firma.FirmaMail?.Trim().ToLower();
+                firma.FirmaSmtpUser = firma.FirmaSmtpUser?.Trim().ToLower();
+
                 context.Firmalar.Add(firma);
                 await context.SaveChangesAsync();
 
@@ -86,13 +89,15 @@ namespace EMutabakat.Services
 
             try
             {
-
                 var existingFirma = await context.Firmalar
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.FirmaId == firma.FirmaId);
 
                 if (existingFirma == null)
                     return null;
+
+                firma.FirmaMail = firma.FirmaMail?.Trim().ToLower();
+                firma.FirmaSmtpUser = firma.FirmaSmtpUser?.Trim().ToLower();
 
                 var updated = await context.Firmalar
                     .Where(x => x.FirmaId == firma.FirmaId)
@@ -107,12 +112,12 @@ namespace EMutabakat.Services
                         .SetProperty(x => x.FirmaMersisNumarasi, firma.FirmaMersisNumarasi)
                         .SetProperty(x => x.FirmaWebAdresi, firma.FirmaWebAdresi)
                         .SetProperty(x => x.FirmaYetkiliAdiSoyadi, firma.FirmaYetkiliAdiSoyadi)
-                        .SetProperty(x => x.FirmaMail, firma.FirmaMail)
+                        .SetProperty(x => x.FirmaMail, firma.FirmaMail) // 🔥 normalized
                         .SetProperty(x => x.FirmaTelefon, firma.FirmaTelefon)
                         .SetProperty(x => x.FirmaGsm, firma.FirmaGsm)
                         .SetProperty(x => x.FirmaSmtpHost, firma.FirmaSmtpHost)
                         .SetProperty(x => x.FirmaSmtpPort, firma.FirmaSmtpPort)
-                        .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser)
+                        .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser) // 🔥 normalized
                         .SetProperty(x => x.FirmaSmtpPassword, firma.FirmaSmtpPassword)
                         .SetProperty(x => x.FirmaSmtpSecure, firma.FirmaSmtpSecure)
                         .SetProperty(x => x.FirmaAktifPasif, firma.FirmaAktifPasif));

@@ -94,16 +94,20 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var normalizedMail = mail?.Trim().ToLower();
+
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Firmalar)
-                .FirstOrDefaultAsync(x => x.KullaniciMail == mail);
+                .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
         }
 
         public async Task<Kullanici?> RegisterAsync(Kullanici kullanici)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            kullanici.KullaniciMail = kullanici.KullaniciMail?.Trim().ToLower();
 
             var mevcutKullanici = await context.Kullanicilar
                 .FirstOrDefaultAsync(x => x.KullaniciMail == kullanici.KullaniciMail);
@@ -130,8 +134,10 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var normalizedMail = mail?.Trim().ToLower();
+
             var kullanici = await context.Kullanicilar
-                .FirstOrDefaultAsync(x => x.KullaniciMail == mail && x.KullaniciAktifPasif == "1");
+                .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail && x.KullaniciAktifPasif == "1");
 
             if (kullanici == null)
                 return null;
@@ -143,8 +149,8 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Bilgi",
                     "Kullanıcı",
-                    $"Başarılı login: {mail}",
-                    mail
+                    $"Başarılı login: {normalizedMail}",
+                    normalizedMail
                 );
 
                 return kullanici;
@@ -172,8 +178,9 @@ namespace EMutabakat.Services
             if (!KullaniciRolleri.IsValid(kullanici.Rol))
                 throw new Exception("Geçerli bir rol seçiniz.");
 
-            var normalizedMail = kullanici.KullaniciMail.Trim().ToLower();
-            var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
+            kullanici.KullaniciMail = kullanici.KullaniciMail.Trim().ToLower();
+
+            var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail == kullanici.KullaniciMail);
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı kullanıcı zaten var.");
 
@@ -189,7 +196,6 @@ namespace EMutabakat.Services
 
             kullanici.FirmaId = firmaIds[0];
             kullanici.KullaniciId = await GenerateNextKullaniciIdAsync();
-            kullanici.KullaniciMail = kullanici.KullaniciMail.Trim();
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
             context.Kullanicilar.Add(kullanici);
@@ -231,10 +237,19 @@ namespace EMutabakat.Services
             if (validFirmaCount != firmaIds.Count)
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
+            var normalizedMail = kullanici.KullaniciMail?.Trim().ToLower();
+
+            var mailExists = await context.Kullanicilar.AnyAsync(x =>
+                x.KullaniciId != kullanici.KullaniciId &&
+                x.KullaniciMail == normalizedMail);
+
+            if (mailExists)
+                throw new Exception("Bu mail adresi ile kayıtlı başka bir kullanıcı zaten var.");
+
             existingKullanici.FirmaId = firmaIds[0];
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi;
-            existingKullanici.KullaniciMail = kullanici.KullaniciMail;
+            existingKullanici.KullaniciMail = normalizedMail;
             existingKullanici.KullaniciGsm = kullanici.KullaniciGsm;
             existingKullanici.Rol = kullanici.Rol;
             existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif;
@@ -516,7 +531,7 @@ namespace EMutabakat.Services
 
                         var mailOwner = await context.Kullanicilar
                             .AsNoTracking()
-                            .FirstOrDefaultAsync(x => x.KullaniciMail.ToLower() == normalizedMail);
+                            .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
 
                         if (mailOwner != null && !mailOwner.KullaniciId.Equals(kullaniciId, StringComparison.OrdinalIgnoreCase))
                         {
@@ -528,7 +543,7 @@ namespace EMutabakat.Services
 
                         var existingUser = await context.Kullanicilar
                             .Include(x => x.Firmalar)
-                            .FirstOrDefaultAsync(x => x.KullaniciId.ToLower() == kullaniciId.ToLower());
+                            .FirstOrDefaultAsync(x => x.KullaniciId == kullaniciId);
 
                         if (existingUser == null)
                         {
@@ -547,7 +562,7 @@ namespace EMutabakat.Services
                                 FirmaIds = firmaIds.ToList(),
                                 KullaniciAdi = kullaniciAdi.Trim(),
                                 KullaniciSoyadi = kullaniciSoyadi.Trim(),
-                                KullaniciMail = kullaniciMail.Trim(),
+                                KullaniciMail = normalizedMail,
                                 KullaniciGsm = kullaniciGsm.Trim(),
                                 Sifre = string.Empty,
                                 Rol = rol.Trim(),
@@ -574,7 +589,7 @@ namespace EMutabakat.Services
 
                             var currentAdi = (existingUser.KullaniciAdi ?? string.Empty).Trim();
                             var currentSoyadi = (existingUser.KullaniciSoyadi ?? string.Empty).Trim();
-                            var currentMail = (existingUser.KullaniciMail ?? string.Empty).Trim().ToLower();
+                            var currentMail = (existingUser.KullaniciMail ?? string.Empty).Trim();
                             var currentGsm = (existingUser.KullaniciGsm ?? string.Empty).Trim();
                             var currentRol = (existingUser.Rol ?? string.Empty).Trim();
                             var currentAktifPasif = (existingUser.KullaniciAktifPasif ?? string.Empty).Trim();
@@ -610,7 +625,7 @@ namespace EMutabakat.Services
                                 existingUser.FirmaId = firmaIds[0];
                                 existingUser.KullaniciAdi = normalizedAdi;
                                 existingUser.KullaniciSoyadi = normalizedSoyadi;
-                                existingUser.KullaniciMail = kullaniciMail.Trim();
+                                existingUser.KullaniciMail = normalizedMail;
                                 existingUser.KullaniciGsm = normalizedGsm;
                                 existingUser.Rol = normalizedRol;
                                 existingUser.KullaniciAktifPasif = normalizedAktifPasif;

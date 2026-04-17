@@ -297,6 +297,11 @@ namespace EMutabakat.Services
         private async Task ValidateCariAsync(AppDbContext context, Cari cari)
         {
             cari.CariId = cari.CariId?.Trim() ?? string.Empty;
+            cari.CariGrupId = cari.CariGrupId?.Trim() ?? string.Empty;
+            cari.CariYetkiliMail = cari.CariYetkiliMail?.Trim().ToLower();
+            cari.CariDovizKodu = string.IsNullOrWhiteSpace(cari.CariDovizKodu)
+                ? null
+                : cari.CariDovizKodu.Trim().ToUpperInvariant();
 
             if (string.IsNullOrWhiteSpace(cari.CariId))
                 throw new Exception("Cari ID zorunludur.");
@@ -319,8 +324,6 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(cari.CariGrupId))
                 throw new Exception("Cari grup seçimi zorunludur.");
 
-            cari.CariGrupId = cari.CariGrupId.Trim();
-
             if (cari.CariAktifPasif != 0 && cari.CariAktifPasif != 1)
                 throw new Exception("Aktif/Pasif değeri geçersiz.");
 
@@ -339,7 +342,9 @@ namespace EMutabakat.Services
 
             if (!string.IsNullOrWhiteSpace(cari.CariDovizKodu))
             {
-                var dovizExists = await context.DovizKodlari.AnyAsync(x => x.TCMB == cari.CariDovizKodu);
+                var dovizExists = await context.DovizKodlari
+                    .AnyAsync(x => x.TCMB == cari.CariDovizKodu);
+
                 if (!dovizExists)
                     throw new Exception("Geçerli bir döviz kodu seçiniz.");
             }
