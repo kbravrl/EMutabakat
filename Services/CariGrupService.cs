@@ -93,11 +93,13 @@ namespace EMutabakat.Services
             if (kullanici.Rol == Models.KullaniciRolleri.Admin)
                 return null;
 
-            var ids = new List<int>();
-            if (kullanici.FirmaId > 0) ids.Add(kullanici.FirmaId);
-            ids.AddRange(kullanici.Firmalar.Select(uf => uf.FirmaId));
+            var ids = kullanici.Firmalar
+               .Select(uf => uf.FirmaId)
+               .Distinct()
+               .Where(i => i > 0)
+               .ToList();
 
-            return ids.Distinct().Where(i => i > 0).ToList();
+            return ids;
         }
 
         public async Task<string> GenerateNextCariGrupIdAsync()

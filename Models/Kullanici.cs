@@ -10,10 +10,6 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Kullanıcı ID zorunludur.")]
         public string KullaniciId { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
-        [ForeignKey("Firma")]
-        public int FirmaId { get; set; }
-
         [Required(ErrorMessage = "Ad zorunludur.")]
         public string KullaniciAdi { get; set; } = string.Empty;
 
@@ -33,12 +29,11 @@ namespace EMutabakat.Models
         public string Rol { get; set; } = KullaniciRolleri.Standart;
 
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
-        public string KullaniciAktifPasif { get; set; } = "Aktif";
+        public string KullaniciAktifPasif { get; set; } = "1";
 
-        public Firma? Firma { get; set; }
         public ICollection<Firma> Firmalar { get; set; } = new List<Firma>();
 
         [NotMapped]
         public List<int> FirmaIds { get; set; } = new();
     }
-} 
+}

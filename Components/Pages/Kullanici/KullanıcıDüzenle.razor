@@ -165,7 +165,7 @@ else
     private Kullanici? kullanici;
     private bool isLoading = true;
     private List<Firma> firmalar = new();
-    private List<int> selectedFirmaIds = new();
+    private IEnumerable<int> selectedFirmaIds = Enumerable.Empty<int>();
 
     private List<RolOption> roller = new()
     {
@@ -188,14 +188,13 @@ else
 
             if (kullanici != null)
             {
-                selectedFirmaIds = kullanici.Firmalar?.Select(x => x.FirmaId).ToList() ?? new List<int>();
+                selectedFirmaIds = kullanici.Firmalar?
+                    .Select(x => x.FirmaId)
+                    .Distinct()
+                    .ToList() ?? new List<int>();
 
-                if (selectedFirmaIds.Count == 0 && kullanici.FirmaId > 0)
-                {
-                    selectedFirmaIds.Add(kullanici.FirmaId);
-                }
+                kullanici.FirmaIds = selectedFirmaIds.ToList();
 
-                // mevcut şifreyi boşaltıyoruz ki düzenleme ekranında hash görünmesin
                 kullanici.Sifre = string.Empty;
             }
         }
@@ -212,14 +211,17 @@ else
 
         try
         {
-            if (selectedFirmaIds.Count == 0)
+            var firmaIdList = selectedFirmaIds?
+                .Distinct()
+                .ToList() ?? new List<int>();
+
+            if (firmaIdList.Count == 0)
             {
                 NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "En az bir firma seçimi zorunludur.");
                 return;
             }
 
-            kullanici.FirmaIds = selectedFirmaIds.Distinct().ToList();
-            kullanici.FirmaId = kullanici.FirmaIds.First();
+            kullanici.FirmaIds = firmaIdList;
 
             await KullaniciService.UpdateAsync(kullanici);
 

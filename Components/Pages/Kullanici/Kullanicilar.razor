@@ -52,10 +52,11 @@
                 <RadzenDataGridColumn TItem="Kullanici" Title="Firmalar">
                     <Template Context="item">
                         @string.Join(", ",
-                            (item.Firmalar?.Select(x => x.FirmaAdi)
+                            item.Firmalar?
+                                .Select(x => x.FirmaAdi)
                                 .Where(x => !string.IsNullOrWhiteSpace(x))
                                 .Distinct()
-                                .ToList() ?? new List<string>()))
+                                .ToList() ?? new List<string>())
                     </Template>
                 </RadzenDataGridColumn>
 

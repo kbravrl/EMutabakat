@@ -163,7 +163,7 @@
     };
 
     private List<Firma> firmalar = new();
-    private List<int> selectedFirmaIds = new();
+    private IEnumerable<int> selectedFirmaIds = Enumerable.Empty<int>();
 
     private List<RolOption> roller = new()
     {
@@ -180,7 +180,6 @@
     protected override async Task OnInitializedAsync()
     {
         firmalar = await FirmaService.GetAllAsync();
-        selectedFirmaIds = new List<int>();
         kullanici.KullaniciId = await KullaniciService.GenerateNextKullaniciIdAsync();
     }
 
@@ -188,14 +187,17 @@
     {
         try
         {
-            if (selectedFirmaIds.Count == 0)
+            var firmaIdList = selectedFirmaIds?
+                .Distinct()
+                .ToList() ?? new List<int>();
+
+            if (firmaIdList.Count == 0)
             {
                 NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "En az bir firma seçimi zorunludur.");
                 return;
             }
 
-            kullanici.FirmaIds = selectedFirmaIds.Distinct().ToList();
-            kullanici.FirmaId = kullanici.FirmaIds.First();
+            kullanici.FirmaIds = firmaIdList;
 
             await KullaniciService.AddAsync(kullanici);
 

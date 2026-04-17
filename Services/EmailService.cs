@@ -18,19 +18,23 @@ namespace EMutabakat.Services
         {
             try
             {
-                using var smtpClient = new SmtpClient(kullanici.Firma.FirmaSmtpHost, kullanici.Firma.FirmaSmtpPort);
+                var firma = kullanici.Firmalar?.FirstOrDefault();
+                if (firma == null)
+                    throw new Exception("Kullanıcıya bağlı firma bulunamadı.");
+
+                using var smtpClient = new SmtpClient(firma.FirmaSmtpHost, firma.FirmaSmtpPort);
 
                 smtpClient.Credentials = new NetworkCredential(
-                    kullanici.Firma.FirmaSmtpUser,
-                    kullanici.Firma.FirmaSmtpPassword);
+                    firma.FirmaSmtpUser,
+                    firma.FirmaSmtpPassword);
 
-                smtpClient.EnableSsl = IsSecureEnabled(kullanici.Firma.FirmaSmtpSecure);
+                smtpClient.EnableSsl = IsSecureEnabled(firma.FirmaSmtpSecure);
 
                 using var mailMessage = new MailMessage
                 {
-                    From = new MailAddress(kullanici.Firma.FirmaMail, kullanici.Firma.FirmaAdi),
-                    Subject = BuildSubject(mutabakat, kullanici.Firma, isReminder),
-                    Body = BuildHtmlBody(mutabakat, kullanici, approveUrl, rejectUrl),
+                    From = new MailAddress(firma.FirmaMail, firma.FirmaAdi),
+                    Subject = BuildSubject(mutabakat, firma, isReminder),
+                    Body = BuildHtmlBody(mutabakat, firma, approveUrl, rejectUrl),
                     IsBodyHtml = true,
                     BodyEncoding = Encoding.UTF8,
                     SubjectEncoding = Encoding.UTF8
@@ -77,7 +81,7 @@ namespace EMutabakat.Services
             return $"{prefix}{firma.FirmaAdi} Cari Hesap Mutabakatı - {donem}";
         }
 
-        private string BuildHtmlBody(Mutabakat mutabakat, Kullanici kullanici, string approveUrl, string rejectUrl)
+        private string BuildHtmlBody(Mutabakat mutabakat, Firma firma, string approveUrl, string rejectUrl)
         {
             string donem = mutabakat.MutabakatTarihi.ToString("MM.yyyy");
             var bakiyeVal = mutabakat.MutabakatBakiye;
@@ -92,9 +96,9 @@ namespace EMutabakat.Services
 
         <h2 style='text-align:center;'>MUTABAKAT</h2>
 
-        <p><b>Gönderen Firma :</b> {kullanici.Firma.FirmaAdi}</p>
-        <p><b>Vergi Dairesi :</b> {kullanici.Firma.FirmaVergiDairesi ?? "-"}</p>
-        <p><b>Vergi No :</b> {kullanici.Firma.FirmaVergiNumarasi ?? "-"}</p>
+        <p><b>Gönderen Firma :</b> {firma.FirmaAdi}</p>
+        <p><b>Vergi Dairesi :</b> {firma.FirmaVergiDairesi ?? "-"}</p>
+        <p><b>Vergi No :</b> {firma.FirmaVergiNumarasi ?? "-"}</p>
 
         <br/>
 
@@ -105,21 +109,21 @@ namespace EMutabakat.Services
         <br/>
 
         <p>
-        Şirketimiz nezdindeki Cari Hesabınız 
-        <b>{donem}</b> dönemi itibari ile 
-        <b>{bakiye} {doviz} {bakiyeTipi}</b> 
+        Şirketimiz nezdindeki Cari Hesabınız
+        <b>{donem}</b> dönemi itibari ile
+        <b>{bakiye} {doviz} {bakiyeTipi}</b>
         bakiyeniz bulunmaktadır.
         </p>
 
         <p>
-        Mutabık olup olmadığınızı bildirmenizi, mutabık olunmaması durumunda 
+        Mutabık olup olmadığınızı bildirmenizi, mutabık olunmaması durumunda
         cari hesap ekstrenizi göndermenizi rica ederiz.
         </p>
 
         <br/>
 
         <p>
-        T.T.K. 92. maddesi gereği mutabakat veya itirazınızı 1 ay içinde 
+        T.T.K. 92. maddesi gereği mutabakat veya itirazınızı 1 ay içinde
         bildirmediğiniz takdirde bakiyede mutabık sayılacağımızı bilgilerinize sunarız.
         </p>
 
@@ -135,12 +139,12 @@ namespace EMutabakat.Services
 
         <br/><br/>
 
-        <a href='{approveUrl}' 
+        <a href='{approveUrl}'
            style='background-color:green;color:white;padding:12px 20px;text-decoration:none;margin-right:10px;'>
            ✔ Mutabıkız
         </a>
 
-        <a href='{rejectUrl}' 
+        <a href='{rejectUrl}'
            style='background-color:red;color:white;padding:12px 20px;text-decoration:none;'>
            ✖ Mutabık Değiliz
         </a>

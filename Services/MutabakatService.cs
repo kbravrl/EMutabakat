@@ -481,14 +481,16 @@ namespace EMutabakat.Services
             var email = user.Identity.Name;
 
             var kullanici = await context.Kullanicilar
-               .Include(x => x.Firma)
-               .Include(x => x.Firmalar)
-               .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+   .Include(x => x.Firmalar)
+   .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
                 return false;
 
-            if (kullanici.Firma == null)
+            var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
+                       ?? kullanici.Firmalar.FirstOrDefault();
+
+            if (firma == null)
                 return false;
 
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
@@ -564,13 +566,16 @@ namespace EMutabakat.Services
             var email = user.Identity.Name;
 
             var kullanici = await context.Kullanicilar
-               .Include(x => x.Firma)
-               .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+   .Include(x => x.Firmalar)
+   .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
                 return false;
 
-            if (kullanici.Firma == null)
+            var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
+                       ?? kullanici.Firmalar.FirstOrDefault();
+
+            if (firma == null)
                 return false;
 
             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";
@@ -758,11 +763,11 @@ namespace EMutabakat.Services
             if (kullanici.Rol == Models.KullaniciRolleri.Admin)
                 return null;
 
-            var ids = new List<int>();
-            if (kullanici.FirmaId > 0) ids.Add(kullanici.FirmaId);
-            ids.AddRange(kullanici.Firmalar.Select(uf => uf.FirmaId));
-
-            return ids.Distinct().Where(i => i > 0).ToList();
+            return kullanici.Firmalar
+                .Select(uf => uf.FirmaId)
+                .Distinct()
+                .Where(i => i > 0)
+                .ToList();
         }
 
         public async Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm)
@@ -1183,22 +1188,24 @@ namespace EMutabakat.Services
                             }
 
                             var sender = await context.Kullanicilar
-                                .Include(k => k.Firma)
-                                .FirstOrDefaultAsync(k => k.FirmaId == full.FirmaId);
+                                .Include(k => k.Firmalar)
+                                .FirstOrDefaultAsync(k => k.Firmalar.Any(f => f.FirmaId == full.FirmaId));
+
+
 
                             if (sender == null)
                             {
+                                if (full.Firma == null)
+                                {
+                                    errors.Add($"MutabakatId {full.MutabakatId}: firma bilgisi bulunamadı.");
+                                    continue;
+                                }
+
                                 sender = new Kullanici
                                 {
-                                    KullaniciMail = full.Firma?.FirmaMail ?? string.Empty,
-                                    Firma = full.Firma
+                                    KullaniciMail = full.Firma.FirmaMail ?? string.Empty,
+                                    Firmalar = new List<Firma> { full.Firma }
                                 };
-                            }
-
-                            if (sender.Firma == null)
-                            {
-                                errors.Add($"MutabakatId {full.MutabakatId}: firma bilgisi bulunamadı.");
-                                continue;
                             }
 
                             var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:7017";

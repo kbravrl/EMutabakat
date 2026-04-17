@@ -10,6 +10,7 @@ namespace EMutabakat.Data
         {
             await using var scope = services.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
             const string adminMail = "admin@emutabakat.local";
             const string adminPassword = "rp23TE&?";
 
@@ -30,7 +31,9 @@ namespace EMutabakat.Data
 
             await context.SaveChangesAsync();
 
-            var defaultFirma = await context.Firmalar.FirstOrDefaultAsync(f => f.FirmaVergiNumarasi == "1111111111");
+            var defaultFirma = await context.Firmalar
+                .FirstOrDefaultAsync(f => f.FirmaVergiNumarasi == "1111111111");
+
             if (defaultFirma == null)
             {
                 defaultFirma = new Firma
@@ -61,14 +64,16 @@ namespace EMutabakat.Data
             }
 
             var hasher = new PasswordHasher<Kullanici>();
-            var admin = await context.Kullanicilar.FirstOrDefaultAsync(k => k.KullaniciMail == adminMail);
+
+            var admin = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == adminMail);
 
             if (admin == null)
             {
                 admin = new Kullanici
                 {
-                    KullaniciId = "1",
-                    FirmaId = defaultFirma.FirmaId,
+                    KullaniciId = "P1",
                     KullaniciAdi = "Sistem",
                     KullaniciSoyadi = "Yöneticisi",
                     KullaniciMail = adminMail,
@@ -79,6 +84,7 @@ namespace EMutabakat.Data
                 };
 
                 admin.Sifre = hasher.HashPassword(admin, adminPassword);
+                admin.Firmalar.Add(defaultFirma);
 
                 context.Kullanicilar.Add(admin);
                 await context.SaveChangesAsync();
@@ -99,13 +105,11 @@ namespace EMutabakat.Data
                     admin.Sifre = hasher.HashPassword(admin, adminPassword);
                 }
 
-                await context.SaveChangesAsync();
-            }
+                if (!admin.Firmalar.Any(f => f.FirmaId == defaultFirma.FirmaId))
+                {
+                    admin.Firmalar.Add(defaultFirma);
+                }
 
-            await context.Entry(admin).Collection(a => a.Firmalar).LoadAsync();
-            if (!admin.Firmalar.Any(f => f.FirmaId == defaultFirma.FirmaId))
-            {
-                admin.Firmalar.Add(defaultFirma);
                 await context.SaveChangesAsync();
             }
 
@@ -116,28 +120,6 @@ namespace EMutabakat.Data
             foreach (var user in usersWithoutRole)
             {
                 user.Rol = KullaniciRolleri.Standart;
-            }
-
-            var users = await context.Kullanicilar
-                .AsNoTracking()
-                .Select(k => new { k.KullaniciId, k.FirmaId })
-                .ToListAsync();
-
-            foreach (var user in users)
-            {
-                var u = await context.Kullanicilar.FindAsync(user.KullaniciId);
-                if (u != null)
-                {
-                    await context.Entry(u).Collection(x => x.Firmalar).LoadAsync();
-                    if (!u.Firmalar.Any(f => f.FirmaId == user.FirmaId))
-                    {
-                        var f = await context.Firmalar.FindAsync(user.FirmaId);
-                        if (f != null)
-                        {
-                            u.Firmalar.Add(f);
-                        }
-                    }
-                }
             }
 
             await context.SaveChangesAsync();

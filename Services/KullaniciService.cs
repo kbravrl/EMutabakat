@@ -30,17 +30,10 @@ namespace EMutabakat.Services
 
         private static List<int> NormalizeFirmaIds(Kullanici kullanici)
         {
-            var firmaIds = (kullanici.FirmaIds ?? new List<int>())
+            return (kullanici.FirmaIds ?? new List<int>())
                 .Where(x => x > 0)
                 .Distinct()
                 .ToList();
-
-            if (firmaIds.Count == 0 && kullanici.FirmaId > 0)
-            {
-                firmaIds.Add(kullanici.FirmaId);
-            }
-
-            return firmaIds;
         }
 
         public async Task<List<Kullanici>> GetAllAsync()
@@ -49,7 +42,6 @@ namespace EMutabakat.Services
 
             return await context.Kullanicilar
                 .AsNoTracking()
-                .Include(x => x.Firma)
                 .Include(x => x.Firmalar)
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
@@ -62,7 +54,6 @@ namespace EMutabakat.Services
 
             return await context.Kullanicilar
                 .AsNoTracking()
-                .Include(x => x.Firma)
                 .Include(x => x.Firmalar)
                 .FirstOrDefaultAsync(x => x.KullaniciId == id);
         }
@@ -98,7 +89,6 @@ namespace EMutabakat.Services
 
             return await context.Kullanicilar
                 .AsNoTracking()
-                .Include(x => x.Firma)
                 .Include(x => x.Firmalar)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
         }
@@ -190,23 +180,22 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
-            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
-            if (validFirmaCount != firmaIds.Count)
+            var firmalar = await context.Firmalar
+                .Where(f => firmaIds.Contains(f.FirmaId))
+                .ToListAsync();
+
+            if (firmalar.Count != firmaIds.Count)
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
-            kullanici.FirmaId = firmaIds[0];
             kullanici.KullaniciId = await GenerateNextKullaniciIdAsync();
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
 
-            context.Kullanicilar.Add(kullanici);
-            await context.SaveChangesAsync();
-
-            var firmalar = await context.Firmalar.Where(f => firmaIds.Contains(f.FirmaId)).ToListAsync();
             foreach (var firma in firmalar)
             {
                 kullanici.Firmalar.Add(firma);
             }
 
+            context.Kullanicilar.Add(kullanici);
             await context.SaveChangesAsync();
 
             await _logService.AddAsync(
@@ -224,6 +213,7 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var existingKullanici = await context.Kullanicilar
+                .Include(x => x.Firmalar)
                 .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.KullaniciId);
 
             if (existingKullanici == null)
@@ -233,8 +223,11 @@ namespace EMutabakat.Services
             if (firmaIds.Count == 0)
                 throw new Exception("En az bir firma seçimi zorunludur.");
 
-            var validFirmaCount = await context.Firmalar.CountAsync(f => firmaIds.Contains(f.FirmaId));
-            if (validFirmaCount != firmaIds.Count)
+            var desiredFirmalar = await context.Firmalar
+                .Where(f => firmaIds.Contains(f.FirmaId))
+                .ToListAsync();
+
+            if (desiredFirmalar.Count != firmaIds.Count)
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
             var normalizedMail = kullanici.KullaniciMail?.Trim().ToLower();
@@ -246,7 +239,6 @@ namespace EMutabakat.Services
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı başka bir kullanıcı zaten var.");
 
-            existingKullanici.FirmaId = firmaIds[0];
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi;
             existingKullanici.KullaniciMail = normalizedMail;
@@ -259,14 +251,11 @@ namespace EMutabakat.Services
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre);
             }
 
-            await context.Entry(existingKullanici).Collection(k => k.Firmalar).LoadAsync();
-
-            var desired = await context.Firmalar.Where(f => firmaIds.Contains(f.FirmaId)).ToListAsync();
-
             existingKullanici.Firmalar.Clear();
-            foreach (var f in desired)
+
+            foreach (var firma in desiredFirmalar)
             {
-                existingKullanici.Firmalar.Add(f);
+                existingKullanici.Firmalar.Add(firma);
             }
 
             await context.SaveChangesAsync();
@@ -558,7 +547,6 @@ namespace EMutabakat.Services
                             var yeniKullanici = new Kullanici
                             {
                                 KullaniciId = kullaniciId,
-                                FirmaId = firmaIds[0],
                                 FirmaIds = firmaIds.ToList(),
                                 KullaniciAdi = kullaniciAdi.Trim(),
                                 KullaniciSoyadi = kullaniciSoyadi.Trim(),
@@ -612,9 +600,7 @@ namespace EMutabakat.Services
                                 currentRol != normalizedRol ||
                                 currentAktifPasif != normalizedAktifPasif;
 
-                            var firmaChanged =
-                                existingUser.FirmaId != firmaIds[0] ||
-                                !currentFirmaIds.SequenceEqual(newFirmaIds);
+                            var firmaChanged = !currentFirmaIds.SequenceEqual(newFirmaIds);
 
                             var passwordChanged = !string.IsNullOrWhiteSpace(sifre);
 
@@ -622,7 +608,6 @@ namespace EMutabakat.Services
 
                             if (hasChanges)
                             {
-                                existingUser.FirmaId = firmaIds[0];
                                 existingUser.KullaniciAdi = normalizedAdi;
                                 existingUser.KullaniciSoyadi = normalizedSoyadi;
                                 existingUser.KullaniciMail = normalizedMail;

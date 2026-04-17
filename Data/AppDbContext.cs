@@ -1,6 +1,6 @@
 ﻿using EMutabakat.Models;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace EMutabakat.Data
 {
@@ -10,6 +10,7 @@ namespace EMutabakat.Data
             : base(options)
         {
         }
+
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
         public DbSet<CariGrup> CariGruplar { get; set; }
@@ -24,21 +25,24 @@ namespace EMutabakat.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Kullanici>()
-                .HasOne(k => k.Firma)
-                .WithMany()
-                .HasForeignKey(k => k.FirmaId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Kullanici>()
                 .HasMany(k => k.Firmalar)
                 .WithMany(f => f.Kullanicilar)
                 .UsingEntity<Dictionary<string, object>>(
                     "KullaniciFirmalar",
-                    j => j.HasOne<Firma>().WithMany().HasForeignKey("FirmaId").OnDelete(DeleteBehavior.Restrict),
-                    j => j.HasOne<Kullanici>().WithMany().HasForeignKey("KullaniciId").OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasOne<Firma>()
+                          .WithMany()
+                          .HasForeignKey("FirmaId")
+                          .OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasOne<Kullanici>()
+                          .WithMany()
+                          .HasForeignKey("KullaniciId")
+                          .OnDelete(DeleteBehavior.Cascade),
                     j =>
                     {
-                        j.Property<int>("KullaniciFirmaId").HasColumnName("KullaniciFirmaId").ValueGeneratedOnAdd();
+                        j.Property<int>("KullaniciFirmaId")
+                         .HasColumnName("KullaniciFirmaId")
+                         .ValueGeneratedOnAdd();
+
                         j.HasKey("KullaniciFirmaId");
                         j.HasIndex("KullaniciId", "FirmaId").IsUnique();
                         j.ToTable("KullaniciFirmalar");
@@ -124,7 +128,7 @@ namespace EMutabakat.Data
                 .HasPrincipalKey(d => d.TCMB)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<SilinenMutabakat>()   
+            modelBuilder.Entity<SilinenMutabakat>()
                 .HasIndex(sm => new { sm.FirmaId, sm.CariId, sm.MutabakatTarihi });
 
             modelBuilder.Entity<AppLog>()

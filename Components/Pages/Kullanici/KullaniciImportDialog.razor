@@ -1,6 +1,3 @@
-@using Microsoft.AspNetCore.Components.Forms
-@using EMutabakat.Models
-@using EMutabakat.Services.Interfaces
 @inject IKullaniciService KullaniciService
 @inject IFirmaService FirmaService
 @inject DialogService DialogService
@@ -53,7 +50,7 @@
 @code {
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
-    private List<int> selectedFirmaIds = new();
+    private IEnumerable<int> selectedFirmaIds = Enumerable.Empty<int>();
     private List<Firma> firmalar = new();
 
     protected override async Task OnInitializedAsync()
@@ -82,7 +79,11 @@
             return;
         }
 
-        if (selectedFirmaIds == null || !selectedFirmaIds.Any())
+        var firmaIdList = selectedFirmaIds?
+            .Distinct()
+            .ToList() ?? new List<int>();
+
+        if (firmaIdList.Count == 0)
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen en az bir firma seçin.");
             return;
@@ -96,7 +97,8 @@
             await selectedFile.OpenReadStream(50 * 1024 * 1024).CopyToAsync(ms);
             ms.Position = 0;
 
-            var (createdCount, updatedCount, errors) = await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name, selectedFirmaIds);
+            var (createdCount, updatedCount, errors) =
+                await KullaniciService.ImportFromExcelAsync(ms, selectedFile.Name, firmaIdList);
 
             if (errors != null && errors.Count > 0)
             {
