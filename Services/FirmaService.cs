@@ -166,50 +166,15 @@ namespace EMutabakat.Services
 
                 return true;
             }
-            catch (DbUpdateException ex)
-            {
-                await _logService.AddAsync(
-                    "Hata",
-                    "Firma",
-                    $"Firma silinemedi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.InnerException?.Message ?? ex.Message}",
-                    GetUserEmail()
-                );
-
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
-                {
-                    throw new Exception("Bu firma başka kayıtlarda kullanıldığı için silinemez.");
-                }
-
-                throw new Exception("Firma silinirken bir veritabanı hatası oluştu.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _logService.AddAsync(
-                    "Hata",
-                    "Firma",
-                    $"Firma silme işlem hatası. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
-                    GetUserEmail()
-                );
-
-                if (ex.Message.Contains("association between entity types") ||
-                    ex.Message.Contains("relationship") ||
-                    ex.Message.Contains("severed"))
-                {
-                    throw new Exception("Bu firma başka kayıtlarda kullanıldığı için silinemez.");
-                }
-
-                throw new Exception("Firma silinirken bir işlem hatası oluştu.");
-            }
             catch (Exception ex)
             {
                 await _logService.AddAsync(
                     "Hata",
                     "Firma",
-                    $"Firma silme genel hatası. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
+                    $"Firma silinemedi: Firma Id: {firma.FirmaId} Firma Adı: {firma.FirmaAdi}",
                     GetUserEmail()
                 );
-
-                throw new Exception("Firma silinirken bir hata oluştu.");
+                throw new Exception("Bu firma kaydı başka kayıtlarda kullanıldığı için silinemez.");
             }
         }
 

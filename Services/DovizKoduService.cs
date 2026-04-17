@@ -178,50 +178,16 @@ namespace EMutabakat.Services
 
                 return true;
             }
-            catch (DbUpdateException ex)
-            {
-                await _logService.AddAsync(
-                    "Hata",
-                    "DovizKodu",
-                    $"Döviz kodu silinemedi: TCMB: {entity.TCMB} Adı: {entity.Name} - FK hatası",
-                    GetUserEmail()
-                );
-
-                if (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23503")
-                {
-                    throw new Exception("Bu döviz kodu kullanıldığı için silinemez.");
-                }
-
-                throw new Exception("Döviz kodu silinirken veritabanı hatası oluştu.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                await _logService.AddAsync(
-                    "Hata",
-                    "DovizKodu",
-                    $"Döviz kodu silinemedi: TCMB: {entity.TCMB} Adı: {entity.Name} - ilişki hatası",
-                    GetUserEmail()
-                );
-
-                if (ex.Message.Contains("association between entity types") ||
-                    ex.Message.Contains("relationship") ||
-                    ex.Message.Contains("severed"))
-                {
-                    throw new Exception("Bu döviz kodu kullanıldığı için silinemez.");
-                }
-
-                throw new Exception("Döviz kodu silinirken bir işlem hatası oluştu.");
-            }
             catch (Exception ex)
             {
                 await _logService.AddAsync(
                     "Hata",
                     "DovizKodu",
-                    $"Döviz kodu silinemedi: TCMB: {entity.TCMB} Adı: {entity.Name} - beklenmeyen hata: {ex.Message}",
+                    $"Döviz kodu silinemedi: TCMB: {entity.TCMB} Adı: {entity.Name}",
                     GetUserEmail()
                 );
 
-                throw new Exception("Döviz kodu silinirken bir hata oluştu.");
+                throw new Exception("Bu döviz kodu başka kayıtlarda kullanıldığı için silinemez.");
             }
         }
 
