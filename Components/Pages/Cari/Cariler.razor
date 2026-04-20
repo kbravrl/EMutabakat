@@ -2,6 +2,7 @@
 
 @attribute [Authorize]
 
+@using EMutabakat.Models
 @inject ICariService CariService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -15,8 +16,11 @@
             <RadzenText TextStyle="TextStyle.H4">Cari Listesi</RadzenText>
         </RadzenColumn>
 
-          <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+            <RadzenStack Orientation="Orientation.Horizontal"
+                         Gap="8px"
+                         AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.End">
                 <RadzenButton Text="Excel İçe Aktar"
                               Icon="file_upload"
                               Style="margin-left:8px"
@@ -30,7 +34,57 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid Data="@cariler"
+        <RadzenRow Gap="12px" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenTextBox @bind-Value="searchText"
+                               Placeholder="Cari adı, ID, unvan, mail ara..."
+                               Style="width:100%;"
+                               Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenDropDown Data="@firmaOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedFirmaId"
+                                Placeholder="Firma seçiniz"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenDropDown Data="@cariGrupOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedCariGrupId"
+                                Placeholder="Cari grup seçiniz"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown Data="@durumOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDurum"
+                                Placeholder="Durum"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="width:100%;"
+                              Click="ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredCariler"
                         TItem="Cari"
                         AllowPaging="true"
                         AllowSorting="true"
@@ -41,23 +95,25 @@
                 <RadzenDataGridColumn TItem="Cari" Property="CariId" Title="ID" />
                 <RadzenDataGridColumn TItem="Cari" Property="CariAdi" Title="Cari Adı" />
                 <RadzenDataGridColumn TItem="Cari" Property="CariUnvan" Title="Unvan" />
-                <RadzenDataGridColumn TItem="Cari" Title="Firma">
+
+                <RadzenDataGridColumn TItem="Cari" Title="Firma" SortProperty="Firma.FirmaAdi" Filterable="false">
                     <Template Context="item">
                         @item.Firma?.FirmaAdi
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="Cari" Title="Cari Grup">
+
+                <RadzenDataGridColumn TItem="Cari" Title="Cari Grup" Filterable="false">
                     <Template Context="item">
                         @item.CariGrup?.CariGrupAdi
                     </Template>
                 </RadzenDataGridColumn>
+
                 <RadzenDataGridColumn TItem="Cari" Property="CariYetkiliMail" Title="Yetkili Mail" />
 
                 <RadzenDataGridColumn TItem="Cari"
                                       Property="CariAktifPasif"
                                       Title="Durum"
-                                      FilterOperator="FilterOperator.Equals"
-                                      FilterValue="@aktifDurumFiltre">
+                                      FilterOperator="FilterOperator.Equals">
                     <Template Context="item">
                         @if (item.CariAktifPasif == 1)
                         {
@@ -70,7 +126,11 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Cari" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                <RadzenDataGridColumn TItem="Cari"
+                                      Title="İşlemler"
+                                      Sortable="false"
+                                      Filterable="false"
+                                      Width="220px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
                             <RadzenButton Icon="edit"
@@ -100,8 +160,22 @@
 
 @code {
     private List<Cari> cariler = new();
+    private List<Cari> filteredCariler = new();
+
     private bool isSubmitting;
-    private int aktifDurumFiltre = 1;
+
+    private string? searchText;
+    private int? selectedFirmaId;
+    private string? selectedCariGrupId;
+    private int? selectedDurum = 1; // ilk açılışta aktifler gelsin
+
+    private List<FilterOptionInt> firmaOptions = new();
+    private List<FilterOptionString> cariGrupOptions = new();
+    private List<FilterOptionInt> durumOptions = new()
+    {
+        new() { Text = "Aktif", Value = 1 },
+        new() { Text = "Pasif", Value = 0 }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,6 +185,91 @@
     private async Task LoadCarilerAsync()
     {
         cariler = await CariService.GetAllAsync();
+
+        firmaOptions = cariler
+            .Where(x => x.Firma != null)
+            .GroupBy(x => new { x.FirmaId, x.Firma!.FirmaAdi })
+            .Select(g => new FilterOptionInt
+            {
+                Value = g.Key.FirmaId,
+                Text = g.Key.FirmaAdi
+            })
+            .OrderBy(x => x.Text)
+            .ToList();
+
+        cariGrupOptions = cariler
+            .Where(x => x.CariGrup != null && !string.IsNullOrWhiteSpace(x.CariGrupId))
+            .GroupBy(x => new { x.CariGrupId, x.CariGrup!.CariGrupAdi })
+            .Select(g => new FilterOptionString
+            {
+                Value = g.Key.CariGrupId,
+                Text = g.Key.CariGrupAdi
+            })
+            .OrderBy(x => x.Text)
+            .ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Cari> query = cariler;
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var text = searchText.Trim().ToLower();
+
+            query = query.Where(x =>
+                (!string.IsNullOrWhiteSpace(x.CariId) && x.CariId.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.CariAdi) && x.CariAdi.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.CariUnvan) && x.CariUnvan.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.CariYetkiliMail) && x.CariYetkiliMail.ToLower().Contains(text)) ||
+                (x.Firma != null && !string.IsNullOrWhiteSpace(x.Firma.FirmaAdi) && x.Firma.FirmaAdi.ToLower().Contains(text)) ||
+                (x.CariGrup != null && !string.IsNullOrWhiteSpace(x.CariGrup.CariGrupAdi) && x.CariGrup.CariGrupAdi.ToLower().Contains(text))
+            );
+        }
+
+        if (selectedFirmaId.HasValue)
+        {
+            query = query.Where(x => x.FirmaId == selectedFirmaId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedCariGrupId))
+        {
+            query = query.Where(x => x.CariGrupId == selectedCariGrupId);
+        }
+
+        if (selectedDurum.HasValue)
+        {
+            query = query.Where(x => x.CariAktifPasif == selectedDurum.Value);
+        }
+
+        filteredCariler = query
+            .OrderBy(x => GetCariSortValue(x.CariId))
+            .ToList();
+    }
+
+    private int GetCariSortValue(string? cariId)
+    {
+        var id = cariId ?? "";
+
+        if (int.TryParse(id, out var n))
+            return n;
+
+        var match = System.Text.RegularExpressions.Regex.Match(id, @"\\d+");
+        if (int.TryParse(match.Value, out var m))
+            return m;
+
+        return int.MaxValue;
+    }
+
+    private void ClearFilters()
+    {
+        searchText = null;
+        selectedFirmaId = null;
+        selectedCariGrupId = null;
+        selectedDurum = 1;
+        ApplyFilters();
     }
 
     private void GoToCreatePage()
@@ -142,7 +301,9 @@
         if (confirmed == true)
         {
             if (isSubmitting) return;
+
             isSubmitting = true;
+
             try
             {
                 var result = await CariService.DeleteAsync(id, firmaId);
@@ -171,10 +332,27 @@
     private async Task OpenImportDialog()
     {
         var parameters = new Dictionary<string, object?>();
-        var result = await DialogService.OpenAsync("Excel İçe Aktar", typeof(Components.Pages.Cari.CariImportDialog), parameters, new DialogOptions { Width = "600px" });
+        var result = await DialogService.OpenAsync(
+            "Excel İçe Aktar",
+            typeof(Components.Pages.Cari.CariImportDialog),
+            parameters,
+            new DialogOptions { Width = "600px" });
+
         if (result == true)
         {
             await LoadCarilerAsync();
         }
+    }
+
+    public class FilterOptionInt
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    public class FilterOptionString
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }
