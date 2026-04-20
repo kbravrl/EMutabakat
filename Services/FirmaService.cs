@@ -34,7 +34,40 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var user = _httpContextAccessor.HttpContext?.User;
+
+            if (user?.Identity?.IsAuthenticated != true)
+                return new List<Firma>();
+
+            var mail = user.Identity?.Name;
+
+            if (string.IsNullOrWhiteSpace(mail))
+                return new List<Firma>();
+
+            var kullanici = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            if (kullanici == null)
+                return new List<Firma>();
+
+            if (kullanici.Rol == KullaniciRolleri.Admin)
+            {
+                return await context.Firmalar
+                    .AsNoTracking()
+                    .OrderBy(x => x.FirmaAdi)
+                    .ToListAsync();
+            }
+
+            var allowedIds = kullanici.Firmalar
+                .Select(f => f.FirmaId)
+                .ToList();
+
+            if (allowedIds.Count == 0)
+                return new List<Firma>();
+
             return await context.Firmalar
+                .Where(f => allowedIds.Contains(f.FirmaId))
                 .AsNoTracking()
                 .OrderBy(x => x.FirmaAdi)
                 .ToListAsync();
