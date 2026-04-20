@@ -2,470 +2,228 @@
 
 @attribute [Authorize]
 
-@using Microsoft.AspNetCore.Components.Forms
-
 @inject IMutabakatService MutabakatService
+@inject ICariService CariService
+@inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
-@inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<PageTitle>Mutabakatlar</PageTitle>
+<PageTitle>Yeni Mutabakat Ekle</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-3">
-        <RadzenColumn Size="12" SizeMD="4">
-            <RadzenText TextStyle="TextStyle.H4">Mutabakat Listesi</RadzenText>
-        </RadzenColumn>
+<RadzenCard Style="max-width:900px; margin: 24px auto; padding:24px;">
+    <RadzenText TextStyle="TextStyle.H4" class="mb-3">Yeni Mutabakat Ekle</RadzenText>
 
-        <RadzenColumn Size="12" SizeMD="8">
-            <div class="mutabakat-actions">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
-                              Click="@OpenImportDialog" />
+    <EditForm Model="@mutabakat" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-                <RadzenButton Text="Toplu Gönder"
-                              Icon="send"
-                              ButtonStyle="ButtonStyle.Success"
-                              Click="@SendPendingMails"
-                              Disabled="@isSubmitting" />
+        <RadzenRow Gap="16px">
 
-                <RadzenButton Text="Seçilenleri Gönder"
-                              Icon="mark_email_read"
-                              ButtonStyle="ButtonStyle.Secondary"
-                              Click="@SendSelectedMails"
-                              Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Mutabakat ID" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenTextBox @bind-Value="mutabakat.MutabakatId"
+                                       Name="MutabakatId"
+                                       Style="width:100%;" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.MutabakatId)" />
+            </RadzenColumn>
 
-                <RadzenButton Text="Silinenler"
-                              Icon="history"
-                              ButtonStyle="ButtonStyle.Danger"
-                              Click="@GoToDeletedPage" />
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Cari" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenDropDown TValue="string"
+                                        Name="CariId"
+                                        Data="@cariler"
+                                        TextProperty="CariDisplayText"
+                                        ValueProperty="CariId"
+                                        @bind-Value="mutabakat.CariId"
+                                        Placeholder="Cari seçiniz"
+                                        Style="width:100%;"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Change="@OnCariChanged" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.CariId)" />
+            </RadzenColumn>
 
-                <RadzenButton Text="Yeni Mutabakat Ekle"
-                              Icon="add_circle"
-                              ButtonStyle="ButtonStyle.Primary"
-                              Click="@GoToCreatePage" />
-            </div>
-        </RadzenColumn>
-    </RadzenRow>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Mutabakat Tarihi" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenDatePicker @bind-Value="mutabakat.MutabakatTarihi"
+                                          Name="MutabakatTarihi"
+                                          DateFormat="dd.MM.yyyy"
+                                          Style="width:100%;" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.MutabakatTarihi)" />
+            </RadzenColumn>
 
-    <RadzenCard>
-        <RadzenDataGrid Data="@mutabakatlar"
-                        TItem="Mutabakat"
-                        SelectionMode="DataGridSelectionMode.Multiple"
-                        @bind-Value="@selectedMutabakatlar"
-                        AllowRowSelectOnRowClick="false"
-                        AllowPaging="true"
-                        AllowSorting="true"
-                        AllowFiltering="true"
-                        PageSize="10"
-                        EmptyText="Kayıt bulunamadı">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Döviz Kodu" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenDropDown TValue="string"
+                                        Name="MutabakatDovizKodu"
+                                        Data="@dovizKodlari"
+                                        TextProperty="Name"
+                                        ValueProperty="TCMB"
+                                        @bind-Value="mutabakat.MutabakatDovizKodu"
+                                        Placeholder="Döviz seçiniz"
+                                        Style="width:100%;"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.MutabakatDovizKodu)" />
+            </RadzenColumn>
 
-            <Columns>
-                <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" />
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Bakiye" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="mutabakat.MutabakatBakiye"
+                                       Name="MutabakatBakiye"
+                                       TValue="decimal"
+                                       Style="width:100%;"
+                                       Step="0.01"
+                                       Format="N2" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.MutabakatBakiye)" />
+            </RadzenColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Tarih">
-                    <Template Context="item">
-                        @item.MutabakatTarihi.ToString("dd.MM.yyyy")
-                    </Template>
-                </RadzenDataGridColumn>
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Bakiye Tipi" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenDropDown TValue="string"
+                                        Name="MutabakatBakiyeTipi"
+                                        Data="@bakiyeTipleri"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="mutabakat.MutabakatBakiyeTipi"
+                                        Placeholder="Bakiye tipi seçiniz"
+                                        Style="width:100%;" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.MutabakatBakiyeTipi)" />
+            </RadzenColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
-                    <Template Context="item">
-                        @item.Firma?.FirmaAdi
-                    </Template>
-                </RadzenDataGridColumn>
+            <RadzenColumn Size="12">
+                <RadzenFormField Text="Açıklama" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenTextArea @bind-Value="mutabakat.MutabakatAciklama"
+                                        Name="MutabakatAciklama"
+                                        Style="width:100%;"
+                                        Rows="4" />
+                    </ChildContent>
+                </RadzenFormField>
+            </RadzenColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
-                    <Template Context="item">
-                        @item.Cari?.CariAdi
-                    </Template>
-                </RadzenDataGridColumn>
+            <RadzenColumn Size="12">
+                <RadzenStack Orientation="Orientation.Horizontal"
+                             Gap="10px"
+                             JustifyContent="JustifyContent.End"
+                             class="mt-3">
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
-                    <Template Context="item">
-                        @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenButton Text="Kaydet"
+                                  Icon="save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  ButtonType="ButtonType.Submit"
+                                  Disabled="@isSubmitting" />
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
-                    <Template Context="item">
-                        @item.MutabakatBakiye.ToString("N2")
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenButton Text="İptal"
+                                  Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Click="@GoBack"
+                                  Disabled="@isSubmitting" />
+                </RadzenStack>
+            </RadzenColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
-                    <Template Context="item">
-                        @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
-                    <Template Context="item">
-                        <RadzenBadge Text="@GetStatusText(item.Status)"
-                                     BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim Tarihi">
-                    <Template Context="item">
-                        @(item.MutabakatGonderimTarihSaat.HasValue
-                            ? item.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                            : "-")
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Width="60px" Sortable="false" Filterable="false">
-                    <Template Context="item">
-                        <RadzenCheckBox TValue="bool"
-                                        Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
-                                        Change="@(args => OnRowSelectionChanged(item, args))" />
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
-                    <Template Context="item">
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-
-                            @if (item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
-                            {
-                                <RadzenButton Icon="mail"
-                                              Size="ButtonSize.Small"
-                                              Variant="Variant.Flat"
-                                              ButtonStyle="ButtonStyle.Primary"
-                                              Click="@(() => SendMail(item.MutabakatId))"
-                                              Disabled="@isSubmitting" />
-                            }
-
-                            @if (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
-                                                             item.Status == Mutabakat.MutabakatStatus.Hatirlatma)
-                            {
-                                <RadzenButton Icon="refresh"
-                                              Size="ButtonSize.Small"
-                                              Variant="Variant.Flat"
-                                              ButtonStyle="ButtonStyle.Warning"
-                                              Click="@(() => SendReminder(item.MutabakatId))"
-                                              Disabled="@isSubmitting" />
-                            }
-
-                            @if (item.Status != Mutabakat.MutabakatStatus.Mutabik &&
-                                                             item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
-                            {
-                                <RadzenButton Icon="edit"
-                                              Size="ButtonSize.Small"
-                                              ButtonStyle="ButtonStyle.Warning"
-                                              Click="@(() => EditMutabakat(item.MutabakatId))" />
-                            }
-
-                            <RadzenButton Icon="visibility"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Info"
-                                          Click="@(() => GoToDetailsPage(item.MutabakatId))" />
-
-                            <RadzenButton Icon="delete"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Danger"
-                                          Click="@(() => DeleteMutabakat(item.MutabakatId))"
-                                          Disabled="@isSubmitting" />
-                        </RadzenStack>
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
-    </RadzenCard>
-</RadzenStack>
+        </RadzenRow>
+    </EditForm>
+</RadzenCard>
 
 @code {
-    private List<Mutabakat> mutabakatlar = new();
-    private IList<Mutabakat> selectedMutabakatlar = new List<Mutabakat>();
+    private Mutabakat mutabakat = new();
+    private List<CariLookupItem> cariler = new();
+    private List<DovizKodu> dovizKodlari = new();
     private bool isSubmitting = false;
+
+    private readonly List<SelectItem> bakiyeTipleri =
+    [
+        new SelectItem { Text = "Borç", Value = "B" },
+        new SelectItem { Text = "Alacak", Value = "A" }
+    ];
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadMutabakatlarAsync();
+        await LoadInitialDataAsync();
     }
 
-    private async Task OpenImportDialog()
+    private async Task LoadInitialDataAsync()
     {
-        var result = await DialogService.OpenAsync<MutabakatImportDialog>(
-            "Mutabakat Excel Yükleme",
-            null,
-            new DialogOptions
-            {
-                Width = "830px",
-                Height = "350px",
-                Resizable = true,
-                Draggable = true
-            });
-
-        if (result is bool ok && ok)
+        mutabakat = new Mutabakat
         {
-            mutabakatlar = await MutabakatService.GetAllAsync();
-            StateHasChanged();
-        }
-    }
+            MutabakatTarihi = DateTime.Today,
+            MutabakatBakiyeTipi = "B"
+        };
 
-    private async Task LoadMutabakatlarAsync()
-    {
-        mutabakatlar = await MutabakatService.GetAllAsync();
-    }
+        mutabakat.MutabakatId = await MutabakatService.GenerateNextMutabakatIdAsync();
 
-    private void GoToCreatePage()
-    {
-        NavigationManager.NavigateTo("/reconciliations/add");
-    }
-
-    private void GoToDetailsPage(string id)
-    {
-        NavigationManager.NavigateTo($"/reconciliations/detail/{id}");
-    }
-
-    private void EditMutabakat(string id)
-    {
-        NavigationManager.NavigateTo($"/reconciliations/edit/{id}");
-    }
-
-    private void GoToDeletedPage()
-    {
-        NavigationManager.NavigateTo("/reconciliations/deleted");
-    }
-
-    private void OnRowSelectionChanged(Mutabakat item, object value)
-    {
-        var isChecked = value is bool b && b;
-
-        if (isChecked)
-        {
-            if (!selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))
+        var cariList = await CariService.GetAllAsync();
+        cariler = cariList
+            .OrderBy(x => x.CariAdi)
+            .Select(x => new CariLookupItem
             {
-                selectedMutabakatlar.Add(item);
-            }
-        }
-        else
-        {
-            var selectedItem = selectedMutabakatlar.FirstOrDefault(x => x.MutabakatId == item.MutabakatId);
-            if (selectedItem != null)
-            {
-                selectedMutabakatlar.Remove(selectedItem);
-            }
-        }
-    }
-
-    private async Task SendMail(string id)
-    {
-        if (isSubmitting) return;
-        isSubmitting = true;
-
-        try
-        {
-            var result = await MutabakatService.SendMailAsync(id);
-
-            if (result)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Mutabakat maili gönderildi.");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Mutabakat maili gönderilemedi.");
-            }
-
-            await LoadMutabakatlarAsync();
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                ex.Message);
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
-    }
-
-    private async Task SendReminder(string id)
-    {
-        if (isSubmitting) return;
-        isSubmitting = true;
-
-        try
-        {
-            var result = await MutabakatService.SendReminderAsync(id);
-
-            if (result)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    "Hatırlatma maili gönderildi.");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    "Hatırlatma maili gönderilemedi.");
-            }
-
-            await LoadMutabakatlarAsync();
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                ex.Message);
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
-    }
-
-    private async Task DeleteMutabakat(string id)
-    {
-        var confirmed = await DialogService.Confirm(
-            "Bu mutabakat kaydını silmek istediğinize emin misiniz?",
-            "Silme Onayı",
-            new ConfirmOptions
-            {
-                OkButtonText = "Evet",
-                CancelButtonText = "Vazgeç"
-            });
-
-        if (confirmed == true)
-        {
-            if (isSubmitting) return;
-            isSubmitting = true;
-
-            try
-            {
-                var result = await MutabakatService.DeleteAsync(id);
-
-                if (result)
-                {
-                    NotificationService.Notify(
-                        NotificationSeverity.Success,
-                        "Başarılı",
-                        "Mutabakat kaydı silindi.");
-                }
-                else
-                {
-                    NotificationService.Notify(
-                        NotificationSeverity.Error,
-                        "Hata",
-                        "Mutabakat kaydı silinemedi.");
-                }
-
-                await LoadMutabakatlarAsync();
-                selectedMutabakatlar = selectedMutabakatlar
-                    .Where(x => x.MutabakatId != id)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Error,
-                    "Hata",
-                    ex.Message);
-            }
-            finally
-            {
-                isSubmitting = false;
-            }
-        }
-    }
-
-    private async Task SendPendingMails()
-    {
-        if (isSubmitting) return;
-        isSubmitting = true;
-
-        try
-        {
-            var result = await MutabakatService.SendPendingMailsAsync();
-
-            if (result.failCount == 0)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    $"{result.successCount} adet mutabakat maili gönderildi.");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Warning,
-                    "Uyarı",
-                    $"{result.successCount} adet gönderildi, {result.failCount} adet hata oluştu.");
-            }
-
-            await LoadMutabakatlarAsync();
-            selectedMutabakatlar.Clear();
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                ex.Message);
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
-    }
-
-    private async Task SendSelectedMails()
-    {
-        if (isSubmitting) return;
-
-        var ids = selectedMutabakatlar
-            .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
-            .Select(x => x.MutabakatId)
-            .Distinct()
+                CariId = x.CariId,
+                CariAdi = x.CariAdi ?? string.Empty,
+                CariDovizKodu = x.CariDovizKodu
+            })
             .ToList();
 
-        if (!ids.Any())
+        dovizKodlari = await DovizKoduService.GetAllAsync();
+
+        if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
         {
-            NotificationService.Notify(
-                NotificationSeverity.Warning,
-                "Uyarı",
-                "Gönderilecek uygun kayıt seçilmedi.");
-            return;
+            mutabakat.MutabakatDovizKodu = "TL";
         }
+    }
+
+    private void OnCariChanged(object value)
+    {
+        var cariId = value?.ToString();
+
+        if (string.IsNullOrWhiteSpace(cariId))
+            return;
+
+        var selectedCari = cariler.FirstOrDefault(x => x.CariId == cariId);
+        if (selectedCari is null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(selectedCari.CariDovizKodu))
+        {
+            mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu!;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (isSubmitting)
+            return;
 
         isSubmitting = true;
 
         try
         {
-            var result = await MutabakatService.SendSelectedMailsAsync(ids);
+            await MutabakatService.AddAsync(mutabakat);
 
-            if (result.failCount == 0)
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Success,
-                    "Başarılı",
-                    $"{result.successCount} adet seçili mutabakat maili gönderildi.");
-            }
-            else
-            {
-                NotificationService.Notify(
-                    NotificationSeverity.Warning,
-                    "Uyarı",
-                    $"{result.successCount} adet gönderildi, {result.failCount} adet hata oluştu.");
-            }
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Mutabakat başarıyla eklendi.");
 
-            await LoadMutabakatlarAsync();
-            selectedMutabakatlar.Clear();
+            NavigationManager.NavigateTo("/reconciliations");
         }
         catch (Exception ex)
         {
@@ -473,6 +231,11 @@
                 NotificationSeverity.Error,
                 "Hata",
                 ex.Message);
+
+            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatId))
+            {
+                mutabakat.MutabakatId = await MutabakatService.GenerateNextMutabakatIdAsync();
+            }
         }
         finally
         {
@@ -480,39 +243,23 @@
         }
     }
 
-    private string GetBakiyeTipiText(string bakiyeTipi)
+    private void GoBack()
     {
-        return bakiyeTipi switch
-        {
-            "B" => "Borç",
-            "A" => "Alacak",
-            _ => "-"
-        };
+        NavigationManager.NavigateTo("/reconciliations");
     }
 
-    private string GetStatusText(Mutabakat.MutabakatStatus status)
+    private sealed class SelectItem
     {
-        return status switch
-        {
-            Mutabakat.MutabakatStatus.Kaydedildi => "Kaydedildi",
-            Mutabakat.MutabakatStatus.Gonderildi => "Gönderildi",
-            Mutabakat.MutabakatStatus.Hatirlatma => "Hatırlatma",
-            Mutabakat.MutabakatStatus.Mutabik => "Mutabık",
-            Mutabakat.MutabakatStatus.MutabikDegil => "Mutabık Değil",
-            _ => "Tanımsız"
-        };
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 
-    private BadgeStyle GetStatusBadgeStyle(Mutabakat.MutabakatStatus status)
+    private sealed class CariLookupItem
     {
-        return status switch
-        {
-            Mutabakat.MutabakatStatus.Kaydedildi => BadgeStyle.Secondary,
-            Mutabakat.MutabakatStatus.Gonderildi => BadgeStyle.Info,
-            Mutabakat.MutabakatStatus.Hatirlatma => BadgeStyle.Warning,
-            Mutabakat.MutabakatStatus.Mutabik => BadgeStyle.Success,
-            Mutabakat.MutabakatStatus.MutabikDegil => BadgeStyle.Danger,
-            _ => BadgeStyle.Light
-        };
+        public string CariId { get; set; } = string.Empty;
+        public string CariAdi { get; set; } = string.Empty;
+        public string? CariDovizKodu { get; set; }
+
+        public string CariDisplayText => $"{CariId} - {CariAdi}";
     }
 }

@@ -47,25 +47,71 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid Data="@mutabakatlar"
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenTextBox Style="width:100%"
+                               Placeholder="ID / Cari / Firma ara"
+                               @bind-Value="searchText" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
+                                Placeholder="Bakiye Tipi"
+                                Data="@bakiyeTipiOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedBakiyeTipi"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown TValue="int?"
+                                Style="width:100%"
+                                Placeholder="Durum"
+                                Data="@statusOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedStatus"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDatePicker Style="width:100%"
+                                  Placeholder="Başlangıç Tarihi"
+                                  @bind-Value="startDate"
+                                  DateFormat="dd.MM.yyyy" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDatePicker Style="width:100%"
+                                  Placeholder="Bitiş Tarihi"
+                                  @bind-Value="endDate"
+                                  DateFormat="dd.MM.yyyy" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Style="width:100%"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Click="@ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredMutabakatlar"
                         TItem="Mutabakat"
                         SelectionMode="DataGridSelectionMode.Multiple"
                         @bind-Value="@selectedMutabakatlar"
                         AllowRowSelectOnRowClick="false"
                         AllowPaging="true"
                         AllowSorting="true"
-                        AllowFiltering="true"
+                        AllowFiltering="false"
                         PageSize="10"
-                        EmptyText="Kayıt bulunamadı">
+                        EmptyText="Kayıt bulunamadı.">
 
             <Columns>
-                <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" />
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Tarih">
-                    <Template Context="item">
-                        @item.MutabakatTarihi.ToString("dd.MM.yyyy")
-                    </Template>
-                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" Width="80px"/>
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
                     <Template Context="item">
@@ -136,7 +182,7 @@
                             }
 
                             @if (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
-                                                             item.Status == Mutabakat.MutabakatStatus.Hatirlatma)
+                                                            item.Status == Mutabakat.MutabakatStatus.Hatirlatma)
                             {
                                 <RadzenButton Icon="refresh"
                                               Size="ButtonSize.Small"
@@ -147,7 +193,7 @@
                             }
 
                             @if (item.Status != Mutabakat.MutabakatStatus.Mutabik &&
-                                                             item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
+                                                            item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
                             {
                                 <RadzenButton Icon="edit"
                                               Size="ButtonSize.Small"
@@ -180,6 +226,62 @@
     private IList<Mutabakat> selectedMutabakatlar = new List<Mutabakat>();
     private bool isSubmitting = false;
 
+    private string? searchText;
+    private int? selectedStatus;
+    private string? selectedBakiyeTipi;
+    private DateTime? startDate;
+    private DateTime? endDate;
+
+    private List<FilterOption<int?>> statusOptions = new()
+    {
+        new() { Text = "Kaydedildi", Value = (int)Mutabakat.MutabakatStatus.Kaydedildi },
+        new() { Text = "Gönderildi", Value = (int)Mutabakat.MutabakatStatus.Gonderildi },
+        new() { Text = "Hatırlatma", Value = (int)Mutabakat.MutabakatStatus.Hatirlatma },
+        new() { Text = "Mutabık", Value = (int)Mutabakat.MutabakatStatus.Mutabik },
+        new() { Text = "Mutabık Değil", Value = (int)Mutabakat.MutabakatStatus.MutabikDegil }
+    };
+
+    private List<FilterOption<string>> bakiyeTipiOptions = new()
+    {
+        new() { Text = "Borç", Value = "B" },
+        new() { Text = "Alacak", Value = "A" }
+    };
+
+    private List<Mutabakat> filteredMutabakatlar =>
+    mutabakatlar
+        .Where(x =>
+            string.IsNullOrWhiteSpace(searchText) ||
+            (x.MutabakatId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Cari?.CariAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (x.Firma?.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(x =>
+            !selectedStatus.HasValue || (int)x.Status == selectedStatus.Value)
+        .Where(x =>
+            string.IsNullOrWhiteSpace(selectedBakiyeTipi) || x.MutabakatBakiyeTipi == selectedBakiyeTipi)
+        .Where(x =>
+            !startDate.HasValue || x.MutabakatTarihi.Date >= startDate.Value.Date)
+        .Where(x =>
+            !endDate.HasValue || x.MutabakatTarihi.Date <= endDate.Value.Date)
+
+        .OrderBy(x => GetMutabakatSortValue(x.MutabakatId))
+
+        .ToList();
+
+    private int GetMutabakatSortValue(string? mutabakatId)
+    {
+        var id = mutabakatId ?? "";
+
+        if (int.TryParse(id, out var n))
+            return n;
+
+        var match = System.Text.RegularExpressions.Regex.Match(id, @"\d+");
+
+        if (int.TryParse(match.Value, out var m))
+            return m;
+
+        return int.MaxValue;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadMutabakatlarAsync();
@@ -200,7 +302,7 @@
 
         if (result is bool ok && ok)
         {
-            mutabakatlar = await MutabakatService.GetAllAsync();
+            await LoadMutabakatlarAsync();
             StateHasChanged();
         }
     }
@@ -208,6 +310,19 @@
     private async Task LoadMutabakatlarAsync()
     {
         mutabakatlar = await MutabakatService.GetAllAsync();
+
+        selectedMutabakatlar = selectedMutabakatlar
+            .Where(selected => mutabakatlar.Any(x => x.MutabakatId == selected.MutabakatId))
+            .ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchText = null;
+        selectedStatus = null;
+        selectedBakiyeTipi = null;
+        startDate = null;
+        endDate = null;
     }
 
     private void GoToCreatePage()
@@ -513,5 +628,40 @@
             Mutabakat.MutabakatStatus.MutabikDegil => BadgeStyle.Danger,
             _ => BadgeStyle.Light
         };
+    }
+
+    public class FilterOption<T>
+    {
+        public string Text { get; set; } = string.Empty;
+        public T? Value { get; set; }
+    }
+
+    private static int? GetNumericPart(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
+
+        // Find the first continuous sequence of digits in the id
+        var digits = new System.Text.StringBuilder();
+        foreach (var ch in id)
+        {
+            if (char.IsDigit(ch))
+            {
+                digits.Append(ch);
+            }
+            else if (digits.Length > 0)
+            {
+                // stop when digits sequence ends
+                break;
+            }
+        }
+
+        if (digits.Length == 0)
+            return null;
+
+        if (int.TryParse(digits.ToString(), out var value))
+            return value;
+
+        return null;
     }
 }
