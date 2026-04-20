@@ -52,19 +52,19 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Durum:</b> @GetMutabakatDurumText(mutabakat.MutabakatDurum)
+                    <b>Durum:</b> @GetStatusText(mutabakat.Status)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Gönderim Tarihi:</b> @(mutabakat.MutabakatGonderimTarihSaat.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")
+                    <b>Gönderim Tarihi:</b>
+                    @(mutabakat.MutabakatGonderimTarihSaat.HasValue
+                        ? mutabakat.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        : "-")
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Gönderim Durumu:</b> @GetGonderimDurumuText(mutabakat.MutabakatGonderimDurumu)
-                </RadzenColumn>
-
-                <RadzenColumn Size="12" SizeMD="6">
-                    <b>Cevap Tarihi:</b> @(mutabakat.MutabakatCevapTarihSaat?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")
+                    <b>Cevap Tarihi:</b>
+                    @(mutabakat.MutabakatCevapTarihSaat?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "-")
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -87,11 +87,10 @@ else
                     <b>Token:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatToken) ? "-" : mutabakat.MutabakatToken)
                 </RadzenColumn>
 
-                <RadzenColumn Size="12"> 
+                <RadzenColumn Size="12">
                     @if (string.IsNullOrWhiteSpace(mutabakat.MutabakatReceiveStoragePath))
                     {
-                        <b>Red Dosyası: </b>
-                    
+                        <b>Red Dosyası:</b>
                         <span>-</span>
                     }
                     else
@@ -143,24 +142,15 @@ else
         };
     }
 
-    private string GetGonderimDurumuText(int durum)
+    private string GetStatusText(Mutabakat.MutabakatStatus status)
     {
-        return durum switch
+        return status switch
         {
-            1 => "Normal",
-            2 => "Hatırlatma",
-            _ => "-"
-        };
-    }
-
-    private string GetMutabakatDurumText(int durum)
-    {
-        return durum switch
-        {
-            1 => "Mutabık",
-            2 => "Mutabık Değil",
-            3 => "Cevaplanmayan",
-            4 => "Okunmayan",
+            Mutabakat.MutabakatStatus.Kaydedildi => "Kaydedildi",
+            Mutabakat.MutabakatStatus.Gonderildi => "Gönderildi",
+            Mutabakat.MutabakatStatus.Hatirlatma => "Hatırlatma",
+            Mutabakat.MutabakatStatus.Mutabik => "Mutabık",
+            Mutabakat.MutabakatStatus.MutabikDegil => "Mutabık Değil",
             _ => "Tanımsız"
         };
     }

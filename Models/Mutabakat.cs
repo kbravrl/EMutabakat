@@ -5,6 +5,8 @@ namespace EMutabakat.Models
 {
     public class Mutabakat
     {
+
+
         [Required(ErrorMessage = "Mutabakat ID zorunludur.")]
         public string MutabakatId { get; set; } = string.Empty;
 
@@ -34,11 +36,10 @@ namespace EMutabakat.Models
 
         public string? MutabakatAciklama { get; set; }
 
-        public DateTime MutabakatGonderimTarihSaat { get; set; }
+        public DateTime? MutabakatGonderimTarihSaat { get; set; }
 
-        public int MutabakatGonderimDurumu { get; set; }
-
-        public bool MutabakatMailGonderildi { get; set; } = false;
+        [Required]
+        public MutabakatStatus Status { get; set; } = MutabakatStatus.Kaydedildi;
 
         public DateTime? MutabakatCevapTarihSaat { get; set; }
 
@@ -50,8 +51,6 @@ namespace EMutabakat.Models
 
         public string? MutabakatCevapAciklama { get; set; }
 
-        public int MutabakatDurum { get; set; }
-
         public string MutabakatToken { get; set; } = string.Empty;
 
         public string? MutabakatReceiveStoragePath { get; set; }
@@ -59,5 +58,14 @@ namespace EMutabakat.Models
         public Firma? Firma { get; set; }
         public Cari? Cari { get; set; }
         public DovizKodu? DovizKodu { get; set; }
+
+        public enum MutabakatStatus
+        {
+            Kaydedildi = 1,
+            Gonderildi = 2,
+            Hatirlatma = 3,
+            Mutabik = 4,
+            MutabikDegil = 5
+        }
     }
 }

@@ -3,7 +3,6 @@
 @inject IMutabakatClientService MutabakatClientService
 @inject NavigationManager NavigationManager
 @using System.ComponentModel.DataAnnotations
-
 <PageTitle>Mutabakat Cevabı</PageTitle>
 
 <RadzenRow JustifyContent="JustifyContent.Center" class="mt-5">
@@ -92,7 +91,7 @@
     private string? responseGsm;
     private string? responseAciklama;
 
-    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+    private const long MaxFileSize = 10 * 1024 * 1024;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,7 +119,7 @@
             return;
         }
 
-        if (mutabakat.MutabakatDurum == 1)
+        if (mutabakat.Status == Mutabakat.MutabakatStatus.Mutabik)
         {
             if (durum == "approve")
                 successMessage = "Cevabınız başarı ile kaydedildi.";
@@ -131,7 +130,7 @@
             return;
         }
 
-        if (mutabakat.MutabakatDurum == 2)
+        if (mutabakat.Status == Mutabakat.MutabakatStatus.MutabikDegil)
         {
             if (durum == "reject")
                 successMessage = "Dosya gönderildi.";

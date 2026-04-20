@@ -7,7 +7,6 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-
 <PageTitle>Mutabakatlar</PageTitle>
 
 <RadzenStack Gap="1rem" class="p-4">
@@ -34,7 +33,7 @@
                               Click="@SendSelectedMails"
                               Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
 
-            <RadzenButton Text="Silinenler"
+                <RadzenButton Text="Silinenler"
                               Icon="history"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="@GoToDeletedPage" />
@@ -98,48 +97,35 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Mail Durumu">
-                    <Template Context="item">
-                        <RadzenBadge Text="@(item.MutabakatMailGonderildi ? "Gönderildi" : "Gönderilmedi")"
-                                     BadgeStyle="@(item.MutabakatMailGonderildi ? BadgeStyle.Success : BadgeStyle.Warning)" />
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim">
-                    <Template Context="item">
-                        <RadzenBadge Text="@GetGonderimDurumuText(item.MutabakatGonderimDurumu)"
-                                     BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatGonderimDurumu)" />
-                    </Template>
-                </RadzenDataGridColumn>
-
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
                     <Template Context="item">
-                        <RadzenBadge Text="@GetMutabakatDurumText(item.MutabakatDurum)"
-                                     BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatDurum)" />
+                        <RadzenBadge Text="@GetStatusText(item.Status)"
+                                     BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
                     </Template>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim Tarihi">
                     <Template Context="item">
-                        @(item.MutabakatGonderimTarihSaat == default
-                            ? "-"
-                            : item.MutabakatGonderimTarihSaat.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))
+                        @(item.MutabakatGonderimTarihSaat.HasValue
+                            ? item.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            : "-")
                     </Template>
                 </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="Mutabakat" Width="60px" Sortable="false" Filterable="false">
                     <Template Context="item">
                         <RadzenCheckBox TValue="bool"
-                                        Value="@(selectedMutabakatlar.Contains(item))"
-                                        Change="@(args => OnRowSelectionChanged(item, args))" />
+                                        Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
+                                        Change="@(checkedValue => OnRowSelectionChanged(item, checkedValue))"
+                                        Disabled="@(item.Status != Mutabakat.MutabakatStatus.Kaydedildi)" />
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="200px">
+                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="240px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
-                            @if (item.MutabakatDurum != 1 && item.MutabakatDurum != 2)
+                            @if (item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
                             {
                                 <RadzenButton Icon="mail"
                                               Size="ButtonSize.Small"
@@ -147,18 +133,26 @@
                                               ButtonStyle="ButtonStyle.Primary"
                                               Click="@(() => SendMail(item.MutabakatId))"
                                               Disabled="@isSubmitting" />
+                            }
 
-                                <RadzenButton Icon="edit"
-                                              Size="ButtonSize.Small"
-                                              ButtonStyle="ButtonStyle.Warning"
-                                              Click="@(() => EditMutabakat(item.MutabakatId))" />
-
+                            @if (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
+                                                             item.Status == Mutabakat.MutabakatStatus.Hatirlatma)
+                            {
                                 <RadzenButton Icon="refresh"
                                               Size="ButtonSize.Small"
                                               Variant="Variant.Flat"
                                               ButtonStyle="ButtonStyle.Warning"
                                               Click="@(() => SendReminder(item.MutabakatId))"
                                               Disabled="@isSubmitting" />
+                            }
+
+                            @if (item.Status != Mutabakat.MutabakatStatus.Mutabik &&
+                                                             item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
+                            {
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Warning"
+                                              Click="@(() => EditMutabakat(item.MutabakatId))" />
                             }
 
                             <RadzenButton Icon="visibility"
@@ -236,9 +230,9 @@
         NavigationManager.NavigateTo("/reconciliations/deleted");
     }
 
-    private void OnRowSelectionChanged(Mutabakat item, object value)
+    private void OnRowSelectionChanged(Mutabakat item, object checkedValue)
     {
-        var isChecked = value is bool b && b;
+        var isChecked = checkedValue is bool b && b;
 
         if (isChecked)
         {
@@ -375,6 +369,13 @@
                     .Where(x => x.MutabakatId != id)
                     .ToList();
             }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Error,
+                    "Hata",
+                    ex.Message);
+            }
             finally
             {
                 isSubmitting = false;
@@ -427,7 +428,7 @@
         if (isSubmitting) return;
 
         var ids = selectedMutabakatlar
-            .Where(x => !x.MutabakatMailGonderildi && x.MutabakatDurum != 1 && x.MutabakatDurum != 2)
+            .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
             .Select(x => x.MutabakatId)
             .Distinct()
             .ToList();
@@ -488,36 +489,28 @@
         };
     }
 
-    private string GetGonderimDurumuText(int durum)
+    private string GetStatusText(Mutabakat.MutabakatStatus status)
     {
-        return durum switch
+        return status switch
         {
-            1 => "Normal",
-            2 => "Hatırlatma",
-            _ => "-"
-        };
-    }
-
-    private string GetMutabakatDurumText(int durum)
-    {
-        return durum switch
-        {
-            1 => "Mutabık",
-            2 => "Mutabık Değil",
-            3 => "Cevaplanmayan",
-            4 => "Okunmayan",
+            Mutabakat.MutabakatStatus.Kaydedildi => "Kaydedildi",
+            Mutabakat.MutabakatStatus.Gonderildi => "Gönderildi",
+            Mutabakat.MutabakatStatus.Hatirlatma => "Hatırlatma",
+            Mutabakat.MutabakatStatus.Mutabik => "Mutabık",
+            Mutabakat.MutabakatStatus.MutabikDegil => "Mutabık Değil",
             _ => "Tanımsız"
         };
     }
 
-    private BadgeStyle GetMutabakatBadgeStyle(int durum)
+    private BadgeStyle GetStatusBadgeStyle(Mutabakat.MutabakatStatus status)
     {
-        return durum switch
+        return status switch
         {
-            1 => BadgeStyle.Success,
-            2 => BadgeStyle.Danger,
-            3 => BadgeStyle.Warning,
-            4 => BadgeStyle.Secondary,
+            Mutabakat.MutabakatStatus.Kaydedildi => BadgeStyle.Secondary,
+            Mutabakat.MutabakatStatus.Gonderildi => BadgeStyle.Info,
+            Mutabakat.MutabakatStatus.Hatirlatma => BadgeStyle.Warning,
+            Mutabakat.MutabakatStatus.Mutabik => BadgeStyle.Success,
+            Mutabakat.MutabakatStatus.MutabikDegil => BadgeStyle.Danger,
             _ => BadgeStyle.Light
         };
     }

@@ -1,17 +1,18 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
-using NPOI.SS.UserModel;
-using NPOI.XSSF.UserModel;
-using NPOI.HSSF.UserModel;
-using System.IO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using static EMutabakat.Models.Mutabakat;
 
 namespace EMutabakat.Services
 {
@@ -136,11 +137,7 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
                 mutabakat.MutabakatToken = Guid.NewGuid().ToString("N");
 
-            if (mutabakat.MutabakatDurum == 0)
-                mutabakat.MutabakatDurum = 3;
-
-            if (mutabakat.MutabakatGonderimDurumu == 0)
-                mutabakat.MutabakatGonderimDurumu = 1;
+            mutabakat.Status = MutabakatStatus.Kaydedildi;
 
             var existingMutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x =>
@@ -308,8 +305,7 @@ namespace EMutabakat.Services
                     ? null
                     : mutabakat.MutabakatAciklama.Trim(),
                 MutabakatToken = existingMutabakat.MutabakatToken,
-                MutabakatDurum = existingMutabakat.MutabakatDurum,
-                MutabakatGonderimDurumu = existingMutabakat.MutabakatGonderimDurumu,
+                Status = existingMutabakat.Status,
                 MutabakatGonderimTarihSaat = existingMutabakat.MutabakatGonderimTarihSaat,
                 MutabakatCevapTarihSaat = existingMutabakat.MutabakatCevapTarihSaat,
                 MutabakatCevapMail = existingMutabakat.MutabakatCevapMail,
@@ -408,13 +404,12 @@ namespace EMutabakat.Services
                 MutabakatGonderimTarihSaat = existing.MutabakatGonderimTarihSaat == default(DateTime)
                     ? null
                     : existing.MutabakatGonderimTarihSaat,
-                MutabakatGonderimDurumu = existing.MutabakatGonderimDurumu,
+                Status = existing.Status,
                 MutabakatCevapTarihSaat = existing.MutabakatCevapTarihSaat,
                 MutabakatCevapMail = existing.MutabakatCevapMail,
                 MutabakatCevapAdSoyad = existing.MutabakatCevapAdSoyad,
                 MutabakatCevapGsm = existing.MutabakatCevapGsm,
                 MutabakatCevapAciklama = existing.MutabakatCevapAciklama,
-                MutabakatDurum = existing.MutabakatDurum,
                 MutabakatToken = existing.MutabakatToken,
                 MutabakatReceiveStoragePath = existing.MutabakatReceiveStoragePath,
                 SilinmeTarihi = DateTime.UtcNow,
@@ -465,8 +460,9 @@ namespace EMutabakat.Services
             if (mutabakat == null || mutabakat.Cari == null)
                 return false;
 
-            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
-                return false;
+            if (mutabakat.Status == MutabakatStatus.Mutabik ||
+                    mutabakat.Status == MutabakatStatus.MutabikDegil)
+                    return false;
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
             {
@@ -481,8 +477,8 @@ namespace EMutabakat.Services
             var email = user.Identity.Name;
 
             var kullanici = await context.Kullanicilar
-   .Include(x => x.Firmalar)
-   .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+                .Include(x => x.Firmalar)
+                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
                 return false;
@@ -518,13 +514,8 @@ namespace EMutabakat.Services
             }
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-            mutabakat.MutabakatGonderimDurumu = 1;
-            mutabakat.MutabakatMailGonderildi = true;
-
-            if (mutabakat.MutabakatDurum == 0)
-            {
-                mutabakat.MutabakatDurum = 3;
-            }
+            mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
+            mutabakat.Status = MutabakatStatus.Gonderildi;
 
             await context.SaveChangesAsync();
 
@@ -550,8 +541,9 @@ namespace EMutabakat.Services
             if (mutabakat == null || mutabakat.Cari == null)
                 return false;
 
-            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
-                return false;
+            if (mutabakat.Status == MutabakatStatus.Mutabik ||
+                   mutabakat.Status == MutabakatStatus.MutabikDegil)
+                   return false;
 
             if (string.IsNullOrWhiteSpace(mutabakat.MutabakatToken))
             {
@@ -566,8 +558,8 @@ namespace EMutabakat.Services
             var email = user.Identity.Name;
 
             var kullanici = await context.Kullanicilar
-   .Include(x => x.Firmalar)
-   .FirstOrDefaultAsync(x => x.KullaniciMail == email);
+               .Include(x => x.Firmalar)
+               .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
                 return false;
@@ -603,8 +595,7 @@ namespace EMutabakat.Services
             }
 
             mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-            mutabakat.MutabakatGonderimDurumu = 2;
-            mutabakat.MutabakatMailGonderildi = true;
+            mutabakat.Status = MutabakatStatus.Hatirlatma;
 
             await context.SaveChangesAsync();
 
@@ -630,9 +621,7 @@ namespace EMutabakat.Services
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
                 .Where(x =>
-                    !x.MutabakatMailGonderildi &&
-                    x.MutabakatDurum != 1 &&
-                    x.MutabakatDurum != 2)
+                     x.Status == MutabakatStatus.Kaydedildi)
                 .ToListAsync();
 
             foreach (var item in pendingMutabakatlar)
@@ -680,14 +669,12 @@ namespace EMutabakat.Services
                 return (0, 0, errors);
 
             var selectedMutabakatlar = await context.Mutabakatlar
-                .Include(x => x.Firma)
-                .Include(x => x.Cari)
-                .Where(x =>
-                    mutabakatIds.Contains(x.MutabakatId) &&
-                    !x.MutabakatMailGonderildi &&
-                    x.MutabakatDurum != 1 &&
-                    x.MutabakatDurum != 2)
-                .ToListAsync();
+    .Include(x => x.Firma)
+    .Include(x => x.Cari)
+    .Where(x =>
+        mutabakatIds.Contains(x.MutabakatId) &&
+        x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+    .ToListAsync();
 
             foreach (var item in selectedMutabakatlar)
             {
@@ -780,10 +767,11 @@ namespace EMutabakat.Services
             if (mutabakat == null)
                 return false;
 
-            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
+            if (mutabakat.Status == MutabakatStatus.Mutabik ||
+                mutabakat.Status == MutabakatStatus.MutabikDegil)
                 return false;
 
-            mutabakat.MutabakatDurum = 1;
+            mutabakat.Status = MutabakatStatus.Mutabik;
             mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
@@ -812,13 +800,14 @@ namespace EMutabakat.Services
             if (mutabakat == null)
                 return false;
 
-            if (mutabakat.MutabakatDurum == 1 || mutabakat.MutabakatDurum == 2)
-                return false;
+            if (mutabakat.Status == MutabakatStatus.Mutabik ||
+                   mutabakat.Status == MutabakatStatus.MutabikDegil)
+                   return false;
 
             if (string.IsNullOrWhiteSpace(filePath))
                 return false;
 
-            mutabakat.MutabakatDurum = 2;
+            mutabakat.Status = MutabakatStatus.MutabikDegil;
             mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
@@ -1099,18 +1088,6 @@ namespace EMutabakat.Services
                                 createdCount--;
                             }
 
-                            int gonderimDurumu = 1;
-                            if (headerMap.ContainsKey("MutabakatGonderimDurumu"))
-                            {
-                                gonderimDurumu = ParseIntCell(row, headerMap["MutabakatGonderimDurumu"]);
-                            }
-                            else if (headerMap.ContainsKey("GonderimDurumu"))
-                            {
-                                gonderimDurumu = ParseIntCell(row, headerMap["GonderimDurumu"]);
-                            }
-
-                            if (gonderimDurumu <= 0) gonderimDurumu = 1;
-
                             var mutabakat = new Mutabakat
                             {
                                 MutabakatId = mutabakatId,
@@ -1122,8 +1099,7 @@ namespace EMutabakat.Services
                                 MutabakatBakiyeTipi = bakiyeTipi,
                                 MutabakatAciklama = string.IsNullOrWhiteSpace(aciklama) ? null : aciklama.Trim(),
                                 MutabakatToken = Guid.NewGuid().ToString("N"),
-                                MutabakatDurum = 3,
-                                MutabakatGonderimDurumu = gonderimDurumu
+                                Status = MutabakatStatus.Kaydedildi
                             };
 
                             context.Mutabakatlar.Add(mutabakat);
@@ -1220,10 +1196,7 @@ namespace EMutabakat.Services
                             }
 
                             full.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-                            full.MutabakatGonderimDurumu = 1;
-
-                            if (full.MutabakatDurum == 0)
-                                full.MutabakatDurum = 3;
+                            full.Status = MutabakatStatus.Gonderildi;
 
                             mailSentCount++;
                         }

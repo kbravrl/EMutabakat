@@ -142,10 +142,10 @@
             mutabakatCount = mutabakatlar.Count;
             kullaniciCount = kullanicilar.Count;
 
-            mutabikCount = mutabakatlar.Count(x => x.MutabakatDurum == 1);
-            mutabikDegilCount = mutabakatlar.Count(x => x.MutabakatDurum == 2);
-            cevaplanmayanCount = mutabakatlar.Count(x => x.MutabakatDurum == 3);
-            okunmayanCount = mutabakatlar.Count(x => x.MutabakatDurum == 4);
+            mutabikCount = mutabakatlar.Count(x => (int)x.Status == 1);
+            mutabikDegilCount = mutabakatlar.Count(x => (int)x.Status == 2);
+            cevaplanmayanCount = mutabakatlar.Count(x => (int)x.Status == 3);
+            okunmayanCount = mutabakatlar.Count(x => (int)x.Status == 4);
         }
         catch (Exception ex)
         {

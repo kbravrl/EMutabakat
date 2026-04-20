@@ -1,5 +1,7 @@
 ﻿@page "/reconciliations/deleted"
 
+@attribute [Authorize]
+
 @inject IMutabakatService MutabakatService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
@@ -8,19 +10,16 @@
 <PageTitle>Silinen Mutabakatlar</PageTitle>
 
 <RadzenCard Style="padding:20px;">
-
     <RadzenStack Orientation="Orientation.Horizontal"
                  AlignItems="AlignItems.Center"
-                 JustifyContent="JustifyContent.SpaceBetween">
+                 JustifyContent="JustifyContent.SpaceBetween"
+                 Style="margin-bottom:20px;">
+        <RadzenText TextStyle="TextStyle.H4">Silinen Mutabakatlar</RadzenText>
 
-        <RadzenText TextStyle="TextStyle.H4">
-            Silinen Mutabakatlar
-        </RadzenText>
-
-        <RadzenButton Text="Geri Dön"
+        <RadzenButton Text="Aktif Listeye Dön"
                       Icon="arrow_back"
                       ButtonStyle="ButtonStyle.Secondary"
-                      Click="@(()=> NavigationManager.NavigateTo("/reconciliations"))" />
+                      Click="@(() => NavigationManager.NavigateTo("/reconciliations"))" />
     </RadzenStack>
 
     <RadzenDataGrid Data="@items"
@@ -29,12 +28,10 @@
                     AllowSorting="true"
                     AllowFiltering="true"
                     PageSize="10"
-                    Style="margin-top:15px"
-                    EmptyText="Kayıt bulunamadı.">
+                    EmptyText="Kayıt bulunamadı">
 
         <Columns>
-
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Property="MutabakatId" Title="Mutabakat ID" />
+            <RadzenDataGridColumn TItem="SilinenMutabakat" Property="MutabakatId" Title="ID" />
 
             <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Tarih">
                 <Template Context="item">
@@ -72,17 +69,10 @@
                 </Template>
             </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Gönderim">
-                <Template Context="item">
-                    <RadzenBadge Text="@GetGonderimDurumuText(item.MutabakatGonderimDurumu)"
-                                 BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatGonderimDurumu)" />
-                </Template>
-            </RadzenDataGridColumn>
-
             <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Durum">
                 <Template Context="item">
-                    <RadzenBadge Text="@GetMutabakatDurumText(item.MutabakatDurum)"
-                                 BadgeStyle="@GetMutabakatBadgeStyle(item.MutabakatDurum)" />
+                    <RadzenBadge Text="@GetStatusText(item.Status)"
+                                 BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
                 </Template>
             </RadzenDataGridColumn>
 
@@ -108,10 +98,8 @@
                     </RadzenStack>
                 </Template>
             </RadzenDataGridColumn>
-
         </Columns>
     </RadzenDataGrid>
-
 </RadzenCard>
 
 @code {
@@ -180,36 +168,28 @@
         };
     }
 
-    private string GetGonderimDurumuText(int durum)
+    private string GetStatusText(Mutabakat.MutabakatStatus status)
     {
-        return durum switch
+        return status switch
         {
-            1 => "Normal",
-            2 => "Hatırlatma",
-            _ => "-"
-        };
-    }
-
-    private string GetMutabakatDurumText(int durum)
-    {
-        return durum switch
-        {
-            1 => "Mutabık",
-            2 => "Mutabık Değil",
-            3 => "Cevaplanmayan",
-            4 => "Okunmayan",
+            Mutabakat.MutabakatStatus.Kaydedildi => "Kaydedildi",
+            Mutabakat.MutabakatStatus.Gonderildi => "Gönderildi",
+            Mutabakat.MutabakatStatus.Hatirlatma => "Hatırlatma",
+            Mutabakat.MutabakatStatus.Mutabik => "Mutabık",
+            Mutabakat.MutabakatStatus.MutabikDegil => "Mutabık Değil",
             _ => "Tanımsız"
         };
     }
 
-    private BadgeStyle GetMutabakatBadgeStyle(int durum)
+    private BadgeStyle GetStatusBadgeStyle(Mutabakat.MutabakatStatus status)
     {
-        return durum switch
+        return status switch
         {
-            1 => BadgeStyle.Success,
-            2 => BadgeStyle.Danger,
-            3 => BadgeStyle.Warning,
-            4 => BadgeStyle.Secondary,
+            Mutabakat.MutabakatStatus.Kaydedildi => BadgeStyle.Secondary,
+            Mutabakat.MutabakatStatus.Gonderildi => BadgeStyle.Info,
+            Mutabakat.MutabakatStatus.Hatirlatma => BadgeStyle.Warning,
+            Mutabakat.MutabakatStatus.Mutabik => BadgeStyle.Success,
+            Mutabakat.MutabakatStatus.MutabikDegil => BadgeStyle.Danger,
             _ => BadgeStyle.Light
         };
     }

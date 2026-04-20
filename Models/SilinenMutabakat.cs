@@ -34,7 +34,8 @@ namespace EMutabakat.Models
 
         public DateTime? MutabakatGonderimTarihSaat { get; set; }
 
-        public int MutabakatGonderimDurumu { get; set; }
+        [Required]
+        public Mutabakat.MutabakatStatus Status { get; set; }
 
         public DateTime? MutabakatCevapTarihSaat { get; set; }
 
@@ -45,8 +46,6 @@ namespace EMutabakat.Models
         public string? MutabakatCevapGsm { get; set; }
 
         public string? MutabakatCevapAciklama { get; set; }
-
-        public int MutabakatDurum { get; set; }
 
         public string? MutabakatToken { get; set; }
 
