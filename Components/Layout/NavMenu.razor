@@ -7,10 +7,10 @@
                 <RadzenPanelMenuItem Text="Cari Gruplar" Path="/current-groups" Icon="group_work" />
                 <RadzenPanelMenuItem Text="Döviz Kodları" Path="/currency-codes" Icon="currency_exchange" />
                 <RadzenPanelMenuItem Text="Mutabakatlar" Path="/reconciliations" Icon="description" />
+                <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
 
                 <AuthorizeView Roles="Admin" Context="adminContext">
                     <Authorized>
-                        <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
                         <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
                         <RadzenPanelMenuItem Text="Loglar" Path="/auth/logs" Icon="receipt_long" />
                     </Authorized>

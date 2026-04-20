@@ -77,6 +77,23 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var kullanici = await GetCurrentKullaniciAsync(context);
+
+            if (kullanici == null)
+                return null;
+
+            if (kullanici.Rol == KullaniciRolleri.Admin)
+            {
+                return await context.Firmalar
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.FirmaId == id);
+            }
+
+            var allowedIds = kullanici.Firmalar.Select(f => f.FirmaId).ToList();
+
+            if (!allowedIds.Contains(id))
+                return null;
+
             return await context.Firmalar
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.FirmaId == id);
@@ -85,6 +102,10 @@ namespace EMutabakat.Services
         public async Task<Firma> AddAsync(Firma firma)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var current = await GetCurrentKullaniciAsync(context);
+            if (current == null || current.Rol != KullaniciRolleri.Admin)
+                throw new UnauthorizedAccessException("Yalnızca adminler yeni firma ekleyebilir.");
 
             try
             {
@@ -128,6 +149,18 @@ namespace EMutabakat.Services
 
                 if (existingFirma == null)
                     return null;
+
+                var kullanici = await GetCurrentKullaniciAsync(context);
+
+                if (kullanici == null)
+                    return null;
+
+                if (kullanici.Rol != KullaniciRolleri.Admin)
+                {
+                    var allowedIds = kullanici.Firmalar.Select(f => f.FirmaId).ToList();
+                    if (!allowedIds.Contains(firma.FirmaId))
+                        return null;
+                }
 
                 firma.FirmaMail = firma.FirmaMail?.Trim().ToLower();
                 firma.FirmaSmtpUser = firma.FirmaSmtpUser?.Trim().ToLower();
@@ -190,6 +223,16 @@ namespace EMutabakat.Services
             if (firma == null)
                 return false;
 
+            var kullanici = await GetCurrentKullaniciAsync(context);
+
+            if (kullanici == null)
+                return false;
+
+            if (kullanici.Rol != KullaniciRolleri.Admin)
+            {
+                return false;
+            }
+
             try
             {
                 context.Firmalar.Remove(firma);
@@ -214,6 +257,18 @@ namespace EMutabakat.Services
                 );
                 throw new Exception("Bu firma kaydı başka kayıtlarda kullanıldığı için silinemez.");
             }
+        }
+
+        private async Task<Kullanici?> GetCurrentKullaniciAsync(AppDbContext context)
+        {
+            var mail = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            return await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
         }
 
         private string? GetUserEmail()

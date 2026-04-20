@@ -18,9 +18,13 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni Firma Ekle"
-                          Icon="add_circle"
-                          Click="@GoToCreatePage" />
+            <AuthorizeView Roles="Admin">
+                <Authorized>
+                    <RadzenButton Text="Yeni Firma Ekle"
+                                  Icon="add_circle"
+                                  Click="@GoToCreatePage" />
+                </Authorized>
+            </AuthorizeView>
         </RadzenColumn>
     </RadzenRow>
 
@@ -161,11 +165,15 @@
                                           ButtonStyle="ButtonStyle.Info"
                                           Click="@(() => GoToDetailsPage(firma.FirmaId))" />
 
-                            <RadzenButton Icon="delete"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Danger"
-                                          Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
+                            <AuthorizeView Roles="Admin">
+                                <Authorized>
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
+                                </Authorized>
+                            </AuthorizeView>
                         </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>
