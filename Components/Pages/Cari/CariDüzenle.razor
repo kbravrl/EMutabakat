@@ -57,12 +57,14 @@ else
                                         @bind-Value="cari.CariGrupId"
                                         Style="width:100%;" />
                         <RadzenRequiredValidator Component="CariGrupId" Text="Cari grup seçiniz." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariGrupId)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Cari Adı *" />
                         <RadzenTextBox Name="CariAdi" @bind-Value="cari.CariAdi" Style="width:100%;" />
                         <RadzenRequiredValidator Component="CariAdi" Text="Cari adı zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariAdi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
@@ -89,32 +91,38 @@ else
                         <RadzenLabel Text="Vergi Dairesi *" />
                         <RadzenTextBox Name="CariVergiDairesi" @bind-Value="cari.CariVergiDairesi" Style="width:100%;" />
                         <RadzenRequiredValidator Component="CariVergiDairesi" Text="Vergi dairesi zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariVergiDairesi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Vergi Numarası *" />
                         <RadzenTextBox Name="CariVergiNumarasi" @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" />
                         <RadzenRequiredValidator Component="CariVergiNumarasi" Text="Vergi numarası zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariVergiNumarasi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Web Adresi" />
                         <RadzenTextBox @bind-Value="cari.CariWebAdresi" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariWebAdresi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Yetkili Adı Soyadı" />
                         <RadzenTextBox @bind-Value="cari.CariYetkiliAdiSoyadi" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliAdiSoyadi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili Telefon" />
                         <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliTelefon)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili GSM" />
                         <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliGsm)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
@@ -122,6 +130,7 @@ else
                         <RadzenTextBox Name="CariYetkiliMail" @bind-Value="cari.CariYetkiliMail" Style="width:100%;" />
                         <RadzenRequiredValidator Component="CariYetkiliMail" Text="Yetkili mail zorunludur." Popup="true" />
                         <RadzenEmailValidator Component="CariYetkiliMail" Text="Geçerli bir mail adresi giriniz." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliMail)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
