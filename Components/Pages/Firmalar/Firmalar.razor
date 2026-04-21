@@ -2,8 +2,6 @@
 
 @attribute [Authorize]
 
-@using System.Linq
-
 @inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -22,6 +20,8 @@
                 <Authorized>
                     <RadzenButton Text="Yeni Firma Ekle"
                                   Icon="add_circle"
+                                  Size="ButtonSize.Small"
+                                  Style="padding:4px 8px; font-size:0.9rem;"
                                   Click="@GoToCreatePage" />
                 </Authorized>
             </AuthorizeView>
@@ -29,98 +29,56 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid @ref="grid"
-                        Data="@filteredFirmalar"
+        <RadzenRow Gap="12px" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenTextBox @bind-Value="searchText"
+                               Placeholder="ID/ Firma adı/ Unvan/ Mail ara..."
+                               Style="width:100%;"
+                               Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown Data="@durumOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDurum"
+                                Placeholder="Durum"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="width:100%;"
+                              Click="ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredFirmalar"
                         TItem="Firma"
                         AllowPaging="true"
                         AllowSorting="true"
                         AllowFiltering="true"
-                        FilterMode="FilterMode.Simple"
                         PageSize="10"
-                        EmptyText="Kayıt bulunamadı"
-                        ColumnWidth="160px">
-
+                        EmptyText="Kayıt bulunamadı">
             <Columns>
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaId" Title="ID" Width="80px">
-                    <FilterTemplate>
-                        <RadzenNumeric @bind-Value="firmaIdFilter"
-                                       TValue="int?"
-                                       ShowUpDown="false"
-                                       Style="width:100%;"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaId" Title="ID" Width="90px" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaYetkiliAdiSoyadi" Title="Yetkili" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaIl" Title="İl" Width="120px" />
+                <RadzenDataGridColumn TItem="Firma" Property="FirmaIlce" Title="İlçe" Width="140px" />
 
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı">
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="firmaAdiFilter"
-                                       Style="width:100%;"
-                                       Placeholder="Firma adı ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan">
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="firmaUnvanFilter"
-                                       Style="width:100%;"
-                                       Placeholder="Unvan ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail">
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="mailFilter"
-                                       Style="width:100%;"
-                                       Placeholder="Mail ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon">
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="telefonFilter"
-                                       Style="width:100%;"
-                                       Placeholder="Telefon ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaYetkiliAdiSoyadi" Title="Yetkili">
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="yetkiliFilter"
-                                       Style="width:100%;"
-                                       Placeholder="Yetkili ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Title="İl" Width="120px">
-                    <Template Context="firma">
-                        @firma.FirmaIl
-                    </Template>
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="ilFilter"
-                                       Style="width:100%;"
-                                       Placeholder="İl ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Title="İlçe" Width="140px">
-                    <Template Context="firma">
-                        @firma.FirmaIlce
-                    </Template>
-                    <FilterTemplate>
-                        <RadzenTextBox @bind-Value="ilceFilter"
-                                       Style="width:100%;"
-                                       Placeholder="İlçe ara"
-                                       Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaAktifPasif" Title="Durum" Width="150px">
+                <RadzenDataGridColumn TItem="Firma"
+                                      Property="FirmaAktifPasif"
+                                      Title="Durum"
+                                      FilterOperator="FilterOperator.Equals"
+                                      Width="120px">
                     <Template Context="firma">
                         @if (firma.FirmaAktifPasif == 1)
                         {
@@ -131,27 +89,13 @@
                             <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
                         }
                     </Template>
-                    <FilterTemplate>
-                        <RadzenDropDown TValue="int?"
-                                        @bind-Value="durumFilter"
-                                        Data="@durumFiltreleri"
-                                        TextProperty="Text"
-                                        ValueProperty="Value"
-                                        Placeholder="Tümü"
-                                        AllowClear="true"
-                                        Style="width:100%;"
-                                        Change="@(args => ApplyFilters())" />
-                    </FilterTemplate>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Firma" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
-                    <HeaderTemplate>
-                        <RadzenButton Text="Filtreleri Temizle"
-                                      Icon="filter_alt_off"
-                                      ButtonStyle="ButtonStyle.Light"
-                                      Size="ButtonSize.Small"
-                                      Click="@ClearFilters" />
-                    </HeaderTemplate>
+                <RadzenDataGridColumn TItem="Firma"
+                                      Title="İşlemler"
+                                      Sortable="false"
+                                      Filterable="false"
+                                      Width="220px">
                     <Template Context="firma">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
                             <RadzenButton Icon="edit"
@@ -183,23 +127,17 @@
 </RadzenStack>
 
 @code {
-    private RadzenDataGrid<Firma>? grid;
-
     private List<Firma> firmalar = new();
     private List<Firma> filteredFirmalar = new();
 
-    private int? firmaIdFilter;
-    private string firmaAdiFilter = string.Empty;
-    private string firmaUnvanFilter = string.Empty;
-    private string mailFilter = string.Empty;
-    private string telefonFilter = string.Empty;
-    private string yetkiliFilter = string.Empty;
-    private string ilFilter = string.Empty;
-    private string ilceFilter = string.Empty;
-    private string lokasyonFilter = string.Empty;
-    private int? durumFilter = 1;
+    private string? searchText;
+    private string? selectedIl;
+    private string? selectedIlce;
+    private int? selectedDurum = 1;
 
-    private List<DurumFilterOption> durumFiltreleri = new()
+    private List<FilterOptionString> ilOptions = new();
+    private List<FilterOptionString> ilceOptions = new();
+    private List<FilterOptionInt> durumOptions = new()
     {
         new() { Text = "Aktif", Value = 1 },
         new() { Text = "Pasif", Value = 0 }
@@ -213,6 +151,31 @@
     private async Task LoadFirmalarAsync()
     {
         firmalar = await FirmaService.GetAllAsync();
+
+        ilOptions = firmalar
+            .Where(x => !string.IsNullOrWhiteSpace(x.FirmaIl))
+            .Select(x => x.FirmaIl!)
+            .Distinct()
+            .OrderBy(x => x)
+            .Select(x => new FilterOptionString
+            {
+                Value = x,
+                Text = x
+            })
+            .ToList();
+
+        ilceOptions = firmalar
+            .Where(x => !string.IsNullOrWhiteSpace(x.FirmaIlce))
+            .Select(x => x.FirmaIlce!)
+            .Distinct()
+            .OrderBy(x => x)
+            .Select(x => new FilterOptionString
+            {
+                Value = x,
+                Text = x
+            })
+            .ToList();
+
         ApplyFilters();
     }
 
@@ -220,82 +183,36 @@
     {
         IEnumerable<Firma> query = firmalar;
 
-        if (firmaIdFilter.HasValue)
+        if (!string.IsNullOrWhiteSpace(searchText))
         {
-            query = query.Where(x => x.FirmaId == firmaIdFilter.Value);
-        }
+            var text = searchText.Trim().ToLower();
 
-        if (!string.IsNullOrWhiteSpace(firmaAdiFilter))
-        {
-            var term = firmaAdiFilter.Trim().ToLower();
             query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaAdi) &&
-                x.FirmaAdi.ToLower().Contains(term));
+                x.FirmaId.ToString().Contains(text) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaAdi) && x.FirmaAdi.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaUnvan) && x.FirmaUnvan.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaMail) && x.FirmaMail.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaTelefon) && x.FirmaTelefon.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaGsm) && x.FirmaGsm.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaYetkiliAdiSoyadi) && x.FirmaYetkiliAdiSoyadi.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaIl) && x.FirmaIl.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.FirmaIlce) && x.FirmaIlce.ToLower().Contains(text))
+            );
         }
 
-        if (!string.IsNullOrWhiteSpace(firmaUnvanFilter))
+        if (!string.IsNullOrWhiteSpace(selectedIl))
         {
-            var term = firmaUnvanFilter.Trim().ToLower();
-            query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaUnvan) &&
-                x.FirmaUnvan.ToLower().Contains(term));
+            query = query.Where(x => x.FirmaIl == selectedIl);
         }
 
-        if (!string.IsNullOrWhiteSpace(mailFilter))
+        if (!string.IsNullOrWhiteSpace(selectedIlce))
         {
-            var term = mailFilter.Trim().ToLower();
-            query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaMail) &&
-                x.FirmaMail.ToLower().Contains(term));
+            query = query.Where(x => x.FirmaIlce == selectedIlce);
         }
 
-        if (!string.IsNullOrWhiteSpace(telefonFilter))
+        if (selectedDurum.HasValue)
         {
-            var term = telefonFilter.Trim().ToLower();
-            query = query.Where(x =>
-                (!string.IsNullOrWhiteSpace(x.FirmaTelefon) && x.FirmaTelefon.ToLower().Contains(term)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaGsm) && x.FirmaGsm.ToLower().Contains(term)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(yetkiliFilter))
-        {
-            var term = yetkiliFilter.Trim().ToLower();
-            query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaYetkiliAdiSoyadi) &&
-                x.FirmaYetkiliAdiSoyadi.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(ilFilter))
-        {
-            var term = ilFilter.Trim().ToLower();
-            query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaIl) &&
-                x.FirmaIl.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(ilceFilter))
-        {
-            var term = ilceFilter.Trim().ToLower();
-            query = query.Where(x =>
-                !string.IsNullOrWhiteSpace(x.FirmaIlce) &&
-                x.FirmaIlce.ToLower().Contains(term));
-        }
-
-        if (!string.IsNullOrWhiteSpace(lokasyonFilter))
-        {
-            var term = lokasyonFilter.Trim().ToLower();
-            query = query.Where(x =>
-                (!string.IsNullOrWhiteSpace(x.FirmaIl) && x.FirmaIl.ToLower().Contains(term)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaIlce) && x.FirmaIlce.ToLower().Contains(term)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaIl) &&
-                 !string.IsNullOrWhiteSpace(x.FirmaIlce) &&
-                 ($"{x.FirmaIl} {x.FirmaIlce}".ToLower().Contains(term) ||
-                  $"{x.FirmaIlce} {x.FirmaIl}".ToLower().Contains(term))));
-        }
-
-        if (durumFilter.HasValue)
-        {
-            query = query.Where(x => x.FirmaAktifPasif == durumFilter.Value);
+            query = query.Where(x => x.FirmaAktifPasif == selectedDurum.Value);
         }
 
         filteredFirmalar = query
@@ -303,25 +220,13 @@
             .ToList();
     }
 
-    private async Task ClearFilters()
+    private void ClearFilters()
     {
-        firmaIdFilter = null;
-        firmaAdiFilter = string.Empty;
-        firmaUnvanFilter = string.Empty;
-        mailFilter = string.Empty;
-        telefonFilter = string.Empty;
-        yetkiliFilter = string.Empty;
-        ilFilter = string.Empty;
-        ilceFilter = string.Empty;
-        lokasyonFilter = string.Empty;
-        durumFilter = null;
-
+        searchText = null;
+        selectedIl = null;
+        selectedIlce = null;
+        selectedDurum = 1;
         ApplyFilters();
-
-        if (grid is not null)
-        {
-            await grid.FirstPage(true);
-        }
     }
 
     private void GoToCreatePage()
@@ -383,9 +288,15 @@
         }
     }
 
-    private class DurumFilterOption
+    public class FilterOptionInt
     {
+        public int Value { get; set; }
         public string Text { get; set; } = string.Empty;
-        public int? Value { get; set; }
+    }
+
+    public class FilterOptionString
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }
