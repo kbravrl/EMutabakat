@@ -59,6 +59,10 @@ namespace EMutabakat.Data
                 .HasKey(c => new { c.CariId, c.FirmaId });
 
             modelBuilder.Entity<Cari>()
+                .HasIndex(c => new { c.FirmaId, c.CariAdi })
+                .IsUnique();
+
+            modelBuilder.Entity<Cari>()
                 .HasOne(c => c.Firma)
                 .WithMany()
                 .HasForeignKey(c => c.FirmaId)

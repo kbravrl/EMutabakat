@@ -127,12 +127,28 @@ namespace EMutabakat.Services
 
             await ValidateCariAsync(context, cari);
 
+            cari.CariAdi = (cari.CariAdi ?? string.Empty).Trim();
+
+            var sameNameExists = await context.Cariler.AnyAsync(x =>
+                x.FirmaId == cari.FirmaId &&
+                x.CariAdi.ToLower() == cari.CariAdi.ToLower());
+
+            if (sameNameExists)
+                throw new Exception("Bu firmaya ait cari zaten mevcut.");
+
             var exists = await context.Cariler.AnyAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
             if (exists)
                 throw new Exception("Aynı Cari ID ve Firma ile kayıt zaten mevcut.");
 
-            context.Cariler.Add(cari);
-            await context.SaveChangesAsync();
+            try
+            {
+                context.Cariler.Add(cari);
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw new Exception("Bu firmaya ait aynı cari adı zaten mevcut.");
+            }
 
             await _logService.AddAsync(
                 "Bilgi",
