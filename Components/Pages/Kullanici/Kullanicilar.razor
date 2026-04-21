@@ -29,7 +29,35 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid Data="@kullanicilar"
+        <RadzenRow Gap="12px" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenTextBox @bind-Value="searchText"
+                               Placeholder="ID/ Ad/ Soyad/ Mail ara..."
+                               Style="width:100%;"
+                               Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown Data="@durumlar"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDurum"
+                                Placeholder="Durum"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="width:100%;"
+                              Click="ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredKullanicilar"
                         TItem="Kullanici"
                         AllowPaging="true"
                         AllowSorting="true"
@@ -37,7 +65,7 @@
                         PageSize="10"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
-                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciId" Title="ID" />
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciId" Title="ID" Width="100px"/>
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciAdi" Title="Ad" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciSoyadi" Title="Soyad" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciMail" Title="Mail" />
@@ -100,7 +128,17 @@
 
 @code {
     private List<Kullanici> kullanicilar = new();
+    private List<Kullanici> filteredKullanicilar = new();
+
+    private string? searchText;
+    private string? selectedDurum = "1";
     private string aktifDurumFiltre = "1";
+
+    private List<DurumOptionString> durumlar = new()
+    {
+        new() { Text = "Aktif", Value = "1" },
+        new() { Text = "Pasif", Value = "0" }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,6 +148,7 @@
     private async Task LoadKullanicilarAsync()
     {
         kullanicilar = await KullaniciService.GetAllAsync();
+        ApplyFilters();
     }
 
     private void GoToCreatePage()
@@ -174,5 +213,45 @@
         {
             await LoadKullanicilarAsync();
         }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Kullanici> query = kullanicilar;
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var text = searchText.Trim().ToLower();
+
+            query = query.Where(x =>
+                (x.KullaniciId != null && x.KullaniciId.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.KullaniciAdi) && x.KullaniciAdi.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.KullaniciSoyadi) && x.KullaniciSoyadi.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.KullaniciMail) && x.KullaniciMail.ToLower().Contains(text)) ||
+                (!string.IsNullOrWhiteSpace(x.KullaniciGsm) && x.KullaniciGsm.ToLower().Contains(text))
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedDurum))
+        {
+            query = query.Where(x => x.KullaniciAktifPasif == selectedDurum);
+        }
+
+        aktifDurumFiltre = selectedDurum ?? string.Empty;
+
+        filteredKullanicilar = query.OrderBy(x => x.KullaniciAdi).ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchText = null;
+        selectedDurum = "1";
+        ApplyFilters();
+    }
+
+    public class DurumOptionString
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }

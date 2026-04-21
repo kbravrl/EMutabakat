@@ -21,7 +21,35 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid Data="@dovizKodlari"
+        <RadzenRow Gap="12px" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown Data="@tcmbOptions"
+                                @bind-Value="selectedTcmb"
+                                Placeholder="TCMB"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown Data="@nameOptions"
+                                @bind-Value="selectedName"
+                                Placeholder="Ad"
+                                AllowClear="true"
+                                Style="width:100%;"
+                                Change="@(_ => ApplyFilters())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="width:100%;"
+                              Click="ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredDovizKodlari"
                         TItem="DovizKodu"
                         AllowPaging="true"
                         AllowSorting="true"
@@ -55,6 +83,13 @@
 
 @code {
     private List<DovizKodu> dovizKodlari = new();
+    private List<DovizKodu> filteredDovizKodlari = new();
+
+    private string? selectedTcmb;
+    private string? selectedName;
+
+    private List<string> tcmbOptions = new();
+    private List<string> nameOptions = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,6 +99,22 @@
     private async Task LoadAsync()
     {
         dovizKodlari = await DovizKoduService.GetAllAsync();
+
+        tcmbOptions = dovizKodlari
+            .Where(x => !string.IsNullOrWhiteSpace(x.TCMB))
+            .Select(x => x.TCMB!)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+
+        nameOptions = dovizKodlari
+            .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+            .Select(x => x.Name!)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+
+        ApplyFilters();
     }
 
     private void GoToCreatePage()
@@ -107,5 +158,29 @@
                 NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
             }
         }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<DovizKodu> query = dovizKodlari;
+
+        if (!string.IsNullOrWhiteSpace(selectedTcmb))
+        {
+            query = query.Where(x => x.TCMB == selectedTcmb);
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedName))
+        {
+            query = query.Where(x => x.Name == selectedName);
+        }
+
+        filteredDovizKodlari = query.OrderBy(x => x.Name).ToList();
+    }
+
+    private void ClearFilters()
+    {
+        selectedTcmb = null;
+        selectedName = null;
+        ApplyFilters();
     }
 }
