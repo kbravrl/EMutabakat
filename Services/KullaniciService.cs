@@ -168,17 +168,27 @@ namespace EMutabakat.Services
             if (!KullaniciRolleri.IsValid(kullanici.Rol))
                 throw new Exception("Geçerli bir rol seçiniz.");
 
+            if (string.IsNullOrWhiteSpace(kullanici.Sifre))
+                throw new Exception("Şifre zorunludur.");
+
+            if (kullanici.Sifre.Trim().Length < 6)
+                throw new Exception("Şifre en az 6 karakter olmalıdır.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
+
+            kullanici.KullaniciAdi = kullanici.KullaniciAdi.Trim();
+            kullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             kullanici.KullaniciMail = kullanici.KullaniciMail.Trim().ToLower();
+            kullanici.KullaniciGsm = string.IsNullOrWhiteSpace(kullanici.KullaniciGsm)
+                ? null
+                : kullanici.KullaniciGsm.Trim();
+            kullanici.Rol = kullanici.Rol.Trim();
+            kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
             var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail == kullanici.KullaniciMail);
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı kullanıcı zaten var.");
-
-            if (string.IsNullOrWhiteSpace(kullanici.Sifre))
-                throw new Exception("Şifre zorunludur.");
-
-            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
-                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
 
             var firmalar = await context.Firmalar
                 .Where(f => firmaIds.Contains(f.FirmaId))
@@ -188,7 +198,7 @@ namespace EMutabakat.Services
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
             kullanici.KullaniciId = await GenerateNextKullaniciIdAsync();
-            kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre);
+            kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre.Trim());
 
             foreach (var firma in firmalar)
             {
@@ -223,6 +233,21 @@ namespace EMutabakat.Services
             if (firmaIds.Count == 0)
                 throw new Exception("En az bir firma seçimi zorunludur.");
 
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAdi))
+                throw new Exception("Ad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciSoyadi))
+                throw new Exception("Soyad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
+                throw new Exception("Mail zorunludur.");
+
+            if (!KullaniciRolleri.IsValid(kullanici.Rol))
+                throw new Exception("Geçerli bir rol seçiniz.");
+
+            if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
+                throw new Exception("Aktif/Pasif bilgisi zorunludur.");
+
             var desiredFirmalar = await context.Firmalar
                 .Where(f => firmaIds.Contains(f.FirmaId))
                 .ToListAsync();
@@ -239,16 +264,21 @@ namespace EMutabakat.Services
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı başka bir kullanıcı zaten var.");
 
-            existingKullanici.KullaniciAdi = kullanici.KullaniciAdi;
-            existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi;
+            existingKullanici.KullaniciAdi = kullanici.KullaniciAdi.Trim();
+            existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             existingKullanici.KullaniciMail = normalizedMail;
-            existingKullanici.KullaniciGsm = kullanici.KullaniciGsm;
-            existingKullanici.Rol = kullanici.Rol;
-            existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif;
+            existingKullanici.KullaniciGsm = string.IsNullOrWhiteSpace(kullanici.KullaniciGsm)
+                ? null
+                : kullanici.KullaniciGsm.Trim();
+            existingKullanici.Rol = kullanici.Rol.Trim();
+            existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
             if (!string.IsNullOrWhiteSpace(kullanici.Sifre))
             {
-                existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre);
+                if (kullanici.Sifre.Trim().Length < 6)
+                    throw new Exception("Şifre en az 6 karakter olmalıdır.");
+
+                existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre.Trim());
             }
 
             existingKullanici.Firmalar.Clear();

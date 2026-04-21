@@ -73,7 +73,7 @@ namespace EMutabakat.Data
             {
                 admin = new Kullanici
                 {
-                    KullaniciId = "P1",
+                    KullaniciId = "1",
                     KullaniciAdi = "Sistem",
                     KullaniciSoyadi = "Yöneticisi",
                     KullaniciMail = adminMail,

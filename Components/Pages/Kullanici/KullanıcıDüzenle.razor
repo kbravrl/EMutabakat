@@ -36,103 +36,86 @@ else
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Kullanıcı ID *" />
-                        <RadzenTextBox Name="KullaniciId"
-                                       @bind-Value="kullanici.KullaniciId"
-                                       Style="width:100%;"
-                                       Disabled="true" />
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciId"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciId)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Firmalar *" />
-                        <RadzenDropDown Name="FirmaIds"
-                                        Data="@firmalar"
+                        <RadzenDropDown Data="@firmalar"
                                         TextProperty="FirmaAdi"
                                         ValueProperty="FirmaId"
-                                        @bind-Value="selectedFirmaIds"
+                                        @bind-Value="kullanici.FirmaIds"
                                         Placeholder="Firma seçiniz"
                                         Multiple="true"
                                         AllowClear="true"
                                         Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.FirmaIds)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Rol *" />
-                        <RadzenDropDown Name="Rol"
-                                        Data="@roller"
+                        <RadzenDropDown Data="@roller"
                                         TextProperty="Text"
                                         ValueProperty="Value"
                                         @bind-Value="kullanici.Rol"
                                         Placeholder="Rol seçiniz"
                                         Style="width:100%;" />
-                        <RadzenRequiredValidator Component="Rol"
-                                                 Text="Rol seçimi zorunludur."
-                                                 Popup="true" />
+                        <ValidationMessage For="@(() => kullanici.Rol)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Durum *" />
-                        <RadzenDropDown Name="KullaniciAktifPasif"
-                                        Data="@durumlar"
+                        <RadzenDropDown Data="@durumlar"
                                         TextProperty="Text"
                                         ValueProperty="Value"
                                         @bind-Value="kullanici.KullaniciAktifPasif"
                                         Placeholder="Durum seçiniz"
                                         Style="width:100%;" />
-                        <RadzenRequiredValidator Component="KullaniciAktifPasif"
-                                                 Text="Aktif/Pasif bilgisi zorunludur."
-                                                 Popup="true" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciAktifPasif)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Ad *" />
-                        <RadzenTextBox Name="KullaniciAdi"
-                                       @bind-Value="kullanici.KullaniciAdi"
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciAdi"
                                        Placeholder="Ad giriniz"
                                        Style="width:100%;" />
-                        <RadzenRequiredValidator Component="KullaniciAdi"
-                                                 Text="Ad zorunludur."
-                                                 Popup="true" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciAdi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Soyad *" />
-                        <RadzenTextBox Name="KullaniciSoyadi"
-                                       @bind-Value="kullanici.KullaniciSoyadi"
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciSoyadi"
                                        Placeholder="Soyad giriniz"
                                        Style="width:100%;" />
-                        <RadzenRequiredValidator Component="KullaniciSoyadi"
-                                                 Text="Soyad zorunludur."
-                                                 Popup="true" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciSoyadi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Mail *" />
-                        <RadzenTextBox Name="KullaniciMail"
-                                       @bind-Value="kullanici.KullaniciMail"
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciMail"
                                        Placeholder="Mail giriniz"
                                        Style="width:100%;" />
-                        <RadzenRequiredValidator Component="KullaniciMail"
-                                                 Text="Mail zorunludur."
-                                                 Popup="true" />
-                        <RadzenEmailValidator Component="KullaniciMail"
-                                              Text="Geçerli bir mail adresi giriniz."
-                                              Popup="true" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciMail)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="GSM" />
-                        <RadzenTextBox Name="KullaniciGsm"
-                                       @bind-Value="kullanici.KullaniciGsm"
-                                       Placeholder="GSM giriniz"
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciGsm"
+                                       Placeholder="05XXXXXXXXX"
                                        Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciGsm)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Yeni Şifre" />
-                        <RadzenPassword Name="Sifre"
-                                        @bind-Value="kullanici.Sifre"
+                        <RadzenPassword TValue="string"
+                                        Value="@kullanici.Sifre"
+                                        ValueChanged="@OnPasswordChanged"
                                         Placeholder="Boş bırakırsanız değişmez"
                                         Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.Sifre)" />
                     </RadzenColumn>
 
                 </RadzenRow>
@@ -165,7 +148,6 @@ else
     private Kullanici? kullanici;
     private bool isLoading = true;
     private List<Firma> firmalar = new();
-    private IEnumerable<int> selectedFirmaIds = Enumerable.Empty<int>();
 
     private List<RolOption> roller = new()
     {
@@ -188,20 +170,27 @@ else
 
             if (kullanici != null)
             {
-                selectedFirmaIds = kullanici.Firmalar?
+                kullanici.FirmaIds = kullanici.Firmalar?
                     .Select(x => x.FirmaId)
                     .Distinct()
                     .ToList() ?? new List<int>();
 
-                kullanici.FirmaIds = selectedFirmaIds.ToList();
-
-                kullanici.Sifre = string.Empty;
+                // KRITIK: editte boş string değil null
+                kullanici.Sifre = null;
             }
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private void OnPasswordChanged(string? value)
+    {
+        if (kullanici == null)
+            return;
+
+        kullanici.Sifre = string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private async Task HandleValidSubmit()
@@ -211,17 +200,18 @@ else
 
         try
         {
-            var firmaIdList = selectedFirmaIds?
-                .Distinct()
-                .ToList() ?? new List<int>();
+            kullanici.KullaniciMail = (kullanici.KullaniciMail ?? string.Empty).Trim().ToLowerInvariant();
+            kullanici.KullaniciGsm = string.IsNullOrWhiteSpace(kullanici.KullaniciGsm)
+                ? null
+                : kullanici.KullaniciGsm.Trim();
 
-            if (firmaIdList.Count == 0)
+            kullanici.FirmaIds = kullanici.FirmaIds?.Distinct().ToList() ?? new List<int>();
+
+            if (kullanici.FirmaIds.Count == 0)
             {
                 NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "En az bir firma seçimi zorunludur.");
                 return;
             }
-
-            kullanici.FirmaIds = firmaIdList;
 
             await KullaniciService.UpdateAsync(kullanici);
 
