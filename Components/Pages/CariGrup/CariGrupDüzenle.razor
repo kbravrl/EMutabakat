@@ -34,6 +34,7 @@ else
                                        Style="width:100%;" />
 
                         <RadzenRequiredValidator Component="CariGrupId" Text="Cari grup ID zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cariGrup.CariGrupId)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">
@@ -54,6 +55,7 @@ else
                                            Style="width:100%;" />
 
                             <RadzenRequiredValidator Component="CariGrupAdi" Text="Cari grup adı zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cariGrup.CariGrupAdi)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="6">

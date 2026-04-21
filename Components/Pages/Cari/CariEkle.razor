@@ -41,6 +41,7 @@
                                     Placeholder="Firma seçiniz"
                                     Style="width:100%;" />
                     <RadzenRequiredValidator Component="FirmaId" Text="Firma seçimi zorunludur." Popup="true" />
+                    <ValidationMessage For="@(() => cari.FirmaId)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -92,7 +93,7 @@
 
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Vergi Numarası *" />
-                    <RadzenTextBox Name="CariVergiNumarasi" @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" />
+                    <RadzenTextBox Name="CariVergiNumarasi" @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" MaxLength="10" />
                     <RadzenRequiredValidator Component="CariVergiNumarasi" Text="Vergi numarası zorunludur." Popup="true" />
                     <ValidationMessage For="@(() => cari.CariVergiNumarasi)" />
                 </RadzenColumn>

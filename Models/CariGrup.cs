@@ -12,8 +12,8 @@ namespace EMutabakat.Models
         [NotMapped]
         public string OriginalCariGrupId { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
         [ForeignKey("Firma")]
+        [Range(1, int.MaxValue, ErrorMessage = "Firma seçimi zorunludur.")]
         public int FirmaId { get; set; }
 
         [Required(ErrorMessage = "Cari grup adı zorunludur.")]

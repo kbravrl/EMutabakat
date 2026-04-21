@@ -3,6 +3,7 @@
 @attribute [Authorize]
 
 @inject ICariGrupService CariGrupService
+@inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
@@ -18,26 +19,71 @@
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
             <RadzenStack Orientation="Orientation.Horizontal" Gap="8px" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
                 <RadzenButton Text="Excel İçe Aktar"
-                          Icon="file_upload"
-                          Click="OpenImportDialog" />
+                              Icon="file_upload"
+                              Click="OpenImportDialog" />
                 <RadzenButton Text="Yeni Cari Grup Ekle"
-                          Icon="add_circle"
-                          Click="@GoToCreatePage" />
+                              Icon="add_circle"
+                              Click="@GoToCreatePage" />
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenDataGrid Data="@cariGruplar"
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenTextBox Style="width:100%"
+                               Placeholder="ID/ Cari Grup adı ara"
+                               @bind-Value="searchText" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenDropDown TValue="int?"
+                                Style="width:100%"
+                                Placeholder="Firma seç"
+                                Data="@firmaOptions"
+                                TextProperty="FirmaAdi"
+                                ValueProperty="FirmaId"
+                                @bind-Value="selectedFirmaId"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown TValue="int?"
+                                Style="width:100%"
+                                Placeholder="Durum"
+                                Data="@durumOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDurum"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="1">
+                <RadzenButton Text="Temizle"
+                              Style="width:100%"
+                              Icon="filter_alt_off"
+                              ButtonStyle="ButtonStyle.Light"
+                              Click="@ClearFilters" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid Data="@filteredCariGruplar"
                         TItem="CariGrup"
                         AllowPaging="true"
                         AllowSorting="true"
-                        AllowFiltering="true"
+                        AllowFiltering="false"
                         PageSize="10"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
-                <RadzenDataGridColumn TItem="CariGrup" Property="CariGrupId" Title="ID" />
-                <RadzenDataGridColumn TItem="CariGrup" Property="CariGrupAdi" Title="Cari Grup Adı" />
+                <RadzenDataGridColumn TItem="CariGrup"
+                                      Property="CariGrupId"
+                                      Title="ID"
+                                      Width="90px" />
+
+                <RadzenDataGridColumn TItem="CariGrup"
+                                      Property="CariGrupAdi"
+                                      Title="Cari Grup Adı" />
+
                 <RadzenDataGridColumn TItem="CariGrup" Title="Firma">
                     <Template Context="item">
                         @item.Firma?.FirmaAdi
@@ -46,9 +92,7 @@
 
                 <RadzenDataGridColumn TItem="CariGrup"
                                       Property="CariGrupAktifPasif"
-                                      Title="Durum"
-                                      FilterOperator="FilterOperator.Equals"
-                                      FilterValue="@aktifDurumFiltre">
+                                      Title="Durum">
                     <Template Context="item">
                         @if (item.CariGrupAktifPasif == 1)
                         {
@@ -61,7 +105,11 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="CariGrup" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                <RadzenDataGridColumn TItem="CariGrup"
+                                      Title="İşlemler"
+                                      Sortable="false"
+                                      Filterable="false"
+                                      Width="220px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
                             <RadzenButton Icon="edit"
@@ -85,8 +133,38 @@
 
 @code {
     private List<CariGrup> cariGruplar = new();
+    private List<Firma> firmaOptions = new();
+    private List<CariGrup> grupAdiOptions = new();
+
     private bool isSubmitting;
-    private int aktifDurumFiltre = 1;
+
+    private string? searchText;
+    private int? selectedFirmaId;
+    private string? selectedGrupAdi;
+    private int? selectedDurum;
+
+    private List<FilterOption<int?>> durumOptions = new()
+    {
+        new() { Text = "Aktif", Value = 1 },
+        new() { Text = "Pasif", Value = 0 }
+    };
+
+    private List<CariGrup> filteredCariGruplar =>
+        cariGruplar
+            .Where(x =>
+                string.IsNullOrWhiteSpace(searchText) ||
+                ((x.CariGrupId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                 || (x.CariGrupAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)))
+            .Where(x =>
+                !selectedFirmaId.HasValue || x.FirmaId == selectedFirmaId.Value)
+            .Where(x =>
+                string.IsNullOrWhiteSpace(selectedGrupAdi) || x.CariGrupAdi == selectedGrupAdi)
+            .Where(x =>
+                !selectedDurum.HasValue || x.CariGrupAktifPasif == selectedDurum.Value)
+            .OrderByDescending(x => x.CariGrupAktifPasif)
+            .ThenBy(x => GetCariGrupSortValue(x.CariGrupId))
+            .ThenBy(x => x.CariGrupAdi)
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,6 +174,37 @@
     private async Task LoadCariGruplarAsync()
     {
         cariGruplar = await CariGrupService.GetAllAsync();
+        firmaOptions = await FirmaService.GetAllAsync();
+
+        grupAdiOptions = cariGruplar
+            .Where(x => !string.IsNullOrWhiteSpace(x.CariGrupAdi))
+            .GroupBy(x => x.CariGrupAdi)
+            .Select(g => g.First())
+            .OrderBy(x => x.CariGrupAdi)
+            .ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchText = null;
+        selectedFirmaId = null;
+        selectedGrupAdi = null;
+        selectedDurum = null;
+    }
+
+    private int GetCariGrupSortValue(string? cariGrupId)
+    {
+        var id = cariGrupId ?? "";
+
+        if (int.TryParse(id, out var n))
+            return n;
+
+        var match = System.Text.RegularExpressions.Regex.Match(id, @"\d+");
+
+        if (int.TryParse(match.Value, out var m))
+            return m;
+
+        return int.MaxValue;
     }
 
     private void GoToCreatePage()
@@ -122,6 +231,7 @@
         if (confirmed == true)
         {
             if (isSubmitting) return;
+
             isSubmitting = true;
             try
             {
@@ -161,10 +271,21 @@
     private async Task OpenImportDialog()
     {
         var parameters = new Dictionary<string, object?>();
-        var result = await DialogService.OpenAsync("Excel İçe Aktar", typeof(Components.Pages.CariGrup.CariGrupImportDialog), parameters, new DialogOptions { Width = "600px" });
+        var result = await DialogService.OpenAsync(
+            "Excel İçe Aktar",
+            typeof(Components.Pages.CariGrup.CariGrupImportDialog),
+            parameters,
+            new DialogOptions { Width = "600px" });
+
         if (result == true)
         {
             await LoadCariGruplarAsync();
         }
+    }
+
+    public class FilterOption<T>
+    {
+        public string Text { get; set; } = string.Empty;
+        public T? Value { get; set; }
     }
 }

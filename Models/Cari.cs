@@ -9,7 +9,7 @@ namespace EMutabakat.Models
         public string CariId { get; set; } = string.Empty;
 
         [ForeignKey("Firma")]
-        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Firma seçimi zorunludur.")]
         public int FirmaId { get; set; }
 
         [Required(ErrorMessage = "Cari adı zorunludur.")]

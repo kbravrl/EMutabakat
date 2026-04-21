@@ -2,7 +2,6 @@
 
 @attribute [Authorize]
 
-@using EMutabakat.Models
 @inject ICariService CariService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
@@ -37,7 +36,7 @@
         <RadzenRow Gap="12px" class="mb-3">
             <RadzenColumn Size="12" SizeMD="3">
                 <RadzenTextBox @bind-Value="searchText"
-                               Placeholder="Cari adı, ID, unvan, mail ara..."
+                               Placeholder="ID/ Cari adı/ Unvan/ Mail ara..."
                                Style="width:100%;"
                                Change="@(_ => ApplyFilters())" />
             </RadzenColumn>
@@ -167,7 +166,7 @@
     private string? searchText;
     private int? selectedFirmaId;
     private string? selectedCariGrupId;
-    private int? selectedDurum = 1; // ilk açılışta aktifler gelsin
+    private int? selectedDurum = 1;
 
     private List<FilterOptionInt> firmaOptions = new();
     private List<FilterOptionString> cariGrupOptions = new();
