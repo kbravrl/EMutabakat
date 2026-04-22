@@ -2,6 +2,8 @@
 
 @attribute [Authorize]
 
+@using MutabakatModel = EMutabakat.Models.Mutabakat
+
 @inject IFirmaService FirmaService
 @inject ICariService CariService
 @inject IMutabakatService MutabakatService
@@ -15,9 +17,9 @@
     <RadzenText TextStyle="TextStyle.H4">Kontrol Paneli</RadzenText>
 
     <RadzenRow Gap="16px">
-         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+        <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
             <RadzenCard>
-                    <RadzenStack Gap="0.5rem">
+                <RadzenStack Gap="0.5rem">
                     <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
                     <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
                     <RadzenButton Text="Firmalara Git" Icon="business" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
@@ -60,24 +62,164 @@
         </AuthorizeView>
     </RadzenRow>
 
+    <div style="background:#8e44ad;color:white;padding:12px;border-radius:4px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:18px;font-weight:600">★ Özel Mutabakat Analizi</span>
+        </div>
+        <div>
+            <RadzenButton ButtonStyle="ButtonStyle.Light"
+                          Style="color:white;background:transparent;border:0"
+                          Icon="search"
+                          Text="Detaylı İncele"
+                          Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
+        </div>
+    </div>
+
     <RadzenCard>
-        <RadzenStack Gap="0.75rem">
-            <RadzenText TextStyle="TextStyle.Subtitle1">Mutabakat Durum Özeti</RadzenText>
-            <RadzenRow Gap="12px">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
+                                Placeholder="Bakiye Tipi"
+                                Data="bakiyeTipiOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedBakiyeTipi"
+                                AllowClear="true"
+                                Change="@(_ => OnFiltersChanged())" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
+                                Placeholder="Dönem"
+                                Data="periodOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedPeriod"
+                                AllowClear="true"
+                                Change="@(_ => OnFiltersChanged())" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <div style="margin-top:12px;border-top:1px dashed #ddd;padding-top:12px">
+            <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenBadge Text='@($"Mutabık: {mutabikCount}")' BadgeStyle="BadgeStyle.Success" />
+                    <div style="text-align:center">
+                        <div style="color:#888">İlk Gönderim Tarihi:</div>
+                        <div>@(firstSendDate?.ToString("dd.MM.yyyy") ?? "---")</div>
+                    </div>
                 </RadzenColumn>
+
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenBadge Text='@($"Mutabık Değil: {mutabikDegilCount}")' BadgeStyle="BadgeStyle.Danger" />
+                    <div style="text-align:center">
+                        <div style="color:#888">Tahmini Bitiş Tarihi:</div>
+                        <div>@(estimatedEndDate?.ToString("dd.MM.yyyy") ?? "---")</div>
+                    </div>
                 </RadzenColumn>
+
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenBadge Text='@($"Cevaplanmayan: {cevaplanmayanCount}")' BadgeStyle="BadgeStyle.Warning" />
+                    <div style="text-align:center">
+                        <div style="color:#888">Günlük Ortalama:</div>
+                        <div style="font-size:20px;font-weight:600">@gunlukOrtalama</div>
+                    </div>
                 </RadzenColumn>
+
                 <RadzenColumn Size="12" SizeMD="3">
-                    <RadzenBadge Text='@($"Okunmayan: {okunmayanCount}")' BadgeStyle="BadgeStyle.Secondary" />
+                    <div style="text-align:center">
+                        <div style="color:#888">Kalan Gün:</div>
+                        <div style="font-size:20px;font-weight:600">@kalanGun</div>
+                    </div>
                 </RadzenColumn>
             </RadzenRow>
-        </RadzenStack>
+
+            <RadzenRow style="margin-top:12px">
+                <RadzenColumn Size="12" SizeMD="3">
+                    <div style="text-align:center;padding:16px">
+                        <div style="font-size:28px;font-weight:700">@mutabikCount</div>
+                        <div style="color:#888">Mutabık</div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <div style="text-align:center;padding:16px">
+                        <div style="font-size:28px;font-weight:700">@onayBekleyenCount</div>
+                        <div style="color:#888">Onay Bekleyen</div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <div style="text-align:center;padding:16px">
+                        <div style="font-size:28px;font-weight:700">@gonderilmeyenCount</div>
+                        <div style="color:#888">Gönderilmeyen</div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3">
+                    <div style="text-align:center;padding:16px">
+                        <div style="font-size:28px;font-weight:700">@mutabakatCount</div>
+                        <div style="color:#888">Toplam</div>
+                    </div>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" style="margin-top:12px">
+                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #27ae60;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                            @mutabikYuzde%
+                        </div>
+                        <div style="color:#27ae60;font-weight:700">Mutabık</div>
+                        <div style="color:#888">@mutabikCount</div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #f39c12;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                            @onayBekleyenYuzde%
+                        </div>
+                        <div style="color:#f39c12;font-weight:700">Onay Bekleyen</div>
+                        <div style="color:#888">@onayBekleyenCount</div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #e74c3c;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                            @gonderilmeyenYuzde%
+                        </div>
+                        <div style="color:#e74c3c;font-weight:700">Gönderilmeyen</div>
+                        <div style="color:#888">@gonderilmeyenCount</div>
+                    </div>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <div style="margin-top:12px">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">&nbsp;</th>
+                            <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam Adet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in tableRows)
+                        {
+                            <tr>
+                                <td style="padding:6px;border-bottom:1px solid #f1f1f1">
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <div style=@($"width:14px;height:14px;background:{row.Color};border-radius:2px")></div>
+                                        <div>@row.Label</div>
+                                    </div>
+                                </td>
+                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </RadzenCard>
 </RadzenStack>
 
@@ -86,14 +228,226 @@
     private int cariCount;
     private int mutabakatCount;
     private int kullaniciCount;
+
     private int mutabikCount;
     private int mutabikDegilCount;
+    private int onayBekleyenCount;
     private int cevaplanmayanCount;
     private int okunmayanCount;
+    private int gonderilmeyenCount;
+    private int gonderildiCount;
+
+    private int mutabikYuzde;
+    private int onayBekleyenYuzde;
+    private int gonderilmeyenYuzde;
+
+    private int gunlukOrtalama;
+    private int kalanGun;
+
+    private List<MutabakatModel> allMutabakatlar = new();
+
+    private string? selectedPeriod;
+    private string? selectedBakiyeTipi;
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private DateTime? firstSendDate;
+    private DateTime? estimatedEndDate;
+    private int dayCount = 0;
+
+    private List<DashboardRow> tableRows = new();
+
+    private List<FilterOption<int?>> statusOptions = new()
+    {
+        new() { Text = "Kaydedildi", Value = 1 },
+        new() { Text = "Gönderildi", Value = 2 },
+        new() { Text = "Hatırlatma", Value = 3 },
+        new() { Text = "Mutabık", Value = 4 },
+        new() { Text = "Mutabık Değil", Value = 5 }
+    };
+
+    private List<FilterOption<string>> bakiyeTipiOptions = new()
+    {
+        new() { Text = "Borç", Value = "B" },
+        new() { Text = "Alacak", Value = "A" }
+    };
+
+    private List<FilterOption<string>> periodOptions = new();
+
+    public class FilterOption<T>
+    {
+        public string Text { get; set; } = string.Empty;
+        public T? Value { get; set; }
+    }
+
+    private class DashboardRow
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Color { get; set; } = "#3498db";
+        public int Count { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadDashboardAsync();
+    }
+
+    private void OnFiltersChanged()
+    {
+        UpdateAnalysis();
+        StateHasChanged();
+    }
+
+    private void ResetAnalysis()
+    {
+        firstSendDate = null;
+        estimatedEndDate = null;
+        gunlukOrtalama = 0;
+        kalanGun = 0;
+        dayCount = 0;
+
+        mutabakatCount = 0;
+        mutabikCount = 0;
+        mutabikDegilCount = 0;
+        onayBekleyenCount = 0;
+        cevaplanmayanCount = 0;
+        okunmayanCount = 0;
+        gonderilmeyenCount = 0;
+        gonderildiCount = 0;
+
+        mutabikYuzde = 0;
+        onayBekleyenYuzde = 0;
+        gonderilmeyenYuzde = 0;
+
+        tableRows = new List<DashboardRow>();
+    }
+
+    private void UpdateAnalysis()
+    {
+        try
+        {
+            var list = allMutabakatlar.AsEnumerable();
+
+            if (string.IsNullOrWhiteSpace(selectedPeriod))
+            {
+                ResetAnalysis();
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedBakiyeTipi))
+                list = list.Where(x => x.MutabakatBakiyeTipi == selectedBakiyeTipi);
+
+            if (!string.IsNullOrWhiteSpace(selectedPeriod))
+            {
+                var parts = selectedPeriod.Split('.');
+                if (parts.Length == 2 &&
+                    int.TryParse(parts[0], out var mm) &&
+                    int.TryParse(parts[1], out var yyyy))
+                {
+                    list = list.Where(x => x.MutabakatTarihi.Month == mm && x.MutabakatTarihi.Year == yyyy);
+                }
+            }
+
+            if (startDate.HasValue)
+                list = list.Where(x => x.MutabakatTarihi.Date >= startDate.Value.Date);
+
+            if (endDate.HasValue)
+                list = list.Where(x => x.MutabakatTarihi.Date <= endDate.Value.Date);
+
+            var filtered = list.ToList();
+
+            mutabakatCount = filtered.Count;
+            mutabikCount = filtered.Count(x => (int)x.Status == 4);
+            mutabikDegilCount = filtered.Count(x => (int)x.Status == 5);
+            onayBekleyenCount = filtered.Count(x => (int)x.Status == 2 || (int)x.Status == 3);
+            cevaplanmayanCount = onayBekleyenCount;
+            okunmayanCount = filtered.Count(x => x.MutabakatGonderimTarihSaat == null);
+            gonderilmeyenCount = filtered.Count(x => (int)x.Status == 1);
+            gonderildiCount = filtered.Count(x => (int)x.Status == 2);
+
+            tableRows = new List<DashboardRow>
+            {
+                new DashboardRow { Label = "Toplam", Color = "#3498db", Count = filtered.Count },
+                new DashboardRow { Label = "Kaydedildi", Color = "#95a5a6", Count = gonderilmeyenCount },
+                new DashboardRow { Label = "Gönderildi", Color = "#3498db", Count = gonderildiCount },
+                new DashboardRow { Label = "Mutabık", Color = "#27ae60", Count = mutabikCount },
+                new DashboardRow { Label = "Mutabık Değil", Color = "#e74c3c", Count = mutabikDegilCount }
+            };
+
+            if (filtered.Count > 0)
+            {
+                mutabikYuzde = (int)Math.Round((double)mutabikCount * 100 / filtered.Count);
+                onayBekleyenYuzde = (int)Math.Round((double)onayBekleyenCount * 100 / filtered.Count);
+                gonderilmeyenYuzde = (int)Math.Round((double)gonderilmeyenCount * 100 / filtered.Count);
+            }
+            else
+            {
+                mutabikYuzde = 0;
+                onayBekleyenYuzde = 0;
+                gonderilmeyenYuzde = 0;
+            }
+
+            firstSendDate = filtered
+                .Where(x => x.MutabakatGonderimTarihSaat.HasValue)
+                .OrderBy(x => x.MutabakatGonderimTarihSaat)
+                .Select(x => x.MutabakatGonderimTarihSaat)
+                .FirstOrDefault();
+
+            dayCount = firstSendDate.HasValue
+                ? Math.Max((DateTime.Today.Date - firstSendDate.Value.Date).Days + 1, 1)
+                : 0;
+
+            var sentCount = filtered.Count(x => x.MutabakatGonderimTarihSaat.HasValue);
+
+            gunlukOrtalama = dayCount > 0
+                ? (int)Math.Round((double)sentCount / dayCount)
+                : sentCount;
+
+            var today = DateTime.Today;
+
+            var oneMonthAgo = today.AddMonths(-1);
+            var twoMonthsAgo = today.AddMonths(-2);
+            var threeMonthsAgo = today.AddMonths(-3);
+
+            var x1 = filtered.Count(x =>
+                x.MutabakatTarihi.Year == oneMonthAgo.Year &&
+                x.MutabakatTarihi.Month == oneMonthAgo.Month);
+
+            var x2 = filtered.Count(x =>
+                x.MutabakatTarihi.Year == twoMonthsAgo.Year &&
+                x.MutabakatTarihi.Month == twoMonthsAgo.Month);
+
+            var x3 = filtered.Count(x =>
+                x.MutabakatTarihi.Year == threeMonthsAgo.Year &&
+                x.MutabakatTarihi.Month == threeMonthsAgo.Month);
+
+            double weightedMonthlyAvg = (x1 * 3 + x2 * 2 + x3 * 1) / 6.0;
+            double weightedDailyAvg = weightedMonthlyAvg / 30.0;
+
+            var remainingCount = filtered.Count(x =>
+                (int)x.Status != 4 && (int)x.Status != 5);
+
+            if (weightedDailyAvg > 0 && remainingCount > 0)
+            {
+                var estimatedDays = (int)Math.Ceiling(remainingCount / weightedDailyAvg);
+                estimatedEndDate = DateTime.Today.AddDays(estimatedDays);
+            }
+            else if (remainingCount == 0)
+            {
+                estimatedEndDate = DateTime.Today;
+            }
+            else
+            {
+                estimatedEndDate = null;
+            }
+
+            kalanGun = estimatedEndDate.HasValue
+                ? Math.Max((estimatedEndDate.Value.Date - DateTime.Today.Date).Days, 0)
+                : 0;
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+        }
     }
 
     private async Task LoadDashboardAsync()
@@ -107,13 +461,24 @@
 
             firmaCount = firmalar.Count;
             cariCount = cariler.Count;
-            mutabakatCount = mutabakatlar.Count;
             kullaniciCount = kullanicilar.Count;
 
-            mutabikCount = mutabakatlar.Count(x => (int)x.Status == 1);
-            mutabikDegilCount = mutabakatlar.Count(x => (int)x.Status == 2);
-            cevaplanmayanCount = mutabakatlar.Count(x => (int)x.Status == 3);
-            okunmayanCount = mutabakatlar.Count(x => (int)x.Status == 4);
+            allMutabakatlar = mutabakatlar;
+
+            periodOptions = allMutabakatlar
+                .Select(x => new { Month = x.MutabakatTarihi.Month, Year = x.MutabakatTarihi.Year })
+                .Distinct()
+                .OrderByDescending(a => new DateTime(a.Year, a.Month, 1))
+                .Select(a => new FilterOption<string>
+                {
+                    Value = $"{a.Month:00}.{a.Year}",
+                    Text = $"{a.Month:00}.{a.Year}"
+                })
+                .ToList();
+
+            selectedPeriod = periodOptions.FirstOrDefault()?.Value;
+
+            UpdateAnalysis();
         }
         catch (Exception ex)
         {
