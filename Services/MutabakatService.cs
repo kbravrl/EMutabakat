@@ -88,7 +88,7 @@ namespace EMutabakat.Services
             return mutabakat;
         }
 
-        public async Task<Mutabakat> AddAsync(Mutabakat mutabakat)
+        public async Task<Mutabakat> AddAsync(Mutabakat mutabakat, string? cariMail = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -108,6 +108,18 @@ namespace EMutabakat.Services
                 throw new Exception("Aynı CariId birden fazla firmada bulundu. Lütfen cari ID'yi benzersiz kullanın.");
 
             var selectedCari = matchedCariler[0];
+
+            var cariEntity = await context.Cariler
+               .FirstOrDefaultAsync(c => c.CariId == selectedCari.CariId && c.FirmaId == selectedCari.FirmaId);
+
+            if (cariEntity == null)
+                throw new Exception("Seçilen cari bulunamadı.");
+
+            if (!string.IsNullOrWhiteSpace(cariMail))
+            {
+                cariEntity.CariYetkiliMail = cariMail.Trim().ToLowerInvariant();
+            }
+
             mutabakat.FirmaId = selectedCari.FirmaId;
 
             mutabakat.MutabakatTarihi = DateTime.SpecifyKind(
@@ -182,7 +194,7 @@ namespace EMutabakat.Services
             return mutabakat;
         }
 
-        public async Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat)
+        public async Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat, string? cariMail = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -206,6 +218,18 @@ namespace EMutabakat.Services
                 throw new Exception("Aynı CariId birden fazla firmada bulundu. Lütfen cari ID'yi benzersiz kullanın.");
 
             var selectedCari = matchedCariler[0];
+
+            var cariEntity = await context.Cariler
+               .FirstOrDefaultAsync(c => c.CariId == selectedCari.CariId && c.FirmaId == selectedCari.FirmaId);
+
+            if (cariEntity == null)
+                throw new Exception("Seçilen cari bulunamadı.");
+
+            if (!string.IsNullOrWhiteSpace(cariMail))
+            {
+                cariEntity.CariYetkiliMail = cariMail.Trim().ToLowerInvariant();
+            }
+
             var newFirmaId = selectedCari.FirmaId;
 
             mutabakat.MutabakatTarihi = DateTime.SpecifyKind(

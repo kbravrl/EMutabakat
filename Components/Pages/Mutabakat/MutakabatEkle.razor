@@ -15,7 +15,6 @@
 
     <EditForm Model="@mutabakat" OnValidSubmit="@HandleValidSubmit">
         <DataAnnotationsValidator />
-        <ValidationSummary />
 
         <RadzenRow Gap="16px">
 
@@ -47,6 +46,17 @@
                     </ChildContent>
                 </RadzenFormField>
                 <ValidationMessage For="@(() => mutabakat.CariId)" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Cari Mail" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenTextBox @bind-Value="cariMail"
+                                       Name="CariMail"
+                                       Placeholder="Cari yetkili mail"
+                                       Style="width:100%;" />
+                    </ChildContent>
+                </RadzenFormField>
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="6">
@@ -149,6 +159,7 @@
     private List<CariLookupItem> cariler = new();
     private List<DovizKodu> dovizKodlari = new();
     private bool isSubmitting = false;
+    private string? cariMail;
 
     private readonly List<SelectItem> bakiyeTipleri =
     [
@@ -177,8 +188,10 @@
             .Select(x => new CariLookupItem
             {
                 CariId = x.CariId,
+                FirmaId = x.FirmaId,
                 CariAdi = x.CariAdi ?? string.Empty,
-                CariDovizKodu = x.CariDovizKodu
+                CariDovizKodu = x.CariDovizKodu,
+                CariYetkiliMail = x.CariYetkiliMail
             })
             .ToList();
 
@@ -205,6 +218,8 @@
         {
             mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu!;
         }
+
+        cariMail = selectedCari.CariYetkiliMail;
     }
 
     private async Task HandleValidSubmit()
@@ -212,11 +227,14 @@
         if (isSubmitting)
             return;
 
+        if (!ValidateCariMail())
+            return;
+
         isSubmitting = true;
 
         try
         {
-            await MutabakatService.AddAsync(mutabakat);
+            await MutabakatService.AddAsync(mutabakat, cariMail);
 
             NotificationService.Notify(
                 NotificationSeverity.Success,
@@ -257,9 +275,31 @@
     private sealed class CariLookupItem
     {
         public string CariId { get; set; } = string.Empty;
+        public int FirmaId { get; set; }
         public string CariAdi { get; set; } = string.Empty;
         public string? CariDovizKodu { get; set; }
+        public string? CariYetkiliMail { get; set; }
 
         public string CariDisplayText => $"{CariId} - {CariAdi}";
+    }
+
+    private bool ValidateCariMail()
+    {
+        if (string.IsNullOrWhiteSpace(cariMail))
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari mail adresi boş olamaz.");
+            return false;
+        }
+
+        try
+        {
+            var _ = new System.Net.Mail.MailAddress(cariMail!);
+            return true;
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Lütfen geçerli bir mail adresi giriniz.");
+            return false;
+        }
     }
 }

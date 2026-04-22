@@ -1,10 +1,6 @@
 ﻿@page "/reconciliations/edit/{id}"
 @attribute [Authorize]
 
-@using EMutabakat.Models
-@using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.AspNetCore.Authorization
-
 @inject IMutabakatService MutabakatService
 @inject ICariService CariService
 @inject IDovizKoduService DovizKoduService
@@ -27,7 +23,6 @@ else
 {
     <EditForm EditContext="@editContext">
         <DataAnnotationsValidator />
-        <ValidationSummary />
 
         <RadzenCard Class="p-4" Style="max-width:900px;margin:auto;">
             <RadzenText TextStyle="TextStyle.H5">Mutabakat Düzenle</RadzenText>
@@ -45,12 +40,22 @@ else
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Cari" />
                     <RadzenDropDown Data="@cariler"
-                                    TextProperty="CariAdi"
+                                    TextProperty="CariDisplayText"
                                     ValueProperty="CariId"
                                     @bind-Value="mutabakat.CariId"
                                     Name="CariId"
-                                    Style="width:100%" />
+                                    Style="width:100%"
+                                    AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Change="@OnCariChanged" />
                     <ValidationMessage For="@(() => mutabakat.CariId)" />
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Cari Mail" />
+                    <RadzenTextBox @bind-Value="cariMail"
+                                   Name="CariMail"
+                                   Style="width:100%" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
@@ -136,8 +141,9 @@ else
     private bool isLoading = true;
     private bool isSubmitting = false;
     private DateTime mutabakatTarihiTemp;
+    private string? cariMail;
 
-    private List<Cari> cariler = new();
+    private List<CariLookupItem> cariler = new();
     private List<DovizKodu> dovizKodlari = new();
 
     private List<BakiyeTipItem> bakiyeTipleri = new()
@@ -156,11 +162,26 @@ else
             {
                 mutabakat.OriginalMutabakatId = mutabakat.MutabakatId;
 
-                cariler = await CariService.GetAllAsync();
+                var cariList = await CariService.GetAllAsync();
+                cariler = cariList
+                    .OrderBy(x => x.CariAdi)
+                    .Select(x => new CariLookupItem
+                    {
+                        CariId = x.CariId,
+                        FirmaId = x.FirmaId,
+                        CariAdi = x.CariAdi ?? string.Empty,
+                        CariDovizKodu = x.CariDovizKodu,
+                        CariYetkiliMail = x.CariYetkiliMail
+                    })
+                    .ToList();
+
                 dovizKodlari = await DovizKoduService.GetAllAsync();
 
                 mutabakatTarihiTemp = mutabakat.MutabakatTarihi;
                 editContext = new EditContext(mutabakat);
+
+                var selectedCari = cariler.FirstOrDefault(x => x.CariId == mutabakat.CariId);
+                cariMail = selectedCari?.CariYetkiliMail;
             }
         }
         catch (Exception ex)
@@ -170,6 +191,27 @@ else
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private void OnCariChanged(object value)
+    {
+        if (mutabakat == null)
+            return;
+
+        var cariId = value?.ToString();
+        if (string.IsNullOrWhiteSpace(cariId))
+            return;
+
+        var selectedCari = cariler.FirstOrDefault(x => x.CariId == cariId);
+        if (selectedCari == null)
+            return;
+
+        cariMail = selectedCari.CariYetkiliMail;
+
+        if (!string.IsNullOrWhiteSpace(selectedCari.CariDovizKodu))
+        {
+            mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu;
         }
     }
 
@@ -184,11 +226,14 @@ else
         if (isSubmitting || editContext == null || mutabakat == null) return;
         if (!editContext.Validate()) return;
 
+        if (!ValidateCariMail())
+            return;
+
         isSubmitting = true;
 
         try
         {
-            var updated = await MutabakatService.UpdateAsync(mutabakat);
+            var updated = await MutabakatService.UpdateAsync(mutabakat, cariMail);
 
             if (updated == null)
             {
@@ -214,11 +259,14 @@ else
         if (isSubmitting || editContext == null || mutabakat == null) return;
         if (!editContext.Validate()) return;
 
+        if (!ValidateCariMail())
+            return;
+
         isSubmitting = true;
 
         try
         {
-            var updated = await MutabakatService.UpdateAsync(mutabakat);
+            var updated = await MutabakatService.UpdateAsync(mutabakat, cariMail);
 
             if (updated == null)
             {
@@ -256,5 +304,36 @@ else
     {
         public string Text { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
+    }
+
+    private sealed class CariLookupItem
+    {
+        public string CariId { get; set; } = string.Empty;
+        public int FirmaId { get; set; }
+        public string CariAdi { get; set; } = string.Empty;
+        public string? CariDovizKodu { get; set; }
+        public string? CariYetkiliMail { get; set; }
+
+        public string CariDisplayText => $"{CariId} - {CariAdi}";
+    }
+
+    private bool ValidateCariMail()
+    {
+        if (string.IsNullOrWhiteSpace(cariMail))
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari mail adresi boş olamaz.");
+            return false;
+        }
+
+        try
+        {
+            var _ = new System.Net.Mail.MailAddress(cariMail!);
+            return true;
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Lütfen geçerli bir mail adresi giriniz.");
+            return false;
+        }
     }
 }

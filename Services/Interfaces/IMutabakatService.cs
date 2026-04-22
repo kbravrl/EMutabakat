@@ -6,8 +6,8 @@ namespace EMutabakat.Services.Interfaces
     {
         Task<List<Mutabakat>> GetAllAsync();
         Task<Mutabakat?> GetByIdAsync(string id);
-        Task<Mutabakat> AddAsync(Mutabakat mutabakat);
-        Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat);
+        Task<Mutabakat> AddAsync(Mutabakat mutabakat, string? cariMail = null);
+        Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat, string? cariMail = null);
         Task<bool> DeleteAsync(string id);
         Task<bool> SendMailAsync(string mutabakatId);
         Task<bool> SendReminderAsync(string mutabakatId);
