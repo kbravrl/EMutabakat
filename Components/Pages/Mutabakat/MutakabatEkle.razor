@@ -4,6 +4,7 @@
 
 @inject IMutabakatService MutabakatService
 @inject ICariService CariService
+@inject IFirmaService FirmaService
 @inject IDovizKoduService DovizKoduService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
@@ -30,11 +31,30 @@
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="6">
+                <RadzenFormField Text="Firma" Style="width:100%;">
+                    <ChildContent>
+                        <RadzenDropDown TValue="int?"
+                                        Name="FirmaId"
+                                        Data="@firmalar"
+                                        TextProperty="FirmaAdi"
+                                        ValueProperty="FirmaId"
+                                        @bind-Value="selectedFirmaId"
+                                        Placeholder="Firma seçiniz"
+                                        Style="width:100%;"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Change="@OnFirmaChanged" />
+                    </ChildContent>
+                </RadzenFormField>
+                <ValidationMessage For="@(() => mutabakat.FirmaId)" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="6">
                 <RadzenFormField Text="Cari" Style="width:100%;">
                     <ChildContent>
                         <RadzenDropDown TValue="string"
                                         Name="CariId"
-                                        Data="@cariler"
+                                        Data="@filteredCariler"
                                         TextProperty="CariDisplayText"
                                         ValueProperty="CariId"
                                         @bind-Value="mutabakat.CariId"
@@ -42,6 +62,7 @@
                                         Style="width:100%;"
                                         AllowFiltering="true"
                                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Disabled="@(selectedFirmaId == null)"
                                         Change="@OnCariChanged" />
                     </ChildContent>
                 </RadzenFormField>
@@ -156,10 +177,14 @@
 
 @code {
     private Mutabakat mutabakat = new();
-    private List<CariLookupItem> cariler = new();
+    private List<CariLookupItem> allCariler = new();
+    private List<CariLookupItem> filteredCariler = new();
+    private List<FirmaLookupItem> firmalar = new();
     private List<DovizKodu> dovizKodlari = new();
+
     private bool isSubmitting = false;
     private string? cariMail;
+    private int? selectedFirmaId;
 
     private readonly List<SelectItem> bakiyeTipleri =
     [
@@ -182,8 +207,18 @@
 
         mutabakat.MutabakatId = await MutabakatService.GenerateNextMutabakatIdAsync();
 
+        var firmaList = await FirmaService.GetAllAsync();
+        firmalar = firmaList
+            .OrderBy(x => x.FirmaAdi)
+            .Select(x => new FirmaLookupItem
+            {
+                FirmaId = x.FirmaId,
+                FirmaAdi = x.FirmaAdi ?? string.Empty
+            })
+            .ToList();
+
         var cariList = await CariService.GetAllAsync();
-        cariler = cariList
+        allCariler = cariList
             .OrderBy(x => x.CariAdi)
             .Select(x => new CariLookupItem
             {
@@ -195,6 +230,8 @@
             })
             .ToList();
 
+        filteredCariler = new List<CariLookupItem>();
+
         dovizKodlari = await DovizKoduService.GetAllAsync();
 
         if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
@@ -203,29 +240,60 @@
         }
     }
 
+    private void OnFirmaChanged(object value)
+    {
+        selectedFirmaId = value as int? ?? ConvertToNullableInt(value);
+
+        mutabakat.FirmaId = selectedFirmaId ?? 0;
+        mutabakat.CariId = string.Empty;
+        cariMail = null;
+
+        filteredCariler = selectedFirmaId.HasValue
+            ? allCariler
+                .Where(x => x.FirmaId == selectedFirmaId.Value)
+                .OrderBy(x => x.CariAdi)
+                .ToList()
+            : new List<CariLookupItem>();
+    }
+
     private void OnCariChanged(object value)
     {
         var cariId = value?.ToString();
 
-        if (string.IsNullOrWhiteSpace(cariId))
+        if (string.IsNullOrWhiteSpace(cariId) || !selectedFirmaId.HasValue)
             return;
 
-        var selectedCari = cariler.FirstOrDefault(x => x.CariId == cariId);
+        var selectedCari = filteredCariler.FirstOrDefault(x =>
+            x.CariId == cariId && x.FirmaId == selectedFirmaId.Value);
+
         if (selectedCari is null)
             return;
+
+        mutabakat.FirmaId = selectedCari.FirmaId;
+        cariMail = selectedCari.CariYetkiliMail;
 
         if (!string.IsNullOrWhiteSpace(selectedCari.CariDovizKodu))
         {
             mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu!;
         }
-
-        cariMail = selectedCari.CariYetkiliMail;
     }
 
     private async Task HandleValidSubmit()
     {
         if (isSubmitting)
             return;
+
+        if (!selectedFirmaId.HasValue)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen firma seçiniz.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(mutabakat.CariId))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", "Lütfen cari seçiniz.");
+            return;
+        }
 
         if (!ValidateCariMail())
             return;
@@ -234,26 +302,22 @@
 
         try
         {
-            await MutabakatService.AddAsync(mutabakat, cariMail);
+            mutabakat.FirmaId = selectedFirmaId.Value;
 
-            NotificationService.Notify(
-                NotificationSeverity.Success,
-                "Başarılı",
-                "Mutabakat başarıyla eklendi.");
+            var result = await MutabakatService.AddAsync(mutabakat, cariMail);
 
+            if (result == null)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Hata", "Kayıt oluşturulamadı.");
+                return;
+            }
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Mutabakat başarıyla oluşturuldu.");
             NavigationManager.NavigateTo("/reconciliations");
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                ex.Message);
-
-            if (string.IsNullOrWhiteSpace(mutabakat.MutabakatId))
-            {
-                mutabakat.MutabakatId = await MutabakatService.GenerateNextMutabakatIdAsync();
-            }
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
         }
         finally
         {
@@ -266,10 +330,35 @@
         NavigationManager.NavigateTo("/reconciliations");
     }
 
-    private sealed class SelectItem
+    private bool ValidateCariMail()
     {
-        public string Text { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(cariMail))
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari mail adresi boş olamaz.");
+            return false;
+        }
+
+        try
+        {
+            var _ = new System.Net.Mail.MailAddress(cariMail);
+            return true;
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Lütfen geçerli bir mail adresi giriniz.");
+            return false;
+        }
+    }
+
+    private static int? ConvertToNullableInt(object? value)
+    {
+        if (value == null)
+            return null;
+
+        if (value is int intValue)
+            return intValue;
+
+        return int.TryParse(value.ToString(), out var parsed) ? parsed : null;
     }
 
     private sealed class CariLookupItem
@@ -283,23 +372,15 @@
         public string CariDisplayText => $"{CariId} - {CariAdi}";
     }
 
-    private bool ValidateCariMail()
+    private sealed class FirmaLookupItem
     {
-        if (string.IsNullOrWhiteSpace(cariMail))
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Cari mail adresi boş olamaz.");
-            return false;
-        }
+        public int FirmaId { get; set; }
+        public string FirmaAdi { get; set; } = string.Empty;
+    }
 
-        try
-        {
-            var _ = new System.Net.Mail.MailAddress(cariMail!);
-            return true;
-        }
-        catch
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Hata", "Lütfen geçerli bir mail adresi giriniz.");
-            return false;
-        }
+    private sealed class SelectItem
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 }

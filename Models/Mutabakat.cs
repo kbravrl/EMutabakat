@@ -17,7 +17,7 @@ namespace EMutabakat.Models
         public DateTime MutabakatTarihi { get; set; }
 
         [ForeignKey("Firma")]
-        [Required(ErrorMessage = "Firma seçimi zorunludur.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Firma seçimi zorunludur.")]
         public int FirmaId { get; set; }
 
         [ForeignKey("Cari")]
