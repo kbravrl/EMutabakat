@@ -141,7 +141,7 @@
     private string? searchText;
     private int? selectedFirmaId;
     private string? selectedGrupAdi;
-    private int? selectedDurum;
+    private int? selectedDurum = 1;
 
     private List<FilterOption<int?>> durumOptions = new()
     {
@@ -189,7 +189,7 @@
         searchText = null;
         selectedFirmaId = null;
         selectedGrupAdi = null;
-        selectedDurum = null;
+        selectedDurum = 1;
     }
 
     private int GetCariGrupSortValue(string? cariGrupId)
