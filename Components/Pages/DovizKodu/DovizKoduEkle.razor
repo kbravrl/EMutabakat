@@ -22,13 +22,13 @@
             <RadzenColumn Size="12" SizeMD="6">
                 <RadzenLabel Text="TCMB *" />
                 <RadzenTextBox Name="TCMB" @bind-Value="model.TCMB" Style="width:100%;" />
-                <RadzenRequiredValidator Component="TCMB" Text="TCMB zorunludur." Popup="true" />
+                <ValidationMessage For="@(() => model.TCMB)" />
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="6">
                 <RadzenLabel Text="Ad *" />
                 <RadzenTextBox Name="Name" @bind-Value="model.Name" Style="width:100%;" />
-                <RadzenRequiredValidator Component="Name" Text="Ad zorunludur." Popup="true" />
+                <ValidationMessage For="@(() => model.Name)" />
             </RadzenColumn>
 
             <RadzenColumn Size="12">
