@@ -77,17 +77,14 @@
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDatePicker Style="width:100%"
-                                  Placeholder="Başlangıç Tarihi"
-                                  @bind-Value="startDate"
-                                  DateFormat="dd.MM.yyyy" />
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDatePicker Style="width:100%"
-                                  Placeholder="Bitiş Tarihi"
-                                  @bind-Value="endDate"
-                                  DateFormat="dd.MM.yyyy" />
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
+                                Placeholder="Dönem"
+                                Data="periodOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedPeriod"
+                                AllowClear="true" />
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="1">
@@ -229,8 +226,8 @@
     private string? searchText;
     private int? selectedStatus;
     private string? selectedBakiyeTipi;
-    private DateTime? startDate;
-    private DateTime? endDate;
+    private string? selectedPeriod;
+    private List<FilterOption<string>> periodOptions = new();
 
     private List<FilterOption<int?>> statusOptions = new()
     {
@@ -247,25 +244,37 @@
         new() { Text = "Alacak", Value = "A" }
     };
 
-    private List<Mutabakat> filteredMutabakatlar =>
-    mutabakatlar
-        .Where(x =>
-            string.IsNullOrWhiteSpace(searchText) ||
-            (x.MutabakatId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-            (x.Cari?.CariAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-            (x.Firma?.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
-        .Where(x =>
-            !selectedStatus.HasValue || (int)x.Status == selectedStatus.Value)
-        .Where(x =>
-            string.IsNullOrWhiteSpace(selectedBakiyeTipi) || x.MutabakatBakiyeTipi == selectedBakiyeTipi)
-        .Where(x =>
-            !startDate.HasValue || x.MutabakatTarihi.Date >= startDate.Value.Date)
-        .Where(x =>
-            !endDate.HasValue || x.MutabakatTarihi.Date <= endDate.Value.Date)
+    private List<Mutabakat> filteredMutabakatlar
+    {
+        get
+        {
+            var query = mutabakatlar.AsEnumerable()
+                .Where(x =>
+                    string.IsNullOrWhiteSpace(searchText) ||
+                    (x.MutabakatId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.Cari?.CariAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.Firma?.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+                .Where(x =>
+                    !selectedStatus.HasValue || (int)x.Status == selectedStatus.Value)
+                .Where(x =>
+                    string.IsNullOrWhiteSpace(selectedBakiyeTipi) || x.MutabakatBakiyeTipi == selectedBakiyeTipi);
 
-        .OrderBy(x => GetMutabakatSortValue(x.MutabakatId))
+            if (!string.IsNullOrWhiteSpace(selectedPeriod))
+            {
+                var parts = selectedPeriod.Split('.');
+                if (parts.Length == 2 &&
+                    int.TryParse(parts[0], out var mm) &&
+                    int.TryParse(parts[1], out var yyyy))
+                {
+                    query = query.Where(x => x.MutabakatTarihi.Month == mm && x.MutabakatTarihi.Year == yyyy);
+                }
+            }
 
-        .ToList();
+            return query
+                .OrderBy(x => GetMutabakatSortValue(x.MutabakatId))
+                .ToList();
+        }
+    }
 
     private int GetMutabakatSortValue(string? mutabakatId)
     {
@@ -314,6 +323,17 @@
         selectedMutabakatlar = selectedMutabakatlar
             .Where(selected => mutabakatlar.Any(x => x.MutabakatId == selected.MutabakatId))
             .ToList();
+
+        periodOptions = mutabakatlar
+            .Select(x => new { Month = x.MutabakatTarihi.Month, Year = x.MutabakatTarihi.Year })
+            .Distinct()
+            .OrderByDescending(a => new DateTime(a.Year, a.Month, 1))
+            .Select(a => new FilterOption<string>
+            {
+                Value = $"{a.Month:00}.{a.Year}",
+                Text = $"{a.Month:00}.{a.Year}"
+            })
+            .ToList();
     }
 
     private void ClearFilters()
@@ -321,8 +341,7 @@
         searchText = null;
         selectedStatus = null;
         selectedBakiyeTipi = null;
-        startDate = null;
-        endDate = null;
+        selectedPeriod = null;
     }
 
     private void GoToCreatePage()
