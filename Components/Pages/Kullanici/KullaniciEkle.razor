@@ -90,13 +90,12 @@
                     <ValidationMessage For="@(() => kullanici.KullaniciMail)" />
                 </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="GSM" />
-                    <RadzenTextBox @bind-Value="kullanici.KullaniciGsm"
-                                   Placeholder="05XXXXXXXXX"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciGsm)" />
-                </RadzenColumn>
+                <RadzenTextBox Value="@kullanici.KullaniciGsm"
+                               ValueChanged="@OnGsmChanged"
+                               Placeholder="05XXXXXXXXX"
+                               MaxLength="11"
+                               Style="width:100%;" />
+                <ValidationMessage For="@(() => kullanici.KullaniciGsm)" />
 
                 <RadzenColumn Size="12" SizeMD="6">
                     <RadzenLabel Text="Şifre *" />
@@ -196,6 +195,32 @@
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
         }
+    }
+
+    private void OnGsmChanged(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            kullanici.KullaniciGsm = null;
+            return;
+        }
+
+        value = value.Trim()
+            .Replace(" ", "")
+            .Replace("-", "")
+            .Replace("(", "")
+            .Replace(")", "");
+
+        if (value.StartsWith("+90"))
+            value = "0" + value.Substring(3);
+
+        else if (value.StartsWith("90") && value.Length == 12)
+            value = "0" + value.Substring(2);
+
+        else if (value.StartsWith("5") && value.Length == 10)
+            value = "0" + value;
+
+        kullanici.KullaniciGsm = value;
     }
 
     private void Cancel()

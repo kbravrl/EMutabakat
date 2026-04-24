@@ -180,9 +180,7 @@ namespace EMutabakat.Services
             kullanici.KullaniciAdi = kullanici.KullaniciAdi.Trim();
             kullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             kullanici.KullaniciMail = kullanici.KullaniciMail.Trim().ToLower();
-            kullanici.KullaniciGsm = string.IsNullOrWhiteSpace(kullanici.KullaniciGsm)
-                ? null
-                : kullanici.KullaniciGsm.Trim();
+            kullanici.KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm);
             kullanici.Rol = kullanici.Rol.Trim();
             kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
@@ -267,9 +265,7 @@ namespace EMutabakat.Services
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi.Trim();
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             existingKullanici.KullaniciMail = normalizedMail;
-            existingKullanici.KullaniciGsm = string.IsNullOrWhiteSpace(kullanici.KullaniciGsm)
-                ? null
-                : kullanici.KullaniciGsm.Trim();
+            existingKullanici.KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm);
             existingKullanici.Rol = kullanici.Rol.Trim();
             existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
@@ -349,6 +345,29 @@ namespace EMutabakat.Services
         {
             var cell = row.GetCell(idx);
             return cell?.ToString();
+        }
+
+        private static string? NormalizeGsm(string? gsm)
+        {
+            if (string.IsNullOrWhiteSpace(gsm))
+                return null;
+
+            gsm = gsm.Trim()
+                .Replace(" ", "")
+                .Replace("-", "")
+                .Replace("(", "")
+                .Replace(")", "");
+
+            if (gsm.StartsWith("+90"))
+                gsm = "0" + gsm.Substring(3);
+
+            else if (gsm.StartsWith("90") && gsm.Length == 12)
+                gsm = "0" + gsm.Substring(2);
+
+            else if (gsm.StartsWith("5") && gsm.Length == 10)
+                gsm = "0" + gsm;
+
+            return gsm;
         }
 
         public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, List<int> firmaIds)
@@ -485,6 +504,7 @@ namespace EMutabakat.Services
                         var kullaniciGsm = headerMap.ContainsKey("KullaniciGsm")
                             ? GetStringCell(row, headerMap["KullaniciGsm"])?.Trim() ?? string.Empty
                             : string.Empty;
+                        kullaniciGsm = NormalizeGsm(kullaniciGsm) ?? string.Empty;
                         var sifre = headerMap.ContainsKey("Sifre")
                             ? GetStringCell(row, headerMap["Sifre"])?.Trim() ?? string.Empty
                             : string.Empty;
