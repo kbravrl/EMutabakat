@@ -69,9 +69,6 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return null;
 
-            if (kullanici.Rol == Models.KullaniciRolleri.Admin)
-                return null;
-
             return kullanici.Firmalar
                 .Select(uf => uf.FirmaId)
                 .Distinct()

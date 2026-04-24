@@ -51,17 +51,10 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return new List<Firma>();
 
-            if (kullanici.Rol == KullaniciRolleri.Admin)
-            {
-                return await context.Firmalar
-                    .AsNoTracking()
-                    .OrderBy(x => x.FirmaAdi)
-                    .ToListAsync();
-            }
-
             var allowedIds = kullanici.Firmalar
-                .Select(f => f.FirmaId)
-                .ToList();
+              .Select(f => f.FirmaId)
+              .Distinct()
+              .ToList();
 
             if (allowedIds.Count == 0)
                 return new List<Firma>();
@@ -71,6 +64,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .OrderBy(x => x.FirmaAdi)
                 .ToListAsync();
+
         }
 
         public async Task<Firma?> GetByIdAsync(int id)
@@ -89,11 +83,6 @@ namespace EMutabakat.Services
                     .FirstOrDefaultAsync(x => x.FirmaId == id);
             }
 
-            var allowedIds = kullanici.Firmalar.Select(f => f.FirmaId).ToList();
-
-            if (!allowedIds.Contains(id))
-                return null;
-
             return await context.Firmalar
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.FirmaId == id);
@@ -104,8 +93,11 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var current = await GetCurrentKullaniciAsync(context);
-            if (current == null || current.Rol != KullaniciRolleri.Admin)
-                throw new UnauthorizedAccessException("Yalnızca adminler yeni firma ekleyebilir.");
+            if (current == null)
+                throw new UnauthorizedAccessException("Kullanıcı bulunamadı.");
+
+            if (current.Rol != KullaniciRolleri.Admin)
+                throw new UnauthorizedAccessException("Yalnızca adminler firma ekleyebilir.");
 
             try
             {
@@ -114,6 +106,17 @@ namespace EMutabakat.Services
 
                 context.Firmalar.Add(firma);
                 await context.SaveChangesAsync();
+
+                var currentUser = await context.Kullanicilar
+                    .Include(k => k.Firmalar)
+                    .FirstOrDefaultAsync(k => k.KullaniciId == current.KullaniciId);
+
+                if (currentUser != null &&
+                    !currentUser.Firmalar.Any(f => f.FirmaId == firma.FirmaId))
+                {
+                    currentUser.Firmalar.Add(firma);
+                    await context.SaveChangesAsync();
+                }
 
                 await _logService.AddAsync(
                     "Bilgi",

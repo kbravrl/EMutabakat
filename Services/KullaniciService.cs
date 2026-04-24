@@ -40,22 +40,53 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            if (allowedFirmaIds.Count == 0)
+                return new List<Kullanici>();
+
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
+                .Where(k => k.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)))
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
                 .ToListAsync();
+        }
+
+        private async Task<List<int>> GetAllowedFirmaIdsAsync(AppDbContext context)
+        {
+            var mail = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+
+            if (string.IsNullOrWhiteSpace(mail))
+                return new List<int>();
+
+            var kullanici = await context.Kullanicilar
+                .Include(k => k.Firmalar)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            if (kullanici == null)
+                return new List<int>();
+
+            return kullanici.Firmalar
+                .Select(f => f.FirmaId)
+                .Distinct()
+                .Where(id => id > 0)
+                .ToList();
         }
 
         public async Task<Kullanici?> GetByIdAsync(string id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
-                .FirstOrDefaultAsync(x => x.KullaniciId == id);
+                .FirstOrDefaultAsync(x =>
+                    x.KullaniciId == id &&
+                    x.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)));
         }
 
         public async Task<string> GenerateNextKullaniciIdAsync()
