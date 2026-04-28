@@ -15,31 +15,36 @@
             <RadzenText TextStyle="TextStyle.H4">Mutabakat Listesi</RadzenText>
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="8">
+        <RadzenColumn Size="12" SizeMD="8" class="rz-text-align-end">
             <div class="mutabakat-actions">
                 <RadzenButton Text="Excel İçe Aktar"
                               Icon="file_upload"
+                              Style="font-size:12px;"
                               Click="@OpenImportDialog" />
 
                 <RadzenButton Text="Toplu Gönder"
                               Icon="send"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Success"
                               Click="@SendPendingMails"
                               Disabled="@isSubmitting" />
 
                 <RadzenButton Text="Seçilenleri Gönder"
                               Icon="mark_email_read"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Secondary"
                               Click="@SendSelectedMails"
                               Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
 
                 <RadzenButton Text="Silinenler"
                               Icon="history"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="@GoToDeletedPage" />
 
                 <RadzenButton Text="Yeni Mutabakat Ekle"
                               Icon="add_circle"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Primary"
                               Click="@GoToCreatePage" />
             </div>
@@ -47,76 +52,72 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="1rem" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenTextBox Style="width:100%"
-                               Placeholder="ID / Cari / Firma ara"
-                               @bind-Value="searchText" />
-            </RadzenColumn>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="string"
-                                Style="width:100%"
-                                Placeholder="Cari Grup"
-                                Data="@cariGrupOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedCariGrupId"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenTextBox Style="width:340px; "
+                           Placeholder="ID / Cari / Firma ara"
+                           @bind-Value="searchText" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="string"
-                                Style="width:100%"
-                                Placeholder="Döviz"
-                                Data="@dovizOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedDovizKodu"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="string"
+                            Style="width:170px;"
+                            Placeholder="Cari Grup"
+                            Data="@cariGrupOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedCariGrupId"
+                            AllowClear="true" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="string"
-                                Style="width:100%"
-                                Placeholder="Bakiye Tipi"
-                                Data="@bakiyeTipiOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedBakiyeTipi"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="string"
+                            Style="width:170px;"
+                            Placeholder="Döviz"
+                            Data="@dovizOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedDovizKodu"
+                            AllowClear="true" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="int?"
-                                Style="width:100%"
-                                Placeholder="Durum"
-                                Data="@statusOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedStatus"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="string"
+                            Style="width:170px;"
+                            Placeholder="Bakiye Tipi"
+                            Data="@bakiyeTipiOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedBakiyeTipi"
+                            AllowClear="true" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="string"
-                                Style="width:100%"
-                                Placeholder="Dönem"
-                                Data="periodOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedPeriod"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="int?"
+                            Style="width:170px;"
+                            Placeholder="Durum"
+                            Data="@statusOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedStatus"
+                            AllowClear="true" />
 
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Style="width:100%"
-                              Icon="restart_alt"
-                              ButtonStyle="ButtonStyle.Light"
-                              Click="@ClearFilters" />
-            </RadzenColumn>
-        </RadzenRow>
+            <RadzenDropDown TValue="string"
+                            Style="width:170px;"
+                            Placeholder="Dönem"
+                            Data="@periodOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedPeriod"
+                            AllowClear="true" />
+
+            <RadzenButton Text="Temizle"
+                          Icon="restart_alt"
+                          ButtonStyle="ButtonStyle.Light"
+                          Style="height:36px; white-space:nowrap;"
+                          Click="@ClearFilters" />
+
+            <RadzenButton Icon="refresh"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Style="height:36px; width:42px;"
+                          Click="@RefreshData"
+                          IsBusy="@isLoading"
+                          Disabled="@isLoading"
+                          Title="Yenile" />
+
+        </div>
 
         <RadzenDataGrid Data="@filteredMutabakatlar"
                         TItem="Mutabakat"
@@ -263,6 +264,7 @@
     private string? selectedPeriod;
     private string? selectedCariGrupId;
     private string? selectedDovizKodu;
+    private bool isLoading = false;
 
     private List<FilterOption<string>> cariGrupOptions = new();
     private List<FilterOption<string>> dovizOptions = new();
@@ -700,6 +702,23 @@
         finally
         {
             isSubmitting = false;
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            ClearFilters();
+            await LoadMutabakatlarAsync();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
