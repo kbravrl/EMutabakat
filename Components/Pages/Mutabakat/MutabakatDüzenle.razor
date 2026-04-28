@@ -101,7 +101,8 @@ else
                     <RadzenLabel Text="Bakiye" />
                     <RadzenNumeric @bind-Value="mutabakat.MutabakatBakiye"
                                    Name="MutabakatBakiye"
-                                   Style="width:100%" />
+                                   TValue="decimal"
+                                   Style="width:100%;" />
                     <ValidationMessage For="@(() => mutabakat.MutabakatBakiye)" />
                 </RadzenColumn>
 

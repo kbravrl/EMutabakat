@@ -29,6 +29,7 @@ namespace EMutabakat.Models
         public string MutabakatDovizKodu { get; set; } = "TL";
 
         [Required(ErrorMessage = "Bakiye zorunludur.")]
+        [Range(0, double.MaxValue, ErrorMessage = "Bakiye negatif olamaz.")]
         public decimal MutabakatBakiye { get; set; }
 
         [Required(ErrorMessage = "Bakiye tipi zorunludur.")]

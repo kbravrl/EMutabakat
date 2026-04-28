@@ -51,6 +51,7 @@ namespace EMutabakat.Services
                 .AsNoTracking()
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
+                .ThenInclude(c => c.CariGrup)
                 .Include(x => x.DovizKodu)
                 .OrderByDescending(x => x.MutabakatTarihi)
                 .ThenByDescending(x => x.MutabakatId)
@@ -133,6 +134,8 @@ namespace EMutabakat.Services
 
             if (!dovizExists)
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
+
+            mutabakat.MutabakatBakiye = Math.Abs(mutabakat.MutabakatBakiye);
 
             mutabakat.MutabakatAciklama = string.IsNullOrWhiteSpace(mutabakat.MutabakatAciklama)
                 ? null
@@ -233,6 +236,8 @@ namespace EMutabakat.Services
 
             if (!dovizExists)
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
+
+            mutabakat.MutabakatBakiye = Math.Abs(mutabakat.MutabakatBakiye);
 
             var lookupMutabakatId = string.IsNullOrWhiteSpace(mutabakat.OriginalMutabakatId)
                 ? mutabakat.MutabakatId
@@ -519,8 +524,9 @@ namespace EMutabakat.Services
                 return false;
             }
 
-            mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
-            mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
+            mutabakat.MutabakatGonderimTarihSaat = DateTime.SpecifyKind(
+                DateTime.UtcNow.Date,
+                DateTimeKind.Utc);
             mutabakat.Status = MutabakatStatus.Gonderildi;
 
             await context.SaveChangesAsync();
@@ -600,7 +606,9 @@ namespace EMutabakat.Services
                 return false;
             }
 
-            mutabakat.MutabakatGonderimTarihSaat = DateTime.UtcNow;
+            mutabakat.MutabakatGonderimTarihSaat = DateTime.SpecifyKind(
+                DateTime.UtcNow.Date,
+                DateTimeKind.Utc);
             mutabakat.Status = MutabakatStatus.Hatirlatma;
 
             await context.SaveChangesAsync();
@@ -776,7 +784,9 @@ namespace EMutabakat.Services
                 return false;
 
             mutabakat.Status = MutabakatStatus.Mutabik;
-            mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
+            mutabakat.MutabakatCevapTarihSaat = DateTime.SpecifyKind(
+                DateTime.UtcNow.Date,
+                DateTimeKind.Utc);
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
             mutabakat.MutabakatCevapGsm = gsm;
@@ -812,7 +822,9 @@ namespace EMutabakat.Services
                 return false;
 
             mutabakat.Status = MutabakatStatus.MutabikDegil;
-            mutabakat.MutabakatCevapTarihSaat = DateTime.UtcNow;
+            mutabakat.MutabakatCevapTarihSaat = DateTime.SpecifyKind(
+                DateTime.UtcNow.Date,
+                DateTimeKind.Utc);
             mutabakat.MutabakatCevapMail = mail;
             mutabakat.MutabakatCevapAdSoyad = adSoyad;
             mutabakat.MutabakatCevapGsm = gsm;
@@ -991,7 +1003,7 @@ namespace EMutabakat.Services
                                 DateTimeKind.Utc);
 
                             var doviz = (GetStringCell(row, headerMap[dovizColumn]) ?? string.Empty).Trim().ToUpperInvariant();
-                            var bakiye = ParseDecimalCell(row, headerMap["MutabakatBakiye"]);
+                            var bakiye = Math.Abs(ParseDecimalCell(row, headerMap["MutabakatBakiye"]));
                             var bakiyeTipi = (GetStringCell(row, headerMap["MutabakatBakiyeTipi"]) ?? "B").Trim();
                             var aciklama = headerMap.ContainsKey("MutabakatAciklama")
                                 ? GetStringCell(row, headerMap["MutabakatAciklama"])

@@ -57,6 +57,28 @@
             <RadzenColumn Size="12" SizeMD="2">
                 <RadzenDropDown TValue="string"
                                 Style="width:100%"
+                                Placeholder="Cari Grup"
+                                Data="@cariGrupOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedCariGrupId"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
+                                Placeholder="Döviz"
+                                Data="@dovizOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDovizKodu"
+                                AllowClear="true" />
+            </RadzenColumn>
+
+            <RadzenColumn Size="12" SizeMD="2">
+                <RadzenDropDown TValue="string"
+                                Style="width:100%"
                                 Placeholder="Bakiye Tipi"
                                 Data="@bakiyeTipiOptions"
                                 TextProperty="Text"
@@ -122,6 +144,12 @@
                     </Template>
                 </RadzenDataGridColumn>
 
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Cari Grup">
+                    <Template Context="item">
+                        @(item.Cari?.CariGrup?.CariGrupAdi ?? "-")
+                    </Template>
+                </RadzenDataGridColumn>
+
                 <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
                     <Template Context="item">
                         @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
@@ -147,15 +175,21 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim Tarihi">
+                <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi">
                     <Template Context="item">
-                        @(item.MutabakatGonderimTarihSaat.HasValue
-                            ? item.MutabakatGonderimTarihSaat.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                            : "-")
+                        @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Width="60px" Sortable="false" Filterable="false">
+                <RadzenDataGridColumn TItem="Mutabakat"
+                                      Property="MutabakatCevapTarihSaat"
+                                      Title="Cevap Tarihi">
+                    <Template Context="item">
+                        @(item.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy"))
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false">
                     <Template Context="item">
                         <RadzenCheckBox TValue="bool"
                                         Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
@@ -164,7 +198,7 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="240px">
+                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
@@ -227,7 +261,13 @@
     private int? selectedStatus;
     private string? selectedBakiyeTipi;
     private string? selectedPeriod;
+    private string? selectedCariGrupId;
+    private string? selectedDovizKodu;
+
+    private List<FilterOption<string>> cariGrupOptions = new();
+    private List<FilterOption<string>> dovizOptions = new();
     private List<FilterOption<string>> periodOptions = new();
+
 
     private List<FilterOption<int?>> statusOptions = new()
     {
@@ -248,25 +288,51 @@
     {
         get
         {
-            var query = mutabakatlar.AsEnumerable()
-                .Where(x =>
-                    string.IsNullOrWhiteSpace(searchText) ||
+            IEnumerable<Mutabakat> query = mutabakatlar;
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                query = query.Where(x =>
                     (x.MutabakatId?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (x.Cari?.CariAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (x.Firma?.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
-                .Where(x =>
-                    !selectedStatus.HasValue || (int)x.Status == selectedStatus.Value)
-                .Where(x =>
-                    string.IsNullOrWhiteSpace(selectedBakiyeTipi) || x.MutabakatBakiyeTipi == selectedBakiyeTipi);
+                    (x.Firma?.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.Cari?.CariGrup?.CariGrupAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.DovizKodu?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (x.MutabakatDovizKodu?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                );
+            }
+
+            if (selectedStatus.HasValue)
+            {
+                query = query.Where(x => (int)x.Status == selectedStatus.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedBakiyeTipi))
+            {
+                query = query.Where(x => x.MutabakatBakiyeTipi == selectedBakiyeTipi);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedCariGrupId))
+            {
+                query = query.Where(x => x.Cari?.CariGrupId == selectedCariGrupId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDovizKodu))
+            {
+                query = query.Where(x => x.MutabakatDovizKodu == selectedDovizKodu);
+            }
 
             if (!string.IsNullOrWhiteSpace(selectedPeriod))
             {
                 var parts = selectedPeriod.Split('.');
+
                 if (parts.Length == 2 &&
                     int.TryParse(parts[0], out var mm) &&
                     int.TryParse(parts[1], out var yyyy))
                 {
-                    query = query.Where(x => x.MutabakatTarihi.Month == mm && x.MutabakatTarihi.Year == yyyy);
+                    query = query.Where(x =>
+                        x.MutabakatTarihi.Month == mm &&
+                        x.MutabakatTarihi.Year == yyyy);
                 }
             }
 
@@ -334,6 +400,28 @@
                 Text = $"{a.Month:00}.{a.Year}"
             })
             .ToList();
+
+        cariGrupOptions = mutabakatlar
+           .Where(x => x.Cari?.CariGrup != null)
+           .Select(x => new FilterOption<string>
+           {
+               Value = x.Cari!.CariGrupId!,
+               Text = x.Cari.CariGrup!.CariGrupAdi
+           })
+           .DistinctBy(x => x.Value)
+           .OrderBy(x => x.Text)
+           .ToList();
+
+        dovizOptions = mutabakatlar
+            .Where(x => !string.IsNullOrWhiteSpace(x.MutabakatDovizKodu))
+            .Select(x => new FilterOption<string>
+            {
+                Value = x.MutabakatDovizKodu,
+                Text = x.DovizKodu?.Name ?? x.MutabakatDovizKodu
+            })
+            .DistinctBy(x => x.Value)
+            .OrderBy(x => x.Text)
+            .ToList();
     }
 
     private void ClearFilters()
@@ -342,6 +430,8 @@
         selectedStatus = null;
         selectedBakiyeTipi = null;
         selectedPeriod = null;
+        selectedCariGrupId = null;
+        selectedDovizKodu = null;
     }
 
     private void GoToCreatePage()
@@ -655,32 +745,4 @@
         public T? Value { get; set; }
     }
 
-    private static int? GetNumericPart(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id))
-            return null;
-
-        // Find the first continuous sequence of digits in the id
-        var digits = new System.Text.StringBuilder();
-        foreach (var ch in id)
-        {
-            if (char.IsDigit(ch))
-            {
-                digits.Append(ch);
-            }
-            else if (digits.Length > 0)
-            {
-                // stop when digits sequence ends
-                break;
-            }
-        }
-
-        if (digits.Length == 0)
-            return null;
-
-        if (int.TryParse(digits.ToString(), out var value))
-            return value;
-
-        return null;
-    }
 }
