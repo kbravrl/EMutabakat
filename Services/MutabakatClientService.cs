@@ -72,7 +72,7 @@ namespace EMutabakat.Services
                 token,
                 mutabakat.MutabakatTarihi,
                 mutabakat.CariId,
-                mutabakat.Firma?.FirmaAdi,
+                mutabakat.Cari.CariVergiNumarasi,
                 fileStream,
                 originalFileName);
 

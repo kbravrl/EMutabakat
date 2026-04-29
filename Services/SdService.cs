@@ -18,13 +18,13 @@ namespace EMutabakat.Services
         }
 
         public async Task<string?> SaveMutabakatResponseFileAsync(
-            string token,
-            DateTime mutabakatDonemi,
-            string cariId,
-            string? firmaAdi,
-            Stream fileStream,
-            string originalFileName,
-            CancellationToken cancellationToken = default)
+    string token,
+    DateTime mutabakatDonemi,
+    string cariId,
+    string? cariVergiNo,
+    Stream fileStream,
+    string originalFileName,
+    CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(token) ||
                 fileStream == null ||
@@ -36,20 +36,19 @@ namespace EMutabakat.Services
                 return null;
 
             var donemFolder = mutabakatDonemi.ToString("yyyy-MM");
+            var cariVergiNoFolder = SanitizePathSegment(cariVergiNo);
             var cariIdFolder = SanitizePathSegment(cariId);
-            var firmaAdiFolder = SanitizePathSegment(firmaAdi);
 
-            var uploadsRoot = Path.Combine(_storageRoot, donemFolder, cariIdFolder, firmaAdiFolder);
+            var uploadsRoot = Path.Combine(_storageRoot, donemFolder, cariVergiNoFolder, cariIdFolder);
             Directory.CreateDirectory(uploadsRoot);
 
-            var safeOriginalFileName = Path.GetFileName(originalFileName);
-            var safeFileName = $"{Guid.NewGuid():N}_{safeOriginalFileName}";
+            var safeFileName = Path.GetFileName(originalFileName);
             var filePath = Path.Combine(uploadsRoot, safeFileName);
 
             await using var fs = File.Create(filePath);
             await fileStream.CopyToAsync(fs, cancellationToken);
 
-            return $"/uploads/{donemFolder}/{cariIdFolder}/{firmaAdiFolder}/{safeFileName}";
+            return $"/uploads/{donemFolder}/{cariVergiNoFolder}/{cariIdFolder}/{safeFileName}";
         }
 
         public Task<bool> DeleteMutabakatResponseFileAsync(string relativePath, CancellationToken cancellationToken = default)

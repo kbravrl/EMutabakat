@@ -11,7 +11,7 @@ namespace EMutabakat.Services.Interfaces
             string token,
             DateTime mutabakatDonemi,
             string cariId,
-            string? firmaAdi,
+            string cariVergiNo,
             Stream fileStream,
             string originalFileName,
             CancellationToken cancellationToken = default);
