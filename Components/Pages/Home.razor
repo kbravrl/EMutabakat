@@ -22,7 +22,7 @@
                 <RadzenStack Gap="0.5rem">
                     <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
                     <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
-                    <RadzenButton Text="Firmalara Git" Icon="business" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
+                    <RadzenButton Text="Firmalara Git" Icon="business" Style="font-size:12px;" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
@@ -32,7 +32,7 @@
                 <RadzenStack Gap="0.5rem">
                     <RadzenText TextStyle="TextStyle.Subtitle2">Cariler</RadzenText>
                     <RadzenText TextStyle="TextStyle.H5">@cariCount</RadzenText>
-                    <RadzenButton Text="Carilere Git" Icon="account_circle" Click='@(() => NavigationManager.NavigateTo("/currents"))' />
+                    <RadzenButton Text="Carilere Git" Icon="account_circle" Style="font-size:12px;" Click='@(() => NavigationManager.NavigateTo("/currents"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
@@ -42,7 +42,7 @@
                 <RadzenStack Gap="0.5rem">
                     <RadzenText TextStyle="TextStyle.Subtitle2">Mutabakatlar</RadzenText>
                     <RadzenText TextStyle="TextStyle.H5">@mutabakatCount</RadzenText>
-                    <RadzenButton Text="Mutabakatlara Git" Icon="description" Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
+                    <RadzenButton Text="Mutabakatlara Git" Icon="description" Style="font-size:12px;"  Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
@@ -54,7 +54,7 @@
                         <RadzenStack Gap="0.5rem">
                             <RadzenText TextStyle="TextStyle.Subtitle2">Kullanıcılar</RadzenText>
                             <RadzenText TextStyle="TextStyle.H5">@kullaniciCount</RadzenText>
-                            <RadzenButton Text="Kullanıcılara Git" Icon="people" Click='@(() => NavigationManager.NavigateTo("/users"))' />
+                            <RadzenButton Text="Kullanıcılara Git" Icon="people" Style="font-size:12px;" Click='@(() => NavigationManager.NavigateTo("/users"))' />
                         </RadzenStack>
                     </RadzenCard>
                 </RadzenColumn>
@@ -68,7 +68,7 @@
         </div>
         <div>
             <RadzenButton ButtonStyle="ButtonStyle.Light"
-                          Style="color:white;background:transparent;border:0"
+                          Style="color:white;background:transparent;border:0; font-size:12px;"
                           Icon="search"
                           Text="Detaylı İncele"
                           Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />

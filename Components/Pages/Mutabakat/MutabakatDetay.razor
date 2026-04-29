@@ -68,19 +68,19 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Cevap Mail:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapMail) ? "-" : mutabakat.MutabakatCevapMail)
+                    <b>Mail:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapMail) ? "-" : mutabakat.MutabakatCevapMail)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Cevap Ad Soyad:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAdSoyad) ? "-" : mutabakat.MutabakatCevapAdSoyad)
+                    <b>Ad Soyad:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAdSoyad) ? "-" : mutabakat.MutabakatCevapAdSoyad)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <b>Cevap GSM:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapGsm) ? "-" : mutabakat.MutabakatCevapGsm)
+                    <b>GSM:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapGsm) ? "-" : mutabakat.MutabakatCevapGsm)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
-                    <b>Cevap Açıklama:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAciklama) ? "-" : mutabakat.MutabakatCevapAciklama)
+                    <b>Açıklama:</b> @(string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAciklama) ? "-" : mutabakat.MutabakatCevapAciklama)
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
@@ -98,6 +98,7 @@ else
                         <RadzenButton Text="Red Dosyasını İndir"
                                       Icon="download"
                                       ButtonStyle="ButtonStyle.Info"
+                                      Style="font-size:12px;"
                                       Click="@(() => NavigationManager.NavigateTo(mutabakat.MutabakatReceiveStoragePath!, true))" />
                     }
                 </RadzenColumn>
@@ -108,7 +109,7 @@ else
                                       Icon="arrow_back"
                                       ButtonStyle="ButtonStyle.Secondary"
                                       Click="@BackToList"
-                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:12px;" />
                     </RadzenStack>
                 </RadzenColumn>
 

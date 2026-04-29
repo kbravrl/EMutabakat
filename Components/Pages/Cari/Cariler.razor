@@ -16,20 +16,16 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenStack Orientation="Orientation.Horizontal"
-                         Gap="8px"
-                         AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End">
                 <RadzenButton Text="Excel İçe Aktar"
                               Icon="file_upload"
-                              Style="margin-left:8px"
+                              Style="font-size:12px;"
                               Click="OpenImportDialog" />
 
                 <RadzenButton Text="Yeni Cari Ekle"
                               Icon="add_circle"
+                              Style="font-size:12px;"
                               Click="@GoToCreatePage" />
-            </RadzenStack>
-        </RadzenColumn>
+        </RadzenColumn> 
     </RadzenRow>
 
     <RadzenCard>
@@ -78,7 +74,7 @@
                 <RadzenButton Text="Temizle"
                               Icon="restart_alt"
                               ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%;"
+                              Style="width:100%; font-size:12px;"
                               Click="ClearFilters" />
             </RadzenColumn>
         </RadzenRow>
@@ -335,7 +331,7 @@
             "Excel İçe Aktar",
             typeof(Components.Pages.Cari.CariImportDialog),
             parameters,
-            new DialogOptions { Width = "600px" });
+            new DialogOptions { Width = "600px"});
 
         if (result == true)
         {

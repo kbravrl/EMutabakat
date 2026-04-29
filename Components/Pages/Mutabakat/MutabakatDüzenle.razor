@@ -133,18 +133,21 @@ else
                          JustifyContent="JustifyContent.End">
                 <RadzenButton Text="Kaydet"
                               Icon="save"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Success"
                               Click="@UpdateOnly"
                               Disabled="@isSubmitting" />
 
                 <RadzenButton Text="Kaydet ve Mail Gönder"
                               Icon="mail"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Primary"
                               Click="@UpdateAndSendMail"
                               Disabled="@isSubmitting" />
 
                 <RadzenButton Text="İptal"
                               Icon="close"
+                              Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Secondary"
                               Click="@BackToList"
                               Disabled="@isSubmitting" />

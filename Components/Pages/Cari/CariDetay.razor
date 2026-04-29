@@ -44,13 +44,14 @@ else
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End">
                     <RadzenButton Text="Listeye Dön"
                                   Icon="arrow_back"
+
                                   ButtonStyle="ButtonStyle.Secondary"
                                   Click="@BackToList"
-                                  Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px;" />
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:12px;" />
                     <RadzenButton Text="Düzenle"
                                   Icon="edit"
                                   Click="@(() => NavigationManager.NavigateTo($"/currents/edit/{cari.FirmaId}/{Uri.EscapeDataString(cari.CariId)}"))"
-                                  Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px;" />
+                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:12px;" />
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>

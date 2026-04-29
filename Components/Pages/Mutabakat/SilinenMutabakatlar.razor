@@ -18,6 +18,7 @@
 
         <RadzenButton Text="Aktif Listeye Dön"
                       Icon="arrow_back"
+                      Style="font-size:12px;"
                       ButtonStyle="ButtonStyle.Secondary"
                       Click="@(() => NavigationManager.NavigateTo("/reconciliations"))" />
     </RadzenStack>
@@ -87,12 +88,14 @@
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
                         <RadzenButton Text=""
                                       Icon="visibility"
+                                      Style="font-size:12px"
                                       Size="ButtonSize.Small"
                                       Click="@(() => GoDetail(item.Id))" />
 
                         <RadzenButton Text=""
                                       Icon="delete"
                                       Size="ButtonSize.Small"
+                                      Style="font-size:12px"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Click="@(() => DeleteRecord(item))" />
                     </RadzenStack>
