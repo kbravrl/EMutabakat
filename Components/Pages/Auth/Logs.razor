@@ -18,11 +18,13 @@
                          Gap="8px"
                          AlignItems="AlignItems.Center"
                          JustifyContent="JustifyContent.End">
+
                 <RadzenButton Text="Logları Temizle"
                               Icon="delete"
                               Style="font-size:12px;"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="@ClearLogs" />
+
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
@@ -35,19 +37,29 @@
                         AllowFiltering="true"
                         PageSize="20"
                         EmptyText="Kayıt bulunamadı">
-            <Columns>
-                <RadzenDataGridColumn TItem="AppLog" Property="Id" Title="ID" Width="120px" />
 
-                <RadzenDataGridColumn TItem="AppLog" Property="CreatedAt" Title="Tarih" Width="190px">
+            <Columns>
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="Id"
+                                      Title="ID"
+                                      Width="120px" />
+
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="CreatedAt"
+                                      Title="Tarih"
+                                      Width="190px">
                     <Template Context="item">
                         @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="AppLog" Property="Level" Title="Seviye" Width="130px">
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="Level"
+                                      Title="Seviye"
+                                      Width="130px">
                     <Template Context="item">
                         @if ((item.Level ?? string.Empty).Equals("Hata", StringComparison.OrdinalIgnoreCase) ||
-                                                                             (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
+                             (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
                         {
                             <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Danger" />
                         }
@@ -63,9 +75,19 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="AppLog" Property="Source" Title="Kaynak" Width="180px" />
-                <RadzenDataGridColumn TItem="AppLog" Property="UserEmail" Title="Kullanıcı" Width="220px" />
-                <RadzenDataGridColumn TItem="AppLog" Property="Message" Title="Mesaj" />
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="Source"
+                                      Title="Kaynak"
+                                      Width="180px" />
+
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="UserEmail"
+                                      Title="Kullanıcı"
+                                      Width="220px" />
+
+                <RadzenDataGridColumn TItem="AppLog"
+                                      Property="Message"
+                                      Title="Mesaj" />
             </Columns>
         </RadzenDataGrid>
     </RadzenCard>
@@ -85,13 +107,29 @@
     }
 
     private async Task ClearLogs()
+{
+    var result = await DialogService.OpenAsync<ClearLogsDialog>(
+        "Logları Temizle",
+        null,
+        new DialogOptions
+        {
+            Width = "430px",
+            Height = "auto",
+            Resizable = false,
+            Draggable = true
+        });
+
+    if (result is not ClearLogsDialog.ClearLogsDialogResult clearResult)
+        return;
+
+    if (clearResult.ClearType == "All")
     {
         var confirmed = await DialogService.Confirm(
             "Tüm log kayıtlarını silmek istediğinize emin misiniz?",
-            "Silme Onayı",
+            "Tüm Logları Sil",
             new ConfirmOptions
             {
-                OkButtonText = "Evet",
+                OkButtonText = "Evet, Tümünü Sil",
                 CancelButtonText = "Vazgeç"
             });
 
@@ -104,6 +142,32 @@
         NotificationService.Notify(
             NotificationSeverity.Success,
             "Başarılı",
-            "Log kayıtları temizlendi.");
+            "Tüm log kayıtları silindi.");
+
+        return;
     }
+
+    if (clearResult.DayCount <= 0)
+        return;
+
+    var confirmedLastDays = await DialogService.Confirm(
+        $"Son {clearResult.DayCount} günün log kayıtlarını silmek istediğinize emin misiniz?",
+        "Logları Sil",
+        new ConfirmOptions
+        {
+            OkButtonText = "Evet, Sil",
+            CancelButtonText = "Vazgeç"
+        });
+
+    if (confirmedLastDays != true)
+        return;
+
+    await LogService.DeleteLastDaysAsync(clearResult.DayCount);
+    await LoadLogs();
+
+    NotificationService.Notify(
+        NotificationSeverity.Success,
+        "Başarılı",
+        $"Son {clearResult.DayCount} günün log kayıtları silindi.");
+}
 }

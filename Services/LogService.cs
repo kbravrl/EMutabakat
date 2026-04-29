@@ -108,6 +108,27 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var logs = await context.AppLogs.ToListAsync();
+
+            if (logs.Count == 0)
+                return;
+
+            context.AppLogs.RemoveRange(logs);
+            await context.SaveChangesAsync();
+        }
+
+        public async Task DeleteLastDaysAsync(int dayCount)
+        {
+            if (dayCount <= 0)
+                return;
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var startDate = DateTime.UtcNow.Date.AddDays(-dayCount);
+
+            var logs = await context.AppLogs
+                .Where(x => x.CreatedAt >= startDate)
+                .ToListAsync();
+
             if (logs.Count == 0)
                 return;
 

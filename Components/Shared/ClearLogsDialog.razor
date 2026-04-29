@@ -1,0 +1,72 @@
+﻿@using Radzen
+@using Radzen.Blazor
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem" class="p-3">
+
+    <RadzenText TextStyle="TextStyle.Body1">
+        Log temizleme türünü seçin.
+    </RadzenText>
+
+    <RadzenRadioButtonList TValue="string"
+                           @bind-Value="ClearType"
+                           Orientation="Orientation.Vertical">
+        <Items>
+            <RadzenRadioButtonListItem Text="Son belirli günün loglarını sil" Value="@("LastDays")" />
+            <RadzenRadioButtonListItem Text="Tüm logları sil" Value="@("All")" />
+        </Items>
+    </RadzenRadioButtonList>
+
+    @if (ClearType == "LastDays")
+    {
+        <RadzenNumeric TValue="int"
+                       @bind-Value="DayCount"
+                       Min="1"
+                       Style="width:100%"
+                       Placeholder="Gün sayısı" />
+
+        <RadzenText TextStyle="TextStyle.Caption" Style="color:#666;">
+            Örneğin 10 yazarsanız son 10 günün log kayıtları silinir.
+        </RadzenText>
+    }
+
+    <RadzenStack Orientation="Orientation.Horizontal"
+                 Gap="8px"
+                 JustifyContent="JustifyContent.End">
+
+        <RadzenButton Text="Vazgeç"
+                      ButtonStyle="ButtonStyle.Light"
+                      Click="@Cancel" />
+
+        <RadzenButton Text="Devam Et"
+                      Icon="delete"
+                      ButtonStyle="ButtonStyle.Danger"
+                      Click="@Submit" />
+    </RadzenStack>
+
+</RadzenStack>
+
+@code {
+    private string ClearType { get; set; } = "LastDays";
+    private int DayCount { get; set; } = 10;
+
+    private void Submit()
+    {
+        DialogService.Close(new ClearLogsDialogResult
+        {
+            ClearType = ClearType,
+            DayCount = DayCount
+        });
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+
+    public class ClearLogsDialogResult
+    {
+        public string ClearType { get; set; } = "LastDays";
+        public int DayCount { get; set; }
+    }
+}
