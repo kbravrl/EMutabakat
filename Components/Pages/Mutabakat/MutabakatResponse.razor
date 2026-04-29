@@ -119,9 +119,18 @@
             return;
         }
 
-        responseMail = mutabakat.MutabakatCevapMail;
-        responseName = mutabakat.MutabakatCevapAdSoyad;
-        responseGsm = mutabakat.MutabakatCevapGsm;
+        responseMail = !string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapMail)
+            ? mutabakat.MutabakatCevapMail
+            : mutabakat.Cari?.CariYetkiliMail;
+
+        responseName = !string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapAdSoyad)
+            ? mutabakat.MutabakatCevapAdSoyad
+            : mutabakat.Cari?.CariYetkiliAdiSoyadi;
+
+        responseGsm = !string.IsNullOrWhiteSpace(mutabakat.MutabakatCevapGsm)
+            ? mutabakat.MutabakatCevapGsm
+            : mutabakat.Cari?.CariYetkiliGsm;
+
         responseAciklama = mutabakat.MutabakatCevapAciklama;
 
         if (mutabakat.Status == Mutabakat.MutabakatStatus.Mutabik)
