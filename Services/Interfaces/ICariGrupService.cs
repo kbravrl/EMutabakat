@@ -11,5 +11,6 @@ namespace EMutabakat.Services.Interfaces
         Task<CariGrup?> UpdateAsync(CariGrup cariGrup);
         Task<bool> DeleteAsync(string id);
         Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId);
+        Task<byte[]> ExportToExcelAsync(List<CariGrup> cariGruplar);
     }
 }

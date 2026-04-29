@@ -3,9 +3,13 @@
 @attribute [Authorize]
 
 @inject ICariService CariService
+@inject ICariGrupService CariGrupService
+@inject IFirmaService FirmaService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+
+@inject IJSRuntime JS
 
 <PageTitle>Cariler</PageTitle>
 
@@ -16,68 +20,72 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
-                              Style="font-size:12px;"
-                              Click="OpenImportDialog" />
+            <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; width:100%;">
 
+                <img src="/images/excel-export.png"
+                     title="Excel Dışa Aktar"
+                     @onclick="ExportToExcel"
+                     style="width:48px; height:48px; cursor:pointer;" />
+
+ 
+                <img src="/images/excel-import.png"
+                     title="Excel İçe Aktar"
+                     @onclick="OpenImportDialog"
+                     style="width:48px; height:48px; cursor:pointer;" />
+ 
                 <RadzenButton Text="Yeni Cari Ekle"
                               Icon="add_circle"
-                              Style="font-size:12px;"
-                              Click="@GoToCreatePage" />
-        </RadzenColumn> 
+                              Style="font-size:12px;" />
+
+            </div>
+        </RadzenColumn>
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="12px" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenTextBox @bind-Value="searchText"
-                               Placeholder="ID/ Cari adı/ Unvan/ Mail ara..."
-                               Style="width:100%;"
-                               Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenDropDown Data="@firmaOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedFirmaId"
-                                Placeholder="Firma seçiniz"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+            <RadzenTextBox Style="width:340px;"
+                           Placeholder="ID/ Cari adı/ Unvan/ Mail ara..."
+                           @bind-Value="searchText"
+                           Change="@(_ => ApplyFilters())" />
 
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenDropDown Data="@cariGrupOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedCariGrupId"
-                                Placeholder="Cari grup seçiniz"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="int?"
+                            Style="width:220px;"
+                            Placeholder="Firma"
+                            Data="@firmaOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedFirmaId"
+                            AllowClear="true"
+                            Change="@(_ => ApplyFilters())" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown Data="@durumOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedDurum"
-                                Placeholder="Durum"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="string"
+                            Style="width:220px;"
+                            Placeholder="Cari Grup"
+                            Data="@cariGrupOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedCariGrupId"
+                            AllowClear="true"
+                            Change="@(_ => ApplyFilters())" />
 
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Icon="restart_alt"
-                              ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%; font-size:12px;"
-                              Click="ClearFilters" />
-            </RadzenColumn>
-        </RadzenRow>
+            <RadzenDropDown TValue="int?"
+                            Style="width:200px;"
+                            Placeholder="Durum"
+                            Data="@durumOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedDurum"
+                            AllowClear="true"
+                            Change="@(_ => ApplyFilters())" />
+
+            <RadzenButton Text="Temizle"
+                          Icon="restart_alt"
+                          ButtonStyle="ButtonStyle.Light"
+                          Style="height:36px; white-space:nowrap; font-size:12px;"
+                          Click="ClearFilters" />
+
+        </div>
 
         <RadzenDataGrid Data="@filteredCariler"
                         TItem="Cari"
@@ -87,7 +95,7 @@
                         PageSize="10"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
-                <RadzenDataGridColumn TItem="Cari" Property="CariId" Title="ID" />
+                <RadzenDataGridColumn TItem="Cari" Property="CariId" Title="ID" Width="90px" />
                 <RadzenDataGridColumn TItem="Cari" Property="CariAdi" Title="Cari Adı" />
                 <RadzenDataGridColumn TItem="Cari" Property="CariUnvan" Title="Unvan" />
 
@@ -181,25 +189,17 @@
     {
         cariler = await CariService.GetAllAsync();
 
-        firmaOptions = cariler
-            .Where(x => x.Firma != null)
-            .GroupBy(x => new { x.FirmaId, x.Firma!.FirmaAdi })
-            .Select(g => new FilterOptionInt
-            {
-                Value = g.Key.FirmaId,
-                Text = g.Key.FirmaAdi
-            })
+        var firmas = await FirmaService.GetAllAsync();
+        firmaOptions = firmas
+            .Select(f => new FilterOptionInt { Value = f.FirmaId, Text = f.FirmaAdi })
             .OrderBy(x => x.Text)
             .ToList();
 
-        cariGrupOptions = cariler
-            .Where(x => x.CariGrup != null && !string.IsNullOrWhiteSpace(x.CariGrupId))
-            .GroupBy(x => new { x.CariGrupId, x.CariGrup!.CariGrupAdi })
-            .Select(g => new FilterOptionString
-            {
-                Value = g.Key.CariGrupId,
-                Text = g.Key.CariGrupAdi
-            })
+
+        var allGroups = await CariGrupService.GetAllAsync();
+        cariGrupOptions = allGroups
+            .Where(g => !string.IsNullOrWhiteSpace(g.CariGrupId))
+            .Select(g => new FilterOptionString { Value = g.CariGrupId, Text = g.CariGrupAdi ?? string.Empty })
             .OrderBy(x => x.Text)
             .ToList();
 
@@ -321,6 +321,30 @@
             {
                 isSubmitting = false;
             }
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var bytes = await CariService.ExportToExcelAsync(filteredCariler);
+            var base64 = Convert.ToBase64String(bytes);
+
+            var fileName = "Cariler_Listesi.xlsx";
+
+            await JS.InvokeVoidAsync(
+                "downloadFileFromBase64",
+                fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64
+            );
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cariler Excel olarak indirildi.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
         }
     }
 

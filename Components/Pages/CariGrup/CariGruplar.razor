@@ -8,6 +8,8 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
+@inject IJSRuntime JS
+
 <PageTitle>Cari Gruplar</PageTitle>
 
 <RadzenStack Gap="1rem" class="p-4">
@@ -17,55 +19,60 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
-                              Style="font-size:12px;"
-                              Click="OpenImportDialog" />
+            <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; width:100%;">
+
+                <img src="/images/excel-export.png"
+                     title="Excel Dışa Aktar"
+                     @onclick="ExportToExcel"
+                     style="width:48px; height:48px; cursor:pointer;" />
+
+ 
+                <img src="/images/excel-import.png"
+                     title="Excel İçe Aktar"
+                     @onclick="OpenImportDialog"
+                     style="width:48px; height:48px; cursor:pointer;" />
+ 
                 <RadzenButton Text="Yeni Cari Grup Ekle"
                               Icon="add_circle"
                               Style="font-size:12px;"
                               Click="@GoToCreatePage" />
+
+            </div>
         </RadzenColumn>
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="1rem" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenTextBox Style="width:100%"
-                               Placeholder="ID/ Cari Grup adı ara"
-                               @bind-Value="searchText" />
-            </RadzenColumn>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenDropDown TValue="int?"
-                                Style="width:100%"
-                                Placeholder="Firma seç"
-                                Data="@firmaOptions"
-                                TextProperty="FirmaAdi"
-                                ValueProperty="FirmaId"
-                                @bind-Value="selectedFirmaId"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenTextBox Style="width:340px;"
+                           Placeholder="ID/ Cari Grup adı ara"
+                           @bind-Value="searchText" />
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown TValue="int?"
-                                Style="width:100%"
-                                Placeholder="Durum"
-                                Data="@durumOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedDurum"
-                                AllowClear="true" />
-            </RadzenColumn>
+            <RadzenDropDown TValue="int?"
+                            Style="width:220px;"
+                            Placeholder="Firma seç"
+                            Data="@firmaOptions"
+                            TextProperty="FirmaAdi"
+                            ValueProperty="FirmaId"
+                            @bind-Value="selectedFirmaId"
+                            AllowClear="true" />
 
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Style="width:100%; font-size:12px;"
-                              Icon="filter_alt_off"
-                              ButtonStyle="ButtonStyle.Light"
-                              Click="@ClearFilters" />
-            </RadzenColumn>
-        </RadzenRow>
+            <RadzenDropDown TValue="int?"
+                            Style="width:200px;"
+                            Placeholder="Durum"
+                            Data="@durumOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedDurum"
+                            AllowClear="true" />
+
+            <RadzenButton Text="Temizle"
+                          Style="height:36px; white-space:nowrap; font-size:12px;"
+                          Icon="filter_alt_off"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@ClearFilters" />
+
+        </div>
 
         <RadzenDataGrid Data="@filteredCariGruplar"
                         TItem="CariGrup"
@@ -265,6 +272,30 @@
             {
                 isSubmitting = false;
             }
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var bytes = await CariGrupService.ExportToExcelAsync(filteredCariGruplar);
+            var base64 = Convert.ToBase64String(bytes);
+
+            var fileName = "Cari_Gruplar_Listesi.xlsx";
+
+            await JS.InvokeVoidAsync(
+                "downloadFileFromBase64",
+                fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64
+            );
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari gruplar Excel olarak indirildi.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
         }
     }
 

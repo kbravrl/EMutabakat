@@ -380,6 +380,94 @@ namespace EMutabakat.Services
             return int.TryParse(cell.ToString(), out var value) ? value : 0;
         }
 
+        public async Task<byte[]> ExportToExcelAsync(List<Cari> cariler)
+        {
+            await _logService.AddAsync(
+                "Bilgi",
+                "Cari",
+                $"Cari Excel export başladı. Kayıt sayısı: {cariler.Count}",
+                GetUserEmail()
+            );
+
+            IWorkbook workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("Cariler");
+
+            var headers = new[]
+            {
+        "CariId",
+        "FirmaId",
+        "FirmaAdi",
+        "CariAdi",
+        "CariUnvan",
+        "CariAdres",
+        "CariIlce",
+        "CariIl",
+        "CariVergiDairesi",
+        "CariVergiNumarasi",
+        "CariWebAdresi",
+        "CariYetkiliAdiSoyadi",
+        "CariYetkiliTelefon",
+        "CariYetkiliGsm",
+        "CariYetkiliMail",
+        "CariGrupId",
+        "CariGrupAdi",
+        "DovizKodu",
+        "DovizAdi",
+        "CariAktifPasif"
+    };
+
+            var headerRow = sheet.CreateRow(0);
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                headerRow.CreateCell(i).SetCellValue(headers[i]);
+            }
+
+            for (int i = 0; i < cariler.Count; i++)
+            {
+                var cari = cariler[i];
+                var row = sheet.CreateRow(i + 1);
+
+                row.CreateCell(0).SetCellValue(cari.CariId);
+                row.CreateCell(1).SetCellValue(cari.FirmaId);
+                row.CreateCell(2).SetCellValue(cari.Firma?.FirmaAdi ?? "");
+                row.CreateCell(3).SetCellValue(cari.CariAdi);
+                row.CreateCell(4).SetCellValue(cari.CariUnvan ?? "");
+                row.CreateCell(5).SetCellValue(cari.CariAdres ?? "");
+                row.CreateCell(6).SetCellValue(cari.CariIlce ?? "");
+                row.CreateCell(7).SetCellValue(cari.CariIl ?? "");
+                row.CreateCell(8).SetCellValue(cari.CariVergiDairesi);
+                row.CreateCell(9).SetCellValue(cari.CariVergiNumarasi);
+                row.CreateCell(10).SetCellValue(cari.CariWebAdresi ?? "");
+                row.CreateCell(11).SetCellValue(cari.CariYetkiliAdiSoyadi ?? "");
+                row.CreateCell(12).SetCellValue(cari.CariYetkiliTelefon ?? "");
+                row.CreateCell(13).SetCellValue(cari.CariYetkiliGsm ?? "");
+                row.CreateCell(14).SetCellValue(cari.CariYetkiliMail);
+                row.CreateCell(15).SetCellValue(cari.CariGrupId);
+                row.CreateCell(16).SetCellValue(cari.CariGrup?.CariGrupAdi ?? "");
+                row.CreateCell(17).SetCellValue(cari.CariDovizKodu ?? "");
+                row.CreateCell(18).SetCellValue(cari.DovizKodu?.Name ?? "");
+                row.CreateCell(19).SetCellValue(cari.CariAktifPasif);
+            }
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                sheet.AutoSizeColumn(i);
+            }
+
+            await using var ms = new MemoryStream();
+            workbook.Write(ms, true);
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Cari",
+                $"Cari Excel export tamamlandı. Kayıt sayısı: {cariler.Count}",
+                GetUserEmail()
+            );
+
+            return ms.ToArray();
+        }
+
         public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId)
         {
             var errors = new List<string>();
@@ -510,13 +598,34 @@ namespace EMutabakat.Services
                         }
                         else
                         {
-                            var hasChange = !string.Equals(existing.CariAdi, cari.CariAdi, StringComparison.Ordinal)
-                                || !string.Equals(existing.CariVergiNumarasi, cari.CariVergiNumarasi, StringComparison.Ordinal);
+                            var hasChange =
+                               existing.CariAdi != cari.CariAdi || existing.CariUnvan != cari.CariUnvan ||
+                               existing.CariAdres != cari.CariAdres || existing.CariIlce != cari.CariIlce ||
+                               existing.CariIl != cari.CariIl || existing.CariVergiDairesi != cari.CariVergiDairesi ||
+                               existing.CariVergiNumarasi != cari.CariVergiNumarasi || existing.CariWebAdresi != cari.CariWebAdresi ||
+                               existing.CariYetkiliAdiSoyadi != cari.CariYetkiliAdiSoyadi || existing.CariYetkiliTelefon != cari.CariYetkiliTelefon ||
+                               existing.CariYetkiliGsm != cari.CariYetkiliGsm || existing.CariYetkiliMail != cari.CariYetkiliMail ||
+                               existing.CariGrupId != cari.CariGrupId || existing.CariDovizKodu != cari.CariDovizKodu ||
+                               existing.CariAktifPasif != cari.CariAktifPasif;
 
                             if (hasChange)
                             {
                                 existing.CariAdi = cari.CariAdi;
+                                existing.CariUnvan = cari.CariUnvan;
+                                existing.CariAdres = cari.CariAdres;
+                                existing.CariIlce = cari.CariIlce;
+                                existing.CariIl = cari.CariIl;
+                                existing.CariVergiDairesi = cari.CariVergiDairesi;
                                 existing.CariVergiNumarasi = cari.CariVergiNumarasi;
+                                existing.CariWebAdresi = cari.CariWebAdresi;
+                                existing.CariYetkiliAdiSoyadi = cari.CariYetkiliAdiSoyadi;
+                                existing.CariYetkiliTelefon = cari.CariYetkiliTelefon;
+                                existing.CariYetkiliGsm = cari.CariYetkiliGsm;
+                                existing.CariYetkiliMail = cari.CariYetkiliMail;
+                                existing.CariGrupId = cari.CariGrupId;
+                                existing.CariDovizKodu = cari.CariDovizKodu;
+                                existing.CariAktifPasif = cari.CariAktifPasif;
+
                                 updated++;
 
                                 await _logService.AddAsync(

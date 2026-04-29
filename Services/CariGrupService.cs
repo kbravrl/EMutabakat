@@ -350,6 +350,64 @@ namespace EMutabakat.Services
             return int.TryParse(s, out var v) ? v : 0;
         }
 
+        public async Task<byte[]> ExportToExcelAsync(List<CariGrup> cariGruplar)
+        {
+            await _logService.AddAsync(
+                "Bilgi",
+                "CariGrup",
+                $"Cari Grup Excel export başladı. Kayıt sayısı: {cariGruplar.Count}",
+                GetUserEmail()
+            );
+
+            IWorkbook workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("CariGruplar");
+
+            var headers = new[]
+            {
+                "CariGrupId",
+                "CariGrupAdi",
+                "FirmaId",
+                "FirmaAdi",
+                "CariGrupAktifPasif"
+            };
+
+            var headerRow = sheet.CreateRow(0);
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                headerRow.CreateCell(i).SetCellValue(headers[i]);
+            }
+
+            for (int i = 0; i < cariGruplar.Count; i++)
+            {
+                var item = cariGruplar[i];
+                var row = sheet.CreateRow(i + 1);
+
+                row.CreateCell(0).SetCellValue(item.CariGrupId);
+                row.CreateCell(1).SetCellValue(item.CariGrupAdi);
+                row.CreateCell(2).SetCellValue(item.FirmaId);
+                row.CreateCell(3).SetCellValue(item.Firma?.FirmaAdi ?? "");
+                row.CreateCell(4).SetCellValue(item.CariGrupAktifPasif);
+            }
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                sheet.AutoSizeColumn(i);
+            }
+
+            await using var ms = new MemoryStream();
+            workbook.Write(ms, true);
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "CariGrup",
+                $"Cari Grup Excel export tamamlandı. Kayıt sayısı: {cariGruplar.Count}",
+                GetUserEmail()
+            );
+
+            return ms.ToArray();
+        }
+
         public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, int firmaId)
         {
             var errors = new List<string>();
