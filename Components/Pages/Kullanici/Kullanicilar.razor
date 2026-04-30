@@ -7,6 +7,8 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
+@inject IJSRuntime JS
+
 <PageTitle>Kullanıcılar</PageTitle>
 
 <RadzenStack Gap="1rem" class="p-4">
@@ -15,16 +17,23 @@
             <RadzenText TextStyle="TextStyle.H4">Kullanıcı Listesi</RadzenText>
         </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Excel İçe Aktar"
-                          Icon="file_upload"
-                          Style="font-size:12px;"
-                          Click="OpenImportDialog" />
+        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">    
+            <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; width:100%;">
+                <img src="/images/excel-export.png"
+                     title="Excel Dışa Aktar"
+                     @onclick="ExportExcel" 
+                     style="width:48px; height:48px; cursor:pointer;" />
 
-            <RadzenButton Text="Yeni Kullanıcı Ekle"
-                          Icon="add_circle"
-                          Style="font-size:12px;"
-                          Click="@GoToCreatePage" />
+                <img src="/images/excel-import.png"
+                     title="Excel İçe Aktar"
+                     @onclick="OpenImportDialog"
+                     style="width:48px; height:48px; cursor:pointer;" />
+
+                <RadzenButton Text="Yeni Kullanıcı Ekle"
+                              Icon="add_circle"
+                              Style="font-size:12px;"
+                              Click="@GoToCreatePage" />
+            </div>
         </RadzenColumn>
     </RadzenRow>
 
@@ -211,6 +220,43 @@
             await LoadKullanicilarAsync();
         }
     }
+
+    private async Task ExportExcel()
+{
+    try
+    {
+        var bytes = await KullaniciService.ExportToExcelAsync(kullanicilar);
+
+        if (bytes == null || bytes.Length == 0)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Warning,
+                "Uyarı",
+                "Export edilecek kullanıcı kaydı bulunamadı.");
+            return;
+        }
+
+        var base64 = Convert.ToBase64String(bytes);
+
+        await JS.InvokeVoidAsync(
+            "downloadFileFromBase64",
+            "Kullanicilar.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            base64);
+
+        NotificationService.Notify(
+            NotificationSeverity.Success,
+            "Başarılı",
+            "Kullanıcılar Excel olarak indirildi.");
+    }
+    catch (Exception ex)
+    {
+        NotificationService.Notify(
+            NotificationSeverity.Error,
+            "Hata",
+            ex.Message);
+    }
+}
 
     private void ApplyFilters()
     {

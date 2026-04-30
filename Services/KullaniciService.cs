@@ -401,6 +401,70 @@ namespace EMutabakat.Services
             return gsm;
         }
 
+        public async Task<byte[]> ExportToExcelAsync(List<Kullanici> kullanicilar)
+        {
+            await _logService.AddAsync(
+                "Bilgi",
+                "Kullanıcı",
+                $"Kullanıcı Excel export başladı. Kayıt sayısı: {kullanicilar.Count}",
+                GetUserEmail()
+            );
+
+            IWorkbook workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("Kullanicilar");
+
+            var headers = new[]
+            {
+               "KullaniciId",
+               "KullaniciAdi",
+               "KullaniciSoyadi",
+               "KullaniciMail",
+               "KullaniciGsm",
+               "Rol",
+               "KullanıcıAktifPasif",
+               "Sifre"
+            };
+
+            var headerRow = sheet.CreateRow(0);
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                headerRow.CreateCell(i).SetCellValue(headers[i]);
+            }
+
+            for (int i = 0; i < kullanicilar.Count; i++)
+            {
+                var kullanici = kullanicilar[i];
+                var row = sheet.CreateRow(i + 1);
+
+                row.CreateCell(0).SetCellValue(kullanici.KullaniciId ?? "");
+                row.CreateCell(1).SetCellValue(kullanici.KullaniciAdi ?? "");
+                row.CreateCell(2).SetCellValue(kullanici.KullaniciSoyadi ?? "");
+                row.CreateCell(3).SetCellValue(kullanici.KullaniciMail ?? "");
+                row.CreateCell(4).SetCellValue(kullanici.KullaniciGsm ?? "");
+                row.CreateCell(5).SetCellValue(kullanici.Rol ?? "");
+                row.CreateCell(6).SetCellValue(kullanici.KullaniciAktifPasif);
+                row.CreateCell(7).SetCellValue("");
+            }
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                sheet.AutoSizeColumn(i);
+            }
+
+            await using var ms = new MemoryStream();
+            workbook.Write(ms, true);
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Kullanıcı",
+                $"Kullanıcı Excel export tamamlandı. Kayıt sayısı: {kullanicilar.Count}",
+                GetUserEmail()
+            );
+
+            return ms.ToArray();
+        }
+
         public async Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, List<int> firmaIds)
         {
             var errors = new List<string>();

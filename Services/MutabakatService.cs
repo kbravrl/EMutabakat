@@ -891,13 +891,79 @@ namespace EMutabakat.Services
             return cell?.ToString();
         }
 
-        private static int ParseIntCell(IRow row, int idx)
+        public async Task<byte[]> ExportToExcelAsync()
         {
-            var cell = row.GetCell(idx);
-            if (cell == null) return 0;
-            if (cell.CellType == CellType.Numeric) return Convert.ToInt32(cell.NumericCellValue);
-            var s = cell.ToString();
-            return int.TryParse(s, out var v) ? v : 0;
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
+            var query = context.Mutabakatlar
+                .AsNoTracking()
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                    .ThenInclude(x => x.CariGrup)
+                .Include(x => x.DovizKodu)
+                .OrderByDescending(x => x.MutabakatTarihi)
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return Array.Empty<byte>();
+
+                query = query.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            var data = await query.ToListAsync();
+
+            IWorkbook workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("Mutabakatlar");
+
+            var header = sheet.CreateRow(0);
+
+            string[] headers =
+            {
+                "MutabakatId",
+                "CariId",
+                "FirmaId",
+                "DovizKodu",
+                "MutabakatBakiye",
+                "MutabakatBakiyeTipi",
+                "MutabakatTarihi"
+            };
+
+            for (int i = 0; i < headers.Length; i++)
+                header.CreateCell(i).SetCellValue(headers[i]);
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                var item = data[i];
+                var row = sheet.CreateRow(i + 1);
+
+                row.CreateCell(0).SetCellValue(item.MutabakatId);
+                row.CreateCell(1).SetCellValue(item.CariId);
+                row.CreateCell(2).SetCellValue(item.FirmaId);
+                row.CreateCell(3).SetCellValue(item.MutabakatDovizKodu);
+                row.CreateCell(4).SetCellValue(Convert.ToDouble(item.MutabakatBakiye));
+                row.CreateCell(5).SetCellValue(item.MutabakatBakiyeTipi);
+                row.CreateCell(6).SetCellValue(item.MutabakatTarihi.ToString("yyyy-MM-dd"));
+
+            }
+
+            for (int i = 0; i < headers.Length; i++)
+                sheet.AutoSizeColumn(i);
+
+            await using var ms = new MemoryStream();
+            workbook.Write(ms);
+
+            await _logService.AddAsync(
+                "Bilgi",
+                "Mutabakat",
+                $"Mutabakat Excel export yapıldı. Kayıt sayısı: {data.Count}",
+                GetUserEmail()
+            );
+
+            return ms.ToArray();
         }
 
         public async Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(

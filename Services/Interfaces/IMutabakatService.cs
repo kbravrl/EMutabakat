@@ -17,6 +17,7 @@ namespace EMutabakat.Services.Interfaces
         Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm);
         Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? aciklama, string? filePath);
         Task<(int created, int mailsSent, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, bool sendMail);
+        Task<byte[]> ExportToExcelAsync();
         Task<string> GenerateNextMutabakatIdAsync();
         Task<List<SilinenMutabakat>> GetAllDeletedAsync();
         Task<SilinenMutabakat?> GetDeletedByIdAsync(int id);

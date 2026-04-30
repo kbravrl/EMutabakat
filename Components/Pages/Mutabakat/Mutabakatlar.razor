@@ -7,6 +7,8 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
+@inject IJSRuntime JS
+
 <PageTitle>Mutabakatlar</PageTitle>
 
 <RadzenStack Gap="1rem" class="p-4">
@@ -16,11 +18,18 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="8" class="rz-text-align-end">
-            <div class="mutabakat-actions">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
-                              Style="font-size:12px;"
-                              Click="@OpenImportDialog" />
+            <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; width:100%;">
+
+                <img src="/images/excel-export.png"
+                     title="Excel Dışa Aktar"
+                     @onclick="ExportExcel" 
+                     style="width:48px; height:48px; cursor:pointer;" />
+
+                <img src="/images/excel-import.png"
+                     title="Excel İçe Aktar"
+                     @onclick="OpenImportDialog"
+                     style="width:48px; height:48px; cursor:pointer;" />
+
 
                 <RadzenButton Text="Toplu Gönder"
                               Icon="send"
@@ -474,6 +483,43 @@
             {
                 selectedMutabakatlar.Remove(selectedItem);
             }
+        }
+    }
+
+    private async Task ExportExcel()
+    {
+        try
+        {
+            var bytes = await MutabakatService.ExportToExcelAsync();
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    "Export edilecek mutabakat kaydı bulunamadı.");
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(bytes);
+
+            await JS.InvokeVoidAsync(
+                "downloadFileFromBase64",
+                "Mutabakatlar_Listesi.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64);
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Mutabakatlar Excel olarak indirildi.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
         }
     }
 
