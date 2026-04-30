@@ -394,27 +394,23 @@ namespace EMutabakat.Services
 
             var headers = new[]
             {
-        "CariId",
-        "FirmaId",
-        "FirmaAdi",
-        "CariAdi",
-        "CariUnvan",
-        "CariAdres",
-        "CariIlce",
-        "CariIl",
-        "CariVergiDairesi",
-        "CariVergiNumarasi",
-        "CariWebAdresi",
-        "CariYetkiliAdiSoyadi",
-        "CariYetkiliTelefon",
-        "CariYetkiliGsm",
-        "CariYetkiliMail",
-        "CariGrupId",
-        "CariGrupAdi",
-        "DovizKodu",
-        "DovizAdi",
-        "CariAktifPasif"
-    };
+               "CariId",
+               "CariGrupId",
+               "CariAdi",
+               "CariUnvan",
+               "CariAdres",
+               "CariIl",
+               "CariIlce",
+               "CariVergiDairesi",
+               "CariVergiNumarasi",
+               "CariWebAdresi",
+               "CariYetkiliAdiSoyadi",
+               "CariYetkiliTelefon",
+               "CariYetkiliGsm",
+               "CariYetkiliMail",
+               "DovizKodu",
+               "CariAktifPasif"
+            };
 
             var headerRow = sheet.CreateRow(0);
 
@@ -428,26 +424,22 @@ namespace EMutabakat.Services
                 var cari = cariler[i];
                 var row = sheet.CreateRow(i + 1);
 
-                row.CreateCell(0).SetCellValue(cari.CariId);
-                row.CreateCell(1).SetCellValue(cari.FirmaId);
-                row.CreateCell(2).SetCellValue(cari.Firma?.FirmaAdi ?? "");
-                row.CreateCell(3).SetCellValue(cari.CariAdi);
-                row.CreateCell(4).SetCellValue(cari.CariUnvan ?? "");
-                row.CreateCell(5).SetCellValue(cari.CariAdres ?? "");
+                row.CreateCell(0).SetCellValue(cari.CariId ?? "");
+                row.CreateCell(1).SetCellValue(cari.CariGrupId ?? "");
+                row.CreateCell(2).SetCellValue(cari.CariAdi ?? "");
+                row.CreateCell(3).SetCellValue(cari.CariUnvan ?? "");
+                row.CreateCell(4).SetCellValue(cari.CariAdres ?? "");
+                row.CreateCell(5).SetCellValue(cari.CariIl ?? "");
                 row.CreateCell(6).SetCellValue(cari.CariIlce ?? "");
-                row.CreateCell(7).SetCellValue(cari.CariIl ?? "");
-                row.CreateCell(8).SetCellValue(cari.CariVergiDairesi);
-                row.CreateCell(9).SetCellValue(cari.CariVergiNumarasi);
-                row.CreateCell(10).SetCellValue(cari.CariWebAdresi ?? "");
-                row.CreateCell(11).SetCellValue(cari.CariYetkiliAdiSoyadi ?? "");
-                row.CreateCell(12).SetCellValue(cari.CariYetkiliTelefon ?? "");
-                row.CreateCell(13).SetCellValue(cari.CariYetkiliGsm ?? "");
-                row.CreateCell(14).SetCellValue(cari.CariYetkiliMail);
-                row.CreateCell(15).SetCellValue(cari.CariGrupId);
-                row.CreateCell(16).SetCellValue(cari.CariGrup?.CariGrupAdi ?? "");
-                row.CreateCell(17).SetCellValue(cari.CariDovizKodu ?? "");
-                row.CreateCell(18).SetCellValue(cari.DovizKodu?.Name ?? "");
-                row.CreateCell(19).SetCellValue(cari.CariAktifPasif);
+                row.CreateCell(7).SetCellValue(cari.CariVergiDairesi ?? "");
+                row.CreateCell(8).SetCellValue(cari.CariVergiNumarasi ?? "");
+                row.CreateCell(9).SetCellValue(cari.CariWebAdresi ?? "");
+                row.CreateCell(10).SetCellValue(cari.CariYetkiliAdiSoyadi ?? "");
+                row.CreateCell(11).SetCellValue(cari.CariYetkiliTelefon ?? "");
+                row.CreateCell(12).SetCellValue(cari.CariYetkiliGsm ?? "");
+                row.CreateCell(13).SetCellValue(cari.CariYetkiliMail ?? "");
+                row.CreateCell(14).SetCellValue(cari.CariDovizKodu ?? "");
+                row.CreateCell(15).SetCellValue(cari.CariAktifPasif);
             }
 
             for (int i = 0; i < headers.Length; i++)

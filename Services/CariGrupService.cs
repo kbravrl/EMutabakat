@@ -366,8 +366,6 @@ namespace EMutabakat.Services
             {
                 "CariGrupId",
                 "CariGrupAdi",
-                "FirmaId",
-                "FirmaAdi",
                 "CariGrupAktifPasif"
             };
 
@@ -385,9 +383,7 @@ namespace EMutabakat.Services
 
                 row.CreateCell(0).SetCellValue(item.CariGrupId);
                 row.CreateCell(1).SetCellValue(item.CariGrupAdi);
-                row.CreateCell(2).SetCellValue(item.FirmaId);
-                row.CreateCell(3).SetCellValue(item.Firma?.FirmaAdi ?? "");
-                row.CreateCell(4).SetCellValue(item.CariGrupAktifPasif);
+                row.CreateCell(2).SetCellValue(item.CariGrupAktifPasif);
             }
 
             for (int i = 0; i < headers.Length; i++)
