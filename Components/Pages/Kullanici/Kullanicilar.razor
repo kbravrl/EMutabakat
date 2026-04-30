@@ -16,56 +16,53 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-                <RadzenButton Text="Excel İçe Aktar"
-                              Icon="file_upload"
+            <RadzenButton Text="Excel İçe Aktar"
+                          Icon="file_upload"
                           Style="font-size:12px;"
-                              Click="OpenImportDialog" />
+                          Click="OpenImportDialog" />
 
-                <RadzenButton Text="Yeni Kullanıcı Ekle"
-                              Icon="add_circle"
+            <RadzenButton Text="Yeni Kullanıcı Ekle"
+                          Icon="add_circle"
                           Style="font-size:12px;"
-                              Click="@GoToCreatePage" />
+                          Click="@GoToCreatePage" />
         </RadzenColumn>
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="12px" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenTextBox @bind-Value="searchText"
-                               Placeholder="ID/ Ad/ Soyad/ Mail ara..."
-                               Style="width:100%;"
-                               Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown Data="@durumlar"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedDurum"
-                                Placeholder="Durum"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+            <RadzenTextBox Style="width:340px;"
+                           Placeholder="ID/ Ad/ Soyad/ Mail ara"
+                           @bind-Value="searchText"
+                           Change="@(_ => ApplyFilters())" />
 
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Icon="restart_alt"
-                              ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%; font-size:12px;"
-                              Click="ClearFilters" />
-            </RadzenColumn>
-        </RadzenRow>
+            <RadzenDropDown TValue="string"
+                            Style="width:180px;"
+                            Placeholder="Durum"
+                            Data="@durumlar"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedDurum"
+                            AllowClear="true"
+                            Change="@(_ => ApplyFilters())" />
+
+            <RadzenButton Text="Temizle"
+                          Style="height:36px; white-space:nowrap; font-size:12px;"
+                          Icon="filter_alt_off"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@ClearFilters" />
+
+        </div>
 
         <RadzenDataGrid Data="@filteredKullanicilar"
                         TItem="Kullanici"
                         AllowPaging="true"
                         AllowSorting="true"
-                        AllowFiltering="true"
+                        AllowFiltering="false"
                         PageSize="10"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
-                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciId" Title="ID" Width="100px"/>
+                <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciId" Title="ID" Width="100px" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciAdi" Title="Ad" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciSoyadi" Title="Soyad" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciMail" Title="Mail" />

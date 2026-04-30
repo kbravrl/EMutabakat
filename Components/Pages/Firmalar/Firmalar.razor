@@ -28,39 +28,34 @@
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="12px" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenTextBox @bind-Value="searchText"
-                               Placeholder="ID/ Firma adı/ Unvan/ Mail ara..."
-                               Style="width:100%;"
-                               Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown Data="@durumOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="selectedDurum"
-                                Placeholder="Durum"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
+            <RadzenTextBox Style="width:340px;"
+                           Placeholder="ID/ Firma adı/ Unvan/ Mail ara"
+                           @bind-Value="searchText" />
 
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Icon="restart_alt"
-                              ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%; font-size:12px;"
-                              Click="ClearFilters" />
-            </RadzenColumn>
-        </RadzenRow>
+            <RadzenDropDown TValue="int?"
+                            Style="width:200px;"
+                            Placeholder="Durum"
+                            Data="@durumOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="selectedDurum"
+                            AllowClear="true" />
+
+            <RadzenButton Text="Temizle"
+                          Style="height:36px; white-space:nowrap; font-size:12px;"
+                          Icon="filter_alt_off"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@ClearFilters" />
+
+        </div>
 
         <RadzenDataGrid Data="@filteredFirmalar"
                         TItem="Firma"
                         AllowPaging="true"
                         AllowSorting="true"
-                        AllowFiltering="true"
+                        AllowFiltering="false"
                         PageSize="10"
                         EmptyText="Kayıt bulunamadı">
             <Columns>
@@ -127,7 +122,6 @@
 
 @code {
     private List<Firma> firmalar = new();
-    private List<Firma> filteredFirmalar = new();
 
     private string? searchText;
     private string? selectedIl;
@@ -175,49 +169,27 @@
             })
             .ToList();
 
-        ApplyFilters();
     }
 
-    private void ApplyFilters()
-    {
-        IEnumerable<Firma> query = firmalar;
-
-        if (!string.IsNullOrWhiteSpace(searchText))
-        {
-            var text = searchText.Trim().ToLower();
-
-            query = query.Where(x =>
-                x.FirmaId.ToString().Contains(text) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaAdi) && x.FirmaAdi.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaUnvan) && x.FirmaUnvan.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaMail) && x.FirmaMail.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaTelefon) && x.FirmaTelefon.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaGsm) && x.FirmaGsm.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaYetkiliAdiSoyadi) && x.FirmaYetkiliAdiSoyadi.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaIl) && x.FirmaIl.ToLower().Contains(text)) ||
-                (!string.IsNullOrWhiteSpace(x.FirmaIlce) && x.FirmaIlce.ToLower().Contains(text))
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(selectedIl))
-        {
-            query = query.Where(x => x.FirmaIl == selectedIl);
-        }
-
-        if (!string.IsNullOrWhiteSpace(selectedIlce))
-        {
-            query = query.Where(x => x.FirmaIlce == selectedIlce);
-        }
-
-        if (selectedDurum.HasValue)
-        {
-            query = query.Where(x => x.FirmaAktifPasif == selectedDurum.Value);
-        }
-
-        filteredFirmalar = query
-            .OrderBy(x => x.FirmaAdi)
+    private List<Firma> filteredFirmalar =>
+        firmalar
+            .Where(x =>
+                string.IsNullOrWhiteSpace(searchText) ||
+                x.FirmaId.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                (x.FirmaAdi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaUnvan?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaMail?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaTelefon?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaGsm?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaYetkiliAdiSoyadi?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaIl?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (x.FirmaIlce?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Where(x => string.IsNullOrWhiteSpace(selectedIl) || x.FirmaIl == selectedIl)
+            .Where(x => string.IsNullOrWhiteSpace(selectedIlce) || x.FirmaIlce == selectedIlce)
+            .Where(x => !selectedDurum.HasValue || x.FirmaAktifPasif == selectedDurum.Value)
+            .OrderByDescending(x => x.FirmaAktifPasif)
+            .ThenBy(x => x.FirmaAdi)
             .ToList();
-    }
 
     private void ClearFilters()
     {
@@ -225,7 +197,6 @@
         selectedIl = null;
         selectedIlce = null;
         selectedDurum = 1;
-        ApplyFilters();
     }
 
     private void GoToCreatePage()
