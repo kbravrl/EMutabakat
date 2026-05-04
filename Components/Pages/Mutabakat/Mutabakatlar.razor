@@ -218,6 +218,7 @@
                                               Size="ButtonSize.Small"
                                               Variant="Variant.Flat"
                                               ButtonStyle="ButtonStyle.Primary"
+                                              Title="Gönder"
                                               Click="@(() => SendMail(item.MutabakatId))"
                                               Disabled="@isSubmitting" />
                             }
@@ -229,6 +230,7 @@
                                               Size="ButtonSize.Small"
                                               Variant="Variant.Flat"
                                               ButtonStyle="ButtonStyle.Warning"
+                                              Title="Hatırlatma Gönder"
                                               Click="@(() => SendReminder(item.MutabakatId))"
                                               Disabled="@isSubmitting" />
                             }
@@ -239,6 +241,7 @@
                                 <RadzenButton Icon="edit"
                                               Size="ButtonSize.Small"
                                               ButtonStyle="ButtonStyle.Warning"
+                                              Title="Düzenle"
                                               Click="@(() => EditMutabakat(item.MutabakatId))" />
                             }
 
@@ -246,12 +249,14 @@
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Info"
+                                          Title="Detay"
                                           Click="@(() => GoToDetailsPage(item.MutabakatId))" />
 
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
+                                          Title="Sil"
                                           Click="@(() => DeleteMutabakat(item.MutabakatId))"
                                           Disabled="@isSubmitting" />
                         </RadzenStack>

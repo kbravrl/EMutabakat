@@ -139,18 +139,21 @@
                             <RadzenButton Icon="edit"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
+                                          Title="Düzenle"
                                           Click="@(() => GoToEditPage(item.CariId, item.FirmaId))" />
 
                             <RadzenButton Icon="visibility"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Info"
+                                          Title="Detay"
                                           Click="@(() => GoToDetailsPage(item.CariId, item.FirmaId))" />
 
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
+                                          Title="Sil"
                                           Disabled="@isSubmitting"
                                           Click="@(() => DeleteCari(item.CariId, item.FirmaId, item.CariAdi))" />
                         </RadzenStack>

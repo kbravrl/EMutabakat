@@ -122,12 +122,14 @@
                             <RadzenButton Icon="edit"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
+                                          Title="Düzenle"
                                           Click="@(() => GoToEditPage(item.CariGrupId))" />
 
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
+                                          Title="Sil"
                                           Disabled="@isSubmitting"
                                           Click="@(() => DeleteCariGrup(item.CariGrupId, item.CariGrupAdi))" />
                         </RadzenStack>

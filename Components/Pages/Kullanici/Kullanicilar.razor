@@ -117,12 +117,14 @@
                             <RadzenButton Icon="edit"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
+                                          Title="Düzenle"
                                           Click="@(() => GoToEditPage(item.KullaniciId))" />
 
                             <RadzenButton Icon="delete"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Danger"
+                                          Title="Sil"
                                           Click="@(() => DeleteKullanici(item.KullaniciId, item.KullaniciAdi, item.KullaniciSoyadi))" />
                         </RadzenStack>
                     </Template>

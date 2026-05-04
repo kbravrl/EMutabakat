@@ -95,12 +95,14 @@
                             <RadzenButton Icon="edit"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
+                                          Title="Düzenle"
                                           Click="@(() => GoToEditPage(firma.FirmaId))" />
 
                             <RadzenButton Icon="visibility"
                                           Size="ButtonSize.Small"
                                           Variant="Variant.Flat"
                                           ButtonStyle="ButtonStyle.Info"
+                                          Title="Detay"
                                           Click="@(() => GoToDetailsPage(firma.FirmaId))" />
 
                             <AuthorizeView Roles="Admin">
@@ -109,6 +111,7 @@
                                                   Size="ButtonSize.Small"
                                                   Variant="Variant.Flat"
                                                   ButtonStyle="ButtonStyle.Danger"
+                                                  Title="Sil"
                                                   Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
                                 </Authorized>
                             </AuthorizeView>
