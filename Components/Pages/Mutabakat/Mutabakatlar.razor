@@ -18,7 +18,7 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="8" class="rz-text-align-end">
-            <div style="display:flex; align-items:center; gap:12px; justify-content:flex-end; width:100%;">
+            <div style="display:flex; align-items:center; gap:15px; justify-content:flex-end; width:100%;">
 
                 <img src="/images/excel-export.png"
                      title="Excel Dışa Aktar"
@@ -31,29 +31,29 @@
                      style="width:48px; height:48px; cursor:pointer;" />
 
 
-                <RadzenButton Text="Toplu Gönder"
+                <RadzenButton Text="Toplu gönder"
                               Icon="send"
-                              Style="font-size:12px;"
+                              Style="font-size:15px;"
                               ButtonStyle="ButtonStyle.Success"
                               Click="@SendPendingMails"
                               Disabled="@isSubmitting" />
 
-                <RadzenButton Text="Seçilenleri Gönder"
+                <RadzenButton Text="Seçilenleri gönder"
                               Icon="mark_email_read"
-                              Style="font-size:12px;"
+                              Style="font-size:15px;"
                               ButtonStyle="ButtonStyle.Secondary"
                               Click="@SendSelectedMails"
                               Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
 
                 <RadzenButton Text="Silinenler"
                               Icon="history"
-                              Style="font-size:12px;"
+                              Style="font-size:15px;"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="@GoToDeletedPage" />
 
-                <RadzenButton Text="Yeni Mutabakat Ekle"
+                <RadzenButton Text="Yeni mutabakat ekle"
                               Icon="add_circle"
-                              Style="font-size:12px;"
+                              Style="font-size:15px;"
                               ButtonStyle="ButtonStyle.Primary"
                               Click="@GoToCreatePage" />
             </div>
@@ -115,12 +115,12 @@
             <RadzenButton Text="Temizle"
                           Icon="restart_alt"
                           ButtonStyle="ButtonStyle.Light"
-                          Style="height:36px; white-space:nowrap; font-size:12px;"
+                          Style="height:36px; white-space:nowrap; font-size:15px;"
                           Click="@ClearFilters" />
 
             <RadzenButton Icon="refresh"
                           ButtonStyle="ButtonStyle.Primary"
-                          Style="height:36px; width:42px; font-size:12px;"
+                          Style="height:36px; width:42px; font-size:15px;"
                           Click="@RefreshData"
                           IsBusy="@isLoading"
                           Disabled="@isLoading"

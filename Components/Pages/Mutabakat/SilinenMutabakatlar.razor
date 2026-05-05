@@ -16,9 +16,9 @@
                  Style="margin-bottom:20px;">
         <RadzenText TextStyle="TextStyle.H4">Silinen Mutabakatlar</RadzenText>
 
-        <RadzenButton Text="Aktif Listeye Dön"
+        <RadzenButton Text="Aktif listeye dön"
                       Icon="arrow_back"
-                      Style="font-size:12px;"
+                      Style="font-size:15px;"
                       ButtonStyle="ButtonStyle.Secondary"
                       Click="@(() => NavigationManager.NavigateTo("/reconciliations"))" />
     </RadzenStack>
@@ -88,7 +88,7 @@
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
                         <RadzenButton Text=""
                                       Icon="visibility"
-                                      Style="font-size:12px"
+                                      Style="font-size:15px"
                                       Size="ButtonSize.Small"
                                       Title="Detay"
                                       Click="@(() => GoDetail(item.Id))" />
@@ -96,7 +96,7 @@
                         <RadzenButton Text=""
                                       Icon="delete"
                                       Size="ButtonSize.Small"
-                                      Style="font-size:12px"
+                                      Style="font-size:15px"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Title="Sil"
                                       Click="@(() => DeleteRecord(item))" />

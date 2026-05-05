@@ -18,29 +18,29 @@
     </div>
 
     <div class="rz-text-align-right">
-        <RadzenButton Text="Örnek Excel Dosyası"
+        <RadzenButton Text="Örnek excel dosyası"
                       Icon="download"
-                      Style="font-size:12px;"
+                      Style="font-size:15px;"
                       ButtonStyle="ButtonStyle.Success"
                       Click="DownloadTemplate" />
 
         <RadzenButton Text="Kaydet"
                       Icon="save"
-                      Style="font-size:12px;"
+                      Style="font-size:15px;"
                       ButtonStyle="ButtonStyle.Primary"
                       Click="@(() => Upload(false))"
                       Disabled="@isUploading" />
 
-        <RadzenButton Text="Kaydet ve Mail Gönder"
+        <RadzenButton Text="Kaydet ve mail gönder"
                       Icon="mail"
-                      Style="font-size:12px;"
+                      Style="font-size:15px;"
                       ButtonStyle="ButtonStyle.Info"
                       Click="@(() => Upload(true))"
                       Disabled="@isUploading" />
 
         <RadzenButton Text="İptal"
                       Icon="close"
-                      Style="font-size:12px;"
+                      Style="font-size:15px;"
                       Click="Cancel"
                       ButtonStyle="ButtonStyle.Secondary" />
     </div>

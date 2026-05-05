@@ -16,12 +16,12 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni Döviz Kodu" Icon="add_circle" Style="font-size:12px;" Click="@GoToCreatePage" />
+            <RadzenButton Text="Yeni döviz kodu" Icon="add_circle" Style="font-size:15px;" Click="@GoToCreatePage" />
         </RadzenColumn>
     </RadzenRow>
 
     <RadzenCard>
-        <RadzenRow Gap="12px" class="mb-3">
+        <RadzenRow Gap="15px" class="mb-3">
             <RadzenColumn Size="12" SizeMD="2">
                 <RadzenDropDown Data="@tcmbOptions"
                                 @bind-Value="selectedTcmb"
@@ -44,7 +44,7 @@
                 <RadzenButton Text="Temizle"
                               Icon="restart_alt"
                               ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%; font-size:12px;"
+                              Style="width:100%; font-size:15px;"
                               Click="ClearFilters" />
             </RadzenColumn>
         </RadzenRow>
