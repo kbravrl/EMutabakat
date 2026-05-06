@@ -105,16 +105,33 @@ namespace EMutabakat.Services
                 context.Firmalar.Add(firma);
                 await context.SaveChangesAsync();
 
-                var currentUser = await context.Kullanicilar
-                    .Include(k => k.Firmalar)
-                    .FirstOrDefaultAsync(k => k.KullaniciId == current.KullaniciId);
-
-                if (currentUser != null &&
-                    !currentUser.Firmalar.Any(f => f.FirmaId == firma.FirmaId))
+                if (!current.IsSeedUser)
                 {
-                    currentUser.Firmalar.Add(firma);
-                    await context.SaveChangesAsync();
+                    var currentUser = await context.Kullanicilar
+                        .Include(k => k.Firmalar)
+                        .FirstOrDefaultAsync(k => k.KullaniciId == current.KullaniciId);
+
+                    if (currentUser != null &&
+                        !currentUser.Firmalar.Any(f => f.FirmaId == firma.FirmaId))
+                    {
+                        currentUser.Firmalar.Add(firma);
+                    }
                 }
+
+                var seedUsers = await context.Kullanicilar
+                    .Include(k => k.Firmalar)
+                    .Where(k => k.IsSeedUser)
+                    .ToListAsync();
+
+                foreach (var seedUser in seedUsers)
+                {
+                    if (!seedUser.Firmalar.Any(f => f.FirmaId == firma.FirmaId))
+                    {
+                        seedUser.Firmalar.Add(firma);
+                    }
+                }
+
+                await context.SaveChangesAsync();
 
                 await _logService.AddAsync(
                     "Bilgi",
