@@ -42,20 +42,26 @@ namespace EMutabakat.Services
 
             var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
 
-            if (allowedFirmaIds.Count == 0)
-                return new List<Kullanici>();
-
-            return await context.Kullanicilar
+            var query = context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
                 .Include(x => x.Yetkileri)
-                .Where(k => k.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)))
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return new List<Kullanici>();
+
+                query = query.Where(k => k.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)));
+            }
+
+            return await query.ToListAsync();
         }
 
-        private async Task<List<int>> GetAllowedFirmaIdsAsync(AppDbContext context)
+        private async Task<List<int>?> GetAllowedFirmaIdsAsync(AppDbContext context)
         {
             var mail = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
 
@@ -68,6 +74,9 @@ namespace EMutabakat.Services
 
             if (kullanici == null)
                 return new List<int>();
+
+            if (kullanici.IsSeedUser)
+                return null;
 
             return kullanici.Firmalar
                 .Select(f => f.FirmaId)
@@ -82,13 +91,22 @@ namespace EMutabakat.Services
 
             var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
 
-            return await context.Kullanicilar
+            var query = context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
                 .Include(x => x.Yetkileri)
-                .FirstOrDefaultAsync(x =>
-                    x.KullaniciId == id &&
-                    x.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)));
+                .Where(x => x.KullaniciId == id)
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return null;
+
+                query = query.Where(x => x.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)));
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
 
         public async Task<string> GenerateNextKullaniciIdAsync()
@@ -138,6 +156,22 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .AnyAsync(k => k.KullaniciMail == mail && k.IsSeedUser);
+        }
+
+        public async Task<KullaniciYetki?> GetCurrentUserYetkiAsync()
+        {
+            var mail = GetUserEmail();
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var kullanici = await context.Kullanicilar
+                .AsNoTracking()
+                .Include(k => k.Yetkileri)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            return kullanici?.Yetkileri;
         }
 
         public async Task<Kullanici?> RegisterAsync(Kullanici kullanici)
@@ -273,6 +307,19 @@ namespace EMutabakat.Services
             if (existingKullanici == null)
                 return null;
 
+            if (existingKullanici.IsSeedUser)
+            {
+                var currentUserMail = GetUserEmail();
+                var isSelf = !string.IsNullOrWhiteSpace(currentUserMail) &&
+                            !string.IsNullOrWhiteSpace(existingKullanici.KullaniciMail) &&
+                            currentUserMail.Equals(existingKullanici.KullaniciMail, StringComparison.OrdinalIgnoreCase);
+
+                if (!isSelf)
+                {
+                    throw new Exception("Sistem kullanıcısı sadece kendisi tarafından düzenlenebilir.");
+                }
+            }
+
             var firmaIds = NormalizeFirmaIds(kullanici);
             if (firmaIds.Count == 0)
                 throw new Exception("En az bir firma seçimi zorunludur.");
@@ -332,9 +379,9 @@ namespace EMutabakat.Services
                 existingKullanici.Yetkileri.Mutabakatlar = kullanici.Yetkileri.Mutabakatlar;
                 existingKullanici.Yetkileri.Firmalar = kullanici.Yetkileri.Firmalar;
                 existingKullanici.Yetkileri.Kullanicilar = kullanici.Yetkileri.Kullanicilar;
-                existingKullanici.Yetkileri.Loglar = kullanici.Yetkileri.Loglar;
                 existingKullanici.Yetkileri.ImportYetki = kullanici.Yetkileri.ImportYetki;
                 existingKullanici.Yetkileri.ExportYetki = kullanici.Yetkileri.ExportYetki;
+                existingKullanici.Yetkileri.LogYetki = kullanici.Yetkileri.LogYetki;
             }
 
             existingKullanici.Firmalar.Clear();
@@ -365,6 +412,12 @@ namespace EMutabakat.Services
 
             if (kullanici == null)
                 return false;
+
+            // Seed kullanıcı koruması
+            if (kullanici.IsSeedUser)
+            {
+                throw new Exception("Sistem kullanıcısı silinemez.");
+            }
 
             try
             {
@@ -399,6 +452,11 @@ namespace EMutabakat.Services
                 .User?
                 .Identity?
                 .Name;
+        }
+
+        public string? GetCurrentUserEmail()
+        {
+            return GetUserEmail();
         }
 
         private static string? GetStringCell(IRow row, int idx)

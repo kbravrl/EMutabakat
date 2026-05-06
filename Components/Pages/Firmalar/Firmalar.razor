@@ -3,120 +3,135 @@
 @attribute [Authorize]
 
 @inject IFirmaService FirmaService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
 <PageTitle>Firmalar</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText TextStyle="TextStyle.H4">Firma Listesi</RadzenText>
-        </RadzenColumn>
+    <RadzenStack Gap="1rem" class="p-4">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.H4">Firma Listesi</RadzenText>
+            </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni firma ekle"
-                          Icon="add_circle"
-                          Style="font-size:15px;"
-                          Click="@GoToCreatePage" />
-        </RadzenColumn>
-    </RadzenRow>
+            <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+                @if (canAdd)
+                {
+                    <RadzenButton Text="Yeni firma ekle"
+                                  Icon="add_circle"
+                                  Style="font-size:15px;"
+                                  Click="@GoToCreatePage" />
+                }
+            </RadzenColumn>
+        </RadzenRow>
 
-    <RadzenCard>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
+        <RadzenCard>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
 
-            <RadzenTextBox Style="width:340px;"
-                           Placeholder="ID/ Firma adı/ Unvan/ Mail ara"
-                           @bind-Value="searchText" />
+                <RadzenTextBox Style="width:340px;"
+                               Placeholder="ID/ Firma adı/ Unvan/ Mail ara"
+                               @bind-Value="searchText" />
 
-            <RadzenDropDown TValue="int?"
-                            Style="width:200px;"
-                            Placeholder="Durum"
-                            Data="@durumOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedDurum"
-                            AllowClear="true" />
+                <RadzenDropDown TValue="int?"
+                                Style="width:200px;"
+                                Placeholder="Durum"
+                                Data="@durumOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDurum"
+                                AllowClear="true" />
 
-            <RadzenButton Text="Temizle"
-                          Style="height:36px; white-space:nowrap; font-size:15px;"
-                          Icon="filter_alt_off"
-                          ButtonStyle="ButtonStyle.Light"
-                          Click="@ClearFilters" />
+                <RadzenButton Text="Temizle"
+                              Style="height:36px; white-space:nowrap; font-size:15px;"
+                              Icon="filter_alt_off"
+                              ButtonStyle="ButtonStyle.Light"
+                              Click="@ClearFilters" />
 
-        </div>
+            </div>
 
-        <RadzenDataGrid Data="@filteredFirmalar"
-                        TItem="Firma"
-                        AllowPaging="true"
-                        AllowSorting="true"
-                        AllowFiltering="false"
-                        PageSize="10"
-                        EmptyText="Kayıt bulunamadı">
-            <Columns>
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaId" Title="ID" Width="90px" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaYetkiliAdiSoyadi" Title="Yetkili" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaIl" Title="İl" Width="120px" />
-                <RadzenDataGridColumn TItem="Firma" Property="FirmaIlce" Title="İlçe" Width="140px" />
+            <RadzenDataGrid Data="@filteredFirmalar"
+                            TItem="Firma"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            AllowFiltering="false"
+                            PageSize="10"
+                            EmptyText="Kayıt bulunamadı">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaId" Title="ID" Width="90px" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaAdi" Title="Firma Adı" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaUnvan" Title="Unvan" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaMail" Title="Mail" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaTelefon" Title="Telefon" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaYetkiliAdiSoyadi" Title="Yetkili" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaIl" Title="İl" Width="120px" />
+                    <RadzenDataGridColumn TItem="Firma" Property="FirmaIlce" Title="İlçe" Width="140px" />
 
-                <RadzenDataGridColumn TItem="Firma"
-                                      Property="FirmaAktifPasif"
-                                      Title="Durum"
-                                      FilterOperator="FilterOperator.Equals"
-                                      Width="120px">
-                    <Template Context="firma">
-                        @if (firma.FirmaAktifPasif == 1)
-                        {
-                            <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
-                        }
-                        else
-                        {
-                            <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
-                        }
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Firma"
+                                          Property="FirmaAktifPasif"
+                                          Title="Durum"
+                                          FilterOperator="FilterOperator.Equals"
+                                          Width="120px">
+                        <Template Context="firma">
+                            @if (firma.FirmaAktifPasif == 1)
+                            {
+                                <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                            }
+                            else
+                            {
+                                <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="Firma"
-                                      Title="İşlemler"
-                                      Sortable="false"
-                                      Filterable="false"
-                                      Width="220px">
-                    <Template Context="firma">
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                            <RadzenButton Icon="edit"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          Title="Düzenle"
-                                          Click="@(() => GoToEditPage(firma.FirmaId))" />
+                    <RadzenDataGridColumn TItem="Firma"
+                                          Title="İşlemler"
+                                          Sortable="false"
+                                          Filterable="false"
+                                          Width="220px">
+                        <Template Context="firma">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                @if (canEdit)
+                                {
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  Title="Düzenle"
+                                                  Click="@(() => GoToEditPage(firma.FirmaId))" />
+                                }
 
-                            <RadzenButton Icon="visibility"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Info"
-                                          Title="Detay"
-                                          Click="@(() => GoToDetailsPage(firma.FirmaId))" />
+                                <RadzenButton Icon="visibility"
+                                              Size="ButtonSize.Small"
+                                              Variant="Variant.Flat"
+                                              ButtonStyle="ButtonStyle.Info"
+                                              Title="Detay"
+                                              Click="@(() => GoToDetailsPage(firma.FirmaId))" />
 
-                            <RadzenButton Icon="delete"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Danger"
-                                          Title="Sil"
-                                          Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
-                        </RadzenStack>
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
-    </RadzenCard>
-</RadzenStack>
+                                @if (canDelete)
+                                {
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Title="Sil"
+                                                  Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
+                                }
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenCard>
+    </RadzenStack>
 
 @code {
     private List<Firma> firmalar = new();
+
+    private bool canView;
+    private bool canAdd;
+    private bool canEdit;
+    private bool canDelete;
 
     private string? searchText;
     private string? selectedIl;
@@ -133,6 +148,24 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        if (isSeed)
+        {
+            canView = canAdd = canEdit = canDelete = true;
+        }
+        else if (yetki != null)
+        {
+            canView   = yetki.Firmalar >= YetkiSeviyesi.Giris;
+            canAdd    = yetki.Firmalar == YetkiSeviyesi.TamYetki;
+            canEdit   = yetki.Firmalar >= YetkiSeviyesi.GirisDuzeltme;
+            canDelete = yetki.Firmalar == YetkiSeviyesi.TamYetki;
+        }
+
+        if (!canView)
+            return;
+
         await LoadFirmalarAsync();
     }
 

@@ -3,11 +3,18 @@
 @attribute [Authorize]
 
 @inject IFirmaService FirmaService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Firma Ekle</PageTitle>
 
+@if (!canAdd)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
 <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
     <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
         <RadzenText TextStyle="TextStyle.H4">Yeni Firma Ekle</RadzenText>
@@ -171,8 +178,11 @@
         </RadzenFieldset>
     </EditForm>
 </RadzenCard>
+}
 
 @code {
+    private bool canAdd;
+
     private Firma firma = new()
     {
         FirmaAktifPasif = 1,
@@ -186,6 +196,14 @@
         new() { Text = "Aktif", Value = 1 },
         new() { Text = "Pasif", Value = 0 }
     };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canAdd = isSeed || (yetki?.Firmalar == YetkiSeviyesi.TamYetki);
+    }
 
     private async Task HandleValidSubmit()
     {

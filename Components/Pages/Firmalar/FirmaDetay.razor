@@ -3,11 +3,16 @@
 @attribute [Authorize]
 
 @inject IFirmaService FirmaService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Firma Detay</PageTitle>
 
-@if (firma == null)
+@if (!canView)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else if (firma == null)
 {
     <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
 }
@@ -103,9 +108,18 @@ else
     [Parameter] public int id { get; set; }
 
     private Firma? firma;
+    private bool canView;
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canView = isSeed || (yetki != null && yetki.Firmalar >= YetkiSeviyesi.Giris);
+
+        if (!canView)
+            return;
+
         firma = await FirmaService.GetByIdAsync(id);
     }
 

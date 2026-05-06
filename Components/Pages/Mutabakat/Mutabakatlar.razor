@@ -3,6 +3,7 @@
 @attribute [Authorize]
 
 @inject IMutabakatService MutabakatService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
@@ -11,266 +12,291 @@
 
 <PageTitle>Mutabakatlar</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-3">
-        <RadzenColumn Size="12" SizeMD="4">
-            <RadzenText TextStyle="TextStyle.H4">Mutabakat Listesi</RadzenText>
-        </RadzenColumn>
+    <RadzenStack Gap="1rem" class="p-4">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-3">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenText TextStyle="TextStyle.H4">Mutabakat Listesi</RadzenText>
+            </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="8" class="rz-text-align-end">
-            <div style="display:flex; align-items:center; gap:15px; justify-content:flex-end; width:100%;">
+            <RadzenColumn Size="12" SizeMD="8" class="rz-text-align-end">
+                <div style="display:flex; align-items:center; gap:15px; justify-content:flex-end; width:100%;">
 
-                <img src="/images/excel-export.png"
-                     title="Excel Dışa Aktar"
-                     @onclick="ExportExcel" 
-                     style="width:48px; height:48px; cursor:pointer;" />
+                    @if (canExport)
+                    {
+                        <img src="/images/excel-export.png"
+                             title="Excel Dışa Aktar"
+                             @onclick="ExportExcel"
+                             style="width:48px; height:48px; cursor:pointer;" />
+                    }
 
-                <img src="/images/excel-import.png"
-                     title="Excel İçe Aktar"
-                     @onclick="OpenImportDialog"
-                     style="width:48px; height:48px; cursor:pointer;" />
+                    @if (canImport)
+                    {
+                        <img src="/images/excel-import.png"
+                             title="Excel İçe Aktar"
+                             @onclick="OpenImportDialog"
+                             style="width:48px; height:48px; cursor:pointer;" />
+                    }
 
+                    @if (canEdit)
+                    {
+                        <RadzenButton Text="Toplu gönder"
+                                      Icon="send"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Click="@SendPendingMails"
+                                      Disabled="@isSubmitting" />
 
-                <RadzenButton Text="Toplu gönder"
-                              Icon="send"
-                              Style="font-size:15px;"
-                              ButtonStyle="ButtonStyle.Success"
-                              Click="@SendPendingMails"
-                              Disabled="@isSubmitting" />
+                        <RadzenButton Text="Seçilenleri gönder"
+                                      Icon="mark_email_read"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@SendSelectedMails"
+                                      Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
+                    }
 
-                <RadzenButton Text="Seçilenleri gönder"
-                              Icon="mark_email_read"
-                              Style="font-size:15px;"
-                              ButtonStyle="ButtonStyle.Secondary"
-                              Click="@SendSelectedMails"
-                              Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
+                    @if (canDelete)
+                    {
+                        <RadzenButton Text="Silinenler"
+                                      Icon="history"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@GoToDeletedPage" />
+                    }
 
-                <RadzenButton Text="Silinenler"
-                              Icon="history"
-                              Style="font-size:15px;"
-                              ButtonStyle="ButtonStyle.Danger"
-                              Click="@GoToDeletedPage" />
+                    @if (canAdd)
+                    {
+                        <RadzenButton Text="Yeni mutabakat ekle"
+                                      Icon="add_circle"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Click="@GoToCreatePage" />
+                    }
+                </div>
+            </RadzenColumn>
+        </RadzenRow>
 
-                <RadzenButton Text="Yeni mutabakat ekle"
-                              Icon="add_circle"
-                              Style="font-size:15px;"
+        <RadzenCard>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
+
+                <RadzenTextBox Style="width:340px; "
+                               Placeholder="ID / Cari / Firma ara"
+                               @bind-Value="searchText" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:170px;"
+                                Placeholder="Cari Grup"
+                                Data="@cariGrupOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedCariGrupId"
+                                AllowClear="true" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:170px;"
+                                Placeholder="Döviz"
+                                Data="@dovizOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedDovizKodu"
+                                AllowClear="true" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:170px;"
+                                Placeholder="Bakiye Tipi"
+                                Data="@bakiyeTipiOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedBakiyeTipi"
+                                AllowClear="true" />
+
+                <RadzenDropDown TValue="int?"
+                                Style="width:170px;"
+                                Placeholder="Durum"
+                                Data="@statusOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedStatus"
+                                AllowClear="true" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:170px;"
+                                Placeholder="Dönem"
+                                Data="@periodOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedPeriod"
+                                AllowClear="true" />
+
+                <RadzenButton Text="Temizle"
+                              Icon="restart_alt"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="height:36px; white-space:nowrap; font-size:15px;"
+                              Click="@ClearFilters" />
+
+                <RadzenButton Icon="refresh"
                               ButtonStyle="ButtonStyle.Primary"
-                              Click="@GoToCreatePage" />
+                              Style="height:36px; width:42px; font-size:15px;"
+                              Click="@RefreshData"
+                              IsBusy="@isLoading"
+                              Disabled="@isLoading"
+                              Title="Yenile" />
+
             </div>
-        </RadzenColumn>
-    </RadzenRow>
 
-    <RadzenCard>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:1rem;">
+            <RadzenDataGrid Data="@filteredMutabakatlar"
+                            TItem="Mutabakat"
+                            SelectionMode="DataGridSelectionMode.Multiple"
+                            @bind-Value="@selectedMutabakatlar"
+                            AllowRowSelectOnRowClick="false"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            AllowFiltering="false"
+                            PageSize="10"
+                            EmptyText="Kayıt bulunamadı.">
 
-            <RadzenTextBox Style="width:340px; "
-                           Placeholder="ID / Cari / Firma ara"
-                           @bind-Value="searchText" />
+                <Columns>
+                    <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" Width="80px"/>
 
-            <RadzenDropDown TValue="string"
-                            Style="width:170px;"
-                            Placeholder="Cari Grup"
-                            Data="@cariGrupOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedCariGrupId"
-                            AllowClear="true" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
+                        <Template Context="item">
+                            @item.Firma?.FirmaAdi
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenDropDown TValue="string"
-                            Style="width:170px;"
-                            Placeholder="Döviz"
-                            Data="@dovizOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedDovizKodu"
-                            AllowClear="true" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
+                        <Template Context="item">
+                            @item.Cari?.CariAdi
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenDropDown TValue="string"
-                            Style="width:170px;"
-                            Placeholder="Bakiye Tipi"
-                            Data="@bakiyeTipiOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedBakiyeTipi"
-                            AllowClear="true" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari Grup">
+                        <Template Context="item">
+                            @(item.Cari?.CariGrup?.CariGrupAdi ?? "-")
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenDropDown TValue="int?"
-                            Style="width:170px;"
-                            Placeholder="Durum"
-                            Data="@statusOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedStatus"
-                            AllowClear="true" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
+                        <Template Context="item">
+                            @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenDropDown TValue="string"
-                            Style="width:170px;"
-                            Placeholder="Dönem"
-                            Data="@periodOptions"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="selectedPeriod"
-                            AllowClear="true" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
+                        <Template Context="item">
+                            @item.MutabakatBakiye.ToString("N2")
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenButton Text="Temizle"
-                          Icon="restart_alt"
-                          ButtonStyle="ButtonStyle.Light"
-                          Style="height:36px; white-space:nowrap; font-size:15px;"
-                          Click="@ClearFilters" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
+                        <Template Context="item">
+                            @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <RadzenButton Icon="refresh"
-                          ButtonStyle="ButtonStyle.Primary"
-                          Style="height:36px; width:42px; font-size:15px;"
-                          Click="@RefreshData"
-                          IsBusy="@isLoading"
-                          Disabled="@isLoading"
-                          Title="Yenile" />
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
+                        <Template Context="item">
+                            <RadzenBadge Text="@GetStatusText(item.Status)"
+                                         BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
+                        </Template>
+                    </RadzenDataGridColumn>
 
-        </div>
+                    <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi">
+                        <Template Context="item">
+                            @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
+                        </Template>
+                    </RadzenDataGridColumn>
 
-        <RadzenDataGrid Data="@filteredMutabakatlar"
-                        TItem="Mutabakat"
-                        SelectionMode="DataGridSelectionMode.Multiple"
-                        @bind-Value="@selectedMutabakatlar"
-                        AllowRowSelectOnRowClick="false"
-                        AllowPaging="true"
-                        AllowSorting="true"
-                        AllowFiltering="false"
-                        PageSize="10"
-                        EmptyText="Kayıt bulunamadı.">
+                    <RadzenDataGridColumn TItem="Mutabakat"
+                                          Property="MutabakatCevapTarihSaat"
+                                          Title="Cevap Tarihi">
+                        <Template Context="item">
+                            @(item.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy"))
+                        </Template>
+                    </RadzenDataGridColumn>
 
-            <Columns>
-                <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" Width="80px"/>
+                    @if (canEdit)
+                    {
+                        <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false">
+                            <Template Context="item">
+                                <RadzenCheckBox TValue="bool"
+                                                Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
+                                                Change="@(checkedValue => OnRowSelectionChanged(item, checkedValue))"
+                                                Disabled="@(item.Status != Mutabakat.MutabakatStatus.Kaydedildi)" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
-                    <Template Context="item">
-                        @item.Firma?.FirmaAdi
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px">
+                        <Template Context="item">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
-                    <Template Context="item">
-                        @item.Cari?.CariAdi
-                    </Template>
-                </RadzenDataGridColumn>
+                                @if (canEdit && item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+                                {
+                                    <RadzenButton Icon="mail"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Primary"
+                                                  Title="Gönder"
+                                                  Click="@(() => SendMail(item.MutabakatId))"
+                                                  Disabled="@isSubmitting" />
+                                }
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Cari Grup">
-                    <Template Context="item">
-                        @(item.Cari?.CariGrup?.CariGrupAdi ?? "-")
-                    </Template>
-                </RadzenDataGridColumn>
+                                @if (canEdit && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
+                                                                item.Status == Mutabakat.MutabakatStatus.Hatirlatma))
+                                {
+                                    <RadzenButton Icon="refresh"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Warning"
+                                                  Title="Hatırlatma Gönder"
+                                                  Click="@(() => SendReminder(item.MutabakatId))"
+                                                  Disabled="@isSubmitting" />
+                                }
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
-                    <Template Context="item">
-                        @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
-                    </Template>
-                </RadzenDataGridColumn>
+                                @if (canEdit && item.Status != Mutabakat.MutabakatStatus.Mutabik &&
+                                                item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
+                                {
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Warning"
+                                                  Title="Düzenle"
+                                                  Click="@(() => EditMutabakat(item.MutabakatId))" />
+                                }
 
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
-                    <Template Context="item">
-                        @item.MutabakatBakiye.ToString("N2")
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
-                    <Template Context="item">
-                        @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
-                    <Template Context="item">
-                        <RadzenBadge Text="@GetStatusText(item.Status)"
-                                     BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi">
-                    <Template Context="item">
-                        @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat"
-                                      Property="MutabakatCevapTarihSaat"
-                                      Title="Cevap Tarihi">
-                    <Template Context="item">
-                        @(item.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy"))
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false">
-                    <Template Context="item">
-                        <RadzenCheckBox TValue="bool"
-                                        Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
-                                        Change="@(checkedValue => OnRowSelectionChanged(item, checkedValue))"
-                                        Disabled="@(item.Status != Mutabakat.MutabakatStatus.Kaydedildi)" />
-                    </Template>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px">
-                    <Template Context="item">
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-
-                            @if (item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
-                            {
-                                <RadzenButton Icon="mail"
+                                <RadzenButton Icon="visibility"
                                               Size="ButtonSize.Small"
                                               Variant="Variant.Flat"
-                                              ButtonStyle="ButtonStyle.Primary"
-                                              Title="Gönder"
-                                              Click="@(() => SendMail(item.MutabakatId))"
-                                              Disabled="@isSubmitting" />
-                            }
+                                              ButtonStyle="ButtonStyle.Info"
+                                              Title="Detay"
+                                              Click="@(() => GoToDetailsPage(item.MutabakatId))" />
 
-                            @if (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
-                                                            item.Status == Mutabakat.MutabakatStatus.Hatirlatma)
-                            {
-                                <RadzenButton Icon="refresh"
-                                              Size="ButtonSize.Small"
-                                              Variant="Variant.Flat"
-                                              ButtonStyle="ButtonStyle.Warning"
-                                              Title="Hatırlatma Gönder"
-                                              Click="@(() => SendReminder(item.MutabakatId))"
-                                              Disabled="@isSubmitting" />
-                            }
-
-                            @if (item.Status != Mutabakat.MutabakatStatus.Mutabik &&
-                                                            item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
-                            {
-                                <RadzenButton Icon="edit"
-                                              Size="ButtonSize.Small"
-                                              ButtonStyle="ButtonStyle.Warning"
-                                              Title="Düzenle"
-                                              Click="@(() => EditMutabakat(item.MutabakatId))" />
-                            }
-
-                            <RadzenButton Icon="visibility"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Info"
-                                          Title="Detay"
-                                          Click="@(() => GoToDetailsPage(item.MutabakatId))" />
-
-                            <RadzenButton Icon="delete"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Danger"
-                                          Title="Sil"
-                                          Click="@(() => DeleteMutabakat(item.MutabakatId))"
-                                          Disabled="@isSubmitting" />
-                        </RadzenStack>
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
-    </RadzenCard>
-</RadzenStack>
-
+                                @if (canDelete)
+                                {
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Title="Sil"
+                                                  Click="@(() => DeleteMutabakat(item.MutabakatId))"
+                                                  Disabled="@isSubmitting" />
+                                }
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenCard>
+    </RadzenStack>
 @code {
     private List<Mutabakat> mutabakatlar = new();
     private IList<Mutabakat> selectedMutabakatlar = new List<Mutabakat>();
     private bool isSubmitting = false;
+    private bool canView;
+    private bool canAdd;
+    private bool canEdit;
+    private bool canDelete;
+    private bool canImport;
+    private bool canExport;
 
     private string? searchText;
     private int? selectedStatus;
@@ -375,6 +401,26 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        if (isSeed)
+        {
+            canView = canAdd = canEdit = canDelete = canImport = canExport = true;
+        }
+        else if (yetki != null)
+        {
+            canView = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
+            canAdd = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
+            canEdit = yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme;
+            canDelete = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
+            canImport = yetki.ImportYetki;
+            canExport = yetki.ExportYetki;
+        }
+
+        if (!canView)
+            return;
+
         await LoadMutabakatlarAsync();
     }
 

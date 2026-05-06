@@ -5,12 +5,17 @@
 @inject ICariService CariService
 @inject IFirmaService FirmaService
 @inject IDovizKoduService DovizKoduService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Mutabakat Düzenle</PageTitle>
 
-@if (isLoading)
+@if (!canEdit)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else if (isLoading)
 {
     <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" Style="height:6px;" />
 }
@@ -163,6 +168,7 @@ else
     private EditContext? editContext;
     private bool isLoading = true;
     private bool isSubmitting = false;
+    private bool canEdit;
     private DateTime mutabakatTarihiTemp;
     private string? cariMail;
     private int? selectedFirmaId;
@@ -182,6 +188,14 @@ else
     {
         try
         {
+            var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+            var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+            canEdit = isSeed || (yetki != null && yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme);
+
+            if (!canEdit)
+                return;
+
             mutabakat = await MutabakatService.GetByIdAsync(id);
 
             if (mutabakat != null)

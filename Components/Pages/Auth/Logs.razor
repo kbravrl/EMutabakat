@@ -2,102 +2,131 @@
 @attribute [Authorize]
 
 @inject ILogService LogService
+@inject IKullaniciService KullaniciService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 
 <PageTitle>Loglar</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText TextStyle="TextStyle.H4">Sistem Logları</RadzenText>
-        </RadzenColumn>
+@if (!canView)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
+    <RadzenStack Gap="1rem" class="p-4">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.H4">Sistem Logları</RadzenText>
+            </RadzenColumn>
 
-        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenStack Orientation="Orientation.Horizontal"
-                         Gap="8px"
-                         AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End">
+            <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+                <RadzenStack Orientation="Orientation.Horizontal"
+                             Gap="8px"
+                             AlignItems="AlignItems.Center"
+                             JustifyContent="JustifyContent.End">
 
-                <RadzenButton Text="Logları temizle"
-                              Icon="delete"
-                              Style="font-size:15px;"
-                              ButtonStyle="ButtonStyle.Danger"
-                              Click="@ClearLogs" />
+                    @if (canClear)
+                    {
+                        <RadzenButton Text="Logları temizle"
+                                      Icon="delete"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@ClearLogs" />
+                    }
 
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
 
-    <RadzenCard>
-        <RadzenDataGrid Data="@logs"
-                        TItem="AppLog"
-                        AllowPaging="true"
-                        AllowSorting="true"
-                        AllowFiltering="true"
-                        PageSize="20"
-                        EmptyText="Kayıt bulunamadı">
+        <RadzenCard>
+            <RadzenDataGrid Data="@logs"
+                            TItem="AppLog"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            AllowFiltering="true"
+                            PageSize="20"
+                            EmptyText="Kayıt bulunamadı">
 
-            <Columns>
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="Id"
-                                      Title="ID"
-                                      Width="120px" />
+                <Columns>
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="Id"
+                                          Title="ID"
+                                          Width="120px" />
 
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="CreatedAt"
-                                      Title="Tarih"
-                                      Width="190px">
-                    <Template Context="item">
-                        @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="CreatedAt"
+                                          Title="Tarih"
+                                          Width="190px">
+                        <Template Context="item">
+                            @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                        </Template>
+                    </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="Level"
-                                      Title="Seviye"
-                                      Width="130px">
-                    <Template Context="item">
-                        @if ((item.Level ?? string.Empty).Equals("Hata", StringComparison.OrdinalIgnoreCase) ||
-                             (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Danger" />
-                        }
-                        else if ((item.Level ?? string.Empty).Equals("Uyarı", StringComparison.OrdinalIgnoreCase) ||
-                                 (item.Level ?? string.Empty).Equals("Warning", StringComparison.OrdinalIgnoreCase))
-                        {
-                            <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Warning" />
-                        }
-                        else
-                        {
-                            <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Success" />
-                        }
-                    </Template>
-                </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="Level"
+                                          Title="Seviye"
+                                          Width="130px">
+                        <Template Context="item">
+                            @if ((item.Level ?? string.Empty).Equals("Hata", StringComparison.OrdinalIgnoreCase) ||
+                                 (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Danger" />
+                            }
+                            else if ((item.Level ?? string.Empty).Equals("Uyarı", StringComparison.OrdinalIgnoreCase) ||
+                                     (item.Level ?? string.Empty).Equals("Warning", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Warning" />
+                            }
+                            else
+                            {
+                                <RadzenBadge Text="@item.Level" BadgeStyle="BadgeStyle.Success" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="Source"
-                                      Title="Kaynak"
-                                      Width="180px" />
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="Source"
+                                          Title="Kaynak"
+                                          Width="180px" />
 
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="UserEmail"
-                                      Title="Kullanıcı"
-                                      Width="220px" />
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="UserEmail"
+                                          Title="Kullanıcı"
+                                          Width="220px" />
 
-                <RadzenDataGridColumn TItem="AppLog"
-                                      Property="Message"
-                                      Title="Mesaj" />
-            </Columns>
-        </RadzenDataGrid>
-    </RadzenCard>
-</RadzenStack>
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Property="Message"
+                                          Title="Mesaj" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenCard>
+    </RadzenStack>
+}
 
 @code {
     private List<AppLog> logs = new();
+    private bool canView;
+    private bool canClear;
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        if (isSeed)
+        {
+            canView = canClear = true;
+        }
+        else if (yetki != null)
+        {
+            canView = yetki.LogYetki;
+            canClear = yetki.LogYetki;
+        }
+
+        if (!canView)
+            return;
+
         await LoadLogs();
     }
 

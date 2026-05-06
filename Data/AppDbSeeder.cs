@@ -89,7 +89,7 @@ namespace EMutabakat.Data
                         Mutabakatlar = YetkiSeviyesi.TamYetki,
                         Firmalar = YetkiSeviyesi.TamYetki,
                         Kullanicilar = YetkiSeviyesi.TamYetki,
-                        Loglar = YetkiSeviyesi.TamYetki,
+                        LogYetki = true,
                         ImportYetki = true,
                         ExportYetki = true
                     }
@@ -121,7 +121,7 @@ namespace EMutabakat.Data
                         Mutabakatlar = YetkiSeviyesi.TamYetki,
                         Firmalar = YetkiSeviyesi.TamYetki,
                         Kullanicilar = YetkiSeviyesi.TamYetki,
-                        Loglar = YetkiSeviyesi.TamYetki,
+                        LogYetki = true,
                         ImportYetki = true,
                         ExportYetki = true
                     };

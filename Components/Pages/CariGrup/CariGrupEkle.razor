@@ -10,11 +10,18 @@
 
 @inject ICariGrupService CariGrupService
 @inject IFirmaService FirmaService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Cari Grup Ekle</PageTitle>
 
+@if (!canAdd)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
 <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
     <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
         <RadzenText TextStyle="TextStyle.H4">Yeni Cari Grup Ekle</RadzenText>
@@ -101,8 +108,10 @@
         </RadzenFieldset>
     </EditForm>
 </RadzenCard>
+}
 
 @code {
+    private bool canAdd;
     private CariGrup cariGrup = new();
     private List<Firma> firmalar = new();
     private List<DurumOption> durumlar = new()
@@ -113,6 +122,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canAdd = isSeed || (yetki?.CariGruplar == YetkiSeviyesi.TamYetki);
+
+        if (!canAdd)
+            return;
+
         firmalar = await FirmaService.GetAllAsync();
         cariGrup.CariGrupId = await CariGrupService.GenerateNextCariGrupIdAsync();
         cariGrup.CariGrupAktifPasif = 1;

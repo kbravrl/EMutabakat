@@ -14,6 +14,8 @@ namespace EMutabakat.Services.Interfaces
         Task<Kullanici?> LoginAsync(string mail, string sifre);
         Task<string> GenerateNextKullaniciIdAsync();
         Task<bool> IsCurrentUserSeedAsync();
+        Task<KullaniciYetki?> GetCurrentUserYetkiAsync();
+        string? GetCurrentUserEmail();
         Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, List<int> firmaIds);
         Task<byte[]> ExportToExcelAsync(List<Kullanici> kullanicilar);
     }

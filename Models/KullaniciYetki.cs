@@ -16,11 +16,9 @@ namespace EMutabakat.Models
         public YetkiSeviyesi Mutabakatlar { get; set; } = YetkiSeviyesi.Giris;
         public YetkiSeviyesi Firmalar { get; set; } = YetkiSeviyesi.Giris;
         public YetkiSeviyesi Kullanicilar { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi Loglar { get; set; } = YetkiSeviyesi.Giris;
-
+        public bool LogYetki { get; set; }
         public bool ImportYetki { get; set; }
         public bool ExportYetki { get; set; }
-
         public Kullanici? Kullanici { get; set; }
     }
 }

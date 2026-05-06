@@ -6,12 +6,17 @@
 @inject IFirmaService FirmaService
 @inject ICariGrupService CariGrupService
 @inject IDovizKoduService DovizKoduService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Cari Düzenle</PageTitle>
 
-@if (cari == null)
+@if (!canEdit)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else if (cari == null)
 {
     <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
 }
@@ -171,6 +176,7 @@ else
     [Parameter] public string id { get; set; } = string.Empty;
     [Parameter] public int firmaId { get; set; }
 
+    private bool canEdit;
     private Cari? cari;
     private List<Firma> firmalar = new();
     private List<CariGrup> cariGruplar = new();
@@ -192,6 +198,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canEdit = isSeed || (yetki != null && yetki.Cariler >= YetkiSeviyesi.GirisDuzeltme);
+
+        if (!canEdit)
+            return;
+
         firmalar = await FirmaService.GetAllAsync();
         cariGruplar = await CariGrupService.GetAllAsync();
         dovizKodlari = await DovizKoduService.GetAllAsync();

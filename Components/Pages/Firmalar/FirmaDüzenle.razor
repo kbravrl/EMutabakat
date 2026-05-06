@@ -3,12 +3,17 @@
 @attribute [Authorize]
 
 @inject IFirmaService FirmaService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Firma Düzenle</PageTitle>
 
-@if (isLoading)
+@if (!canEdit)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else if (isLoading)
 {
     <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" Style="height:6px;" />
 }
@@ -186,6 +191,7 @@ else
 @code {
     [Parameter] public int id { get; set; }
 
+    private bool canEdit;
     private Firma? firma;
     private bool isLoading = true;
 
@@ -201,6 +207,14 @@ else
     {
         try
         {
+            var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+            var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+            canEdit = isSeed || (yetki != null && yetki.Firmalar >= YetkiSeviyesi.GirisDuzeltme);
+
+            if (!canEdit)
+                return;
+
             firma = await FirmaService.GetByIdAsync(id);
         }
         finally

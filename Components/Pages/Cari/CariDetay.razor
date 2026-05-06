@@ -3,11 +3,16 @@
 @attribute [Authorize]
 
 @inject ICariService CariService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Cari Detay</PageTitle>
 
-@if (cari == null)
+@if (!canView)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else if (cari == null)
 {
     <RadzenAlert AlertStyle="AlertStyle.Warning">Kayıt bulunamadı.</RadzenAlert>
 }
@@ -60,9 +65,18 @@ else
     [Parameter] public int firmaId { get; set; }
 
     private Cari? cari;
+    private bool canView;
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canView = isSeed || (yetki != null && yetki.Cariler >= YetkiSeviyesi.Giris);
+
+        if (!canView)
+            return;
+
         cari = await CariService.GetByIdAsync(id, firmaId);
     }
 

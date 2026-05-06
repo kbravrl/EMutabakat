@@ -7,192 +7,219 @@
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
-<PageTitle>Kullanýcý Ekle</PageTitle>
+<PageTitle>KullanÄ±cÄ± Ekle</PageTitle>
 
-<RadzenCard Class="p-4" Style="max-width:950px;margin-left:auto;margin-right:auto;">
-    <RadzenStack AlignItems="AlignItems.Center"
-                 JustifyContent="JustifyContent.SpaceBetween"
-                 Gap="8px">
-        <RadzenText TextStyle="TextStyle.H4">Yeni Kullanýcý Ekle</RadzenText>
-    </RadzenStack>
+@if (!canAdd)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya eriÅŸim yetkiniz bulunmamaktadÄ±r.</RadzenAlert>
+}
+else
+{
+    <RadzenCard Class="p-4" Style="max-width:950px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.SpaceBetween"
+                     Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Yeni KullanÄ±cÄ± Ekle</RadzenText>
+        </RadzenStack>
 
-    <RadzenDivider />
+        <RadzenDivider />
 
-    <EditForm Model="@kullanici" OnValidSubmit="@HandleValidSubmit">
-        <DataAnnotationsValidator />
+        <EditForm Model="@kullanici" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
 
-        <RadzenFieldset Text="Kullanýcý Bilgileri" Style="margin-bottom:16px">
-            <RadzenRow Gap="16px">
+            <RadzenFieldset Text="KullanÄ±cÄ± Bilgileri" Style="margin-bottom:16px">
+                <RadzenRow Gap="16px">
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Kullanýcý ID *" />
-                    <RadzenTextBox @bind-Value="kullanici.KullaniciId"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciId)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="KullanÄ±cÄ± ID *" />
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciId"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciId)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Firmalar *" />
-                    <RadzenDropDown Data="@firmalar"
-                                    TextProperty="FirmaAdi"
-                                    ValueProperty="FirmaId"
-                                    @bind-Value="kullanici.FirmaIds"
-                                    Placeholder="Firma seçiniz"
-                                    Multiple="true"
-                                    AllowClear="true"
-                                    Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.FirmaIds)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Firmalar *" />
+                        <RadzenDropDown Data="@firmalar"
+                                        TextProperty="FirmaAdi"
+                                        ValueProperty="FirmaId"
+                                        @bind-Value="kullanici.FirmaIds"
+                                        Placeholder="Firma seÃ§iniz"
+                                        Multiple="true"
+                                        AllowClear="true"
+                                        Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.FirmaIds)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Durum *" />
-                    <RadzenDropDown Data="@durumlar"
-                                    TextProperty="Text"
-                                    ValueProperty="Value"
-                                    @bind-Value="kullanici.KullaniciAktifPasif"
-                                    Placeholder="Durum seçiniz"
-                                    Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciAktifPasif)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Durum *" />
+                        <RadzenDropDown Data="@durumlar"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="kullanici.KullaniciAktifPasif"
+                                        Placeholder="Durum seÃ§iniz"
+                                        Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciAktifPasif)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Ad *" />
-                    <RadzenTextBox @bind-Value="kullanici.KullaniciAdi"
-                                   Placeholder="Ad giriniz"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciAdi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Ad *" />
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciAdi"
+                                       Placeholder="Ad giriniz"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciAdi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Soyad *" />
-                    <RadzenTextBox @bind-Value="kullanici.KullaniciSoyadi"
-                                   Placeholder="Soyad giriniz"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciSoyadi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Soyad *" />
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciSoyadi"
+                                       Placeholder="Soyad giriniz"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciSoyadi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Mail *" />
-                    <RadzenTextBox @bind-Value="kullanici.KullaniciMail"
-                                   Placeholder="Mail giriniz"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciMail)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Mail *" />
+                        <RadzenTextBox @bind-Value="kullanici.KullaniciMail"
+                                       Placeholder="Mail giriniz"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciMail)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="GSM" />
-                    <RadzenTextBox Value="@kullanici.KullaniciGsm"
-                                   ValueChanged="@OnGsmChanged"
-                                   Placeholder="05XXXXXXXXX"
-                                   MaxLength="11"
-                                   Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.KullaniciGsm)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="GSM" />
+                        <RadzenTextBox Value="@kullanici.KullaniciGsm"
+                                       ValueChanged="@OnGsmChanged"
+                                       Placeholder="05XXXXXXXXX"
+                                       MaxLength="11"
+                                       Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.KullaniciGsm)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Þifre *" />
-                    <RadzenPassword TValue="string"
-                                    Value="@kullanici.Sifre"
-                                    ValueChanged="@OnPasswordChanged"
-                                    Placeholder="Þifre giriniz"
-                                    Style="width:100%;" />
-                    <ValidationMessage For="@(() => kullanici.Sifre)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Åžifre *" />
+                        <RadzenPassword TValue="string"
+                                        Value="@kullanici.Sifre"
+                                        ValueChanged="@OnPasswordChanged"
+                                        Placeholder="Åžifre giriniz"
+                                        Style="width:100%;" />
+                        <ValidationMessage For="@(() => kullanici.Sifre)" />
+                    </RadzenColumn>
 
-            </RadzenRow>
-        </RadzenFieldset>
+                </RadzenRow>
+            </RadzenFieldset>
 
-        <RadzenRow>
-            <RadzenColumn Size="12">
-                <RadzenFieldset Text="Kullanýcý Tanýmlarý" Style="margin-bottom:16px">
-                    <RadzenRow Gap="16px">
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenFieldset Text="KullanÄ±cÄ± TanÄ±mlarÄ±" Style="margin-bottom:16px">
+                        <RadzenRow Gap="16px">
 
-                        @foreach (var modul in modulYetkileri)
-                        {
+                            @foreach (var modul in modulYetkileri)
+                            {
+                                <RadzenColumn Size="12">
+                                    <div style="display:flex;align-items:center;gap:24px;">
+                                        <span style="width:120px;flex-shrink:0;">@modul.Ad</span>
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
+                                            <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.Giris)"
+                                                            ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.Giris); })"
+                                                            TValue="bool" />
+                                            <span>GiriÅŸ</span>
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:160px;">
+                                            <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.GirisDuzeltme)"
+                                                            ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.GirisDuzeltme); })"
+                                                            TValue="bool" />
+                                            <span>GiriÅŸ + DÃ¼zeltme</span>
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
+                                            <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.TamYetki)"
+                                                            ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.TamYetki); })"
+                                                            TValue="bool" />
+                                            <span>Tam Yetki</span>
+                                        </label>
+                                    </div>
+                                </RadzenColumn>
+                            }
+
                             <RadzenColumn Size="12">
                                 <div style="display:flex;align-items:center;gap:24px;">
-                                    <span style="width:120px;flex-shrink:0;">@modul.Ad</span>
+                                    <span style="width:120px;flex-shrink:0;">Loglar</span>
                                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
-                                        <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.Giris)"
-                                                        ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.Giris); })"
+                                        <RadzenCheckBox Value="@kullanici.Yetkileri.LogYetki"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.LogYetki = v)"
                                                         TValue="bool" />
-                                        <span style="">Giriþ</span>
-                                    </label>
-                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:160px;">
-                                        <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.GirisDuzeltme)"
-                                                        ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.GirisDuzeltme); })"
-                                                        TValue="bool" />
-                                        <span style="">Giriþ + Düzeltme</span>
+                                        <span>Yetkili</span>
                                     </label>
                                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
-                                        <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.TamYetki)"
-                                                        ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.TamYetki); })"
+                                        <RadzenCheckBox Value="@(!kullanici.Yetkileri.LogYetki)"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.LogYetki = !v)"
                                                         TValue="bool" />
-                                        <span style="">Tam Yetki</span>
+                                        <span>Yetkisiz</span>
                                     </label>
                                 </div>
                             </RadzenColumn>
-                        }
 
-                        <RadzenColumn Size="12">
-                            <div style="display:flex;align-items:center;gap:24px;">
-                                <span style="width:120px;flex-shrink:0;">Import</span>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
-                                    <RadzenCheckBox Value="@kullanici.Yetkileri.ImportYetki"
-                                                    ValueChanged="@((bool v) => kullanici.Yetkileri.ImportYetki = v)"
-                                                    TValue="bool" />
-                                    <span style="">Yetkili</span>
-                                </label>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
-                                    <RadzenCheckBox Value="@(!kullanici.Yetkileri.ImportYetki)"
-                                                    ValueChanged="@((bool v) => kullanici.Yetkileri.ImportYetki = !v)"
-                                                    TValue="bool" />
-                                    <span style="">Yetkisiz</span>
-                                </label>
-                            </div>
-                        </RadzenColumn>
+                            <RadzenColumn Size="12">
+                                <div style="display:flex;align-items:center;gap:24px;">
+                                    <span style="width:120px;flex-shrink:0;">Import</span>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
+                                        <RadzenCheckBox Value="@kullanici.Yetkileri.ImportYetki"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.ImportYetki = v)"
+                                                        TValue="bool" />
+                                        <span>Yetkili</span>
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
+                                        <RadzenCheckBox Value="@(!kullanici.Yetkileri.ImportYetki)"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.ImportYetki = !v)"
+                                                        TValue="bool" />
+                                        <span>Yetkisiz</span>
+                                    </label>
+                                </div>
+                            </RadzenColumn>
 
-                        <RadzenColumn Size="12">
-                            <div style="display:flex;align-items:center;gap:24px;">
-                                <span style="width:120px;flex-shrink:0;">Export</span>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
-                                    <RadzenCheckBox Value="@kullanici.Yetkileri.ExportYetki"
-                                                    ValueChanged="@((bool v) => kullanici.Yetkileri.ExportYetki = v)"
-                                                    TValue="bool" />
-                                    <span style="">Yetkili</span>
-                                </label>
-                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
-                                    <RadzenCheckBox Value="@(!kullanici.Yetkileri.ExportYetki)"
-                                                    ValueChanged="@((bool v) => kullanici.Yetkileri.ExportYetki = !v)"
-                                                    TValue="bool" />
-                                    <span style="">Yetkisiz</span>
-                                </label>
-                            </div>
-                        </RadzenColumn>
+                            <RadzenColumn Size="12">
+                                <div style="display:flex;align-items:center;gap:24px;">
+                                    <span style="width:120px;flex-shrink:0;">Export</span>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
+                                        <RadzenCheckBox Value="@kullanici.Yetkileri.ExportYetki"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.ExportYetki = v)"
+                                                        TValue="bool" />
+                                        <span>Yetkili</span>
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
+                                        <RadzenCheckBox Value="@(!kullanici.Yetkileri.ExportYetki)"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.ExportYetki = !v)"
+                                                        TValue="bool" />
+                                        <span>Yetkisiz</span>
+                                    </label>
+                                </div>
+                            </RadzenColumn>
 
-                    </RadzenRow>
-                </RadzenFieldset>
-                <RadzenStack Orientation="Orientation.Horizontal"
-                             Gap="10px"
-                             JustifyContent="JustifyContent.End"
-                             Class="mt-3">
-                    <RadzenButton Text="Ýptal"
-                                  Icon="close"
-                                  Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;"
-                                  ButtonStyle="ButtonStyle.Secondary"
-                                  Click="@Cancel" />
+                        </RadzenRow>
+                    </RadzenFieldset>
+                    <RadzenStack Orientation="Orientation.Horizontal"
+                                 Gap="10px"
+                                 JustifyContent="JustifyContent.End"
+                                 Class="mt-3">
+                        <RadzenButton Text="Ä°ptal"
+                                      Icon="close"
+                                      Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@Cancel" />
 
-                    <RadzenButton Text="Kaydet"
-                                  Icon="save"
-                                  Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;"
-                                  ButtonType="ButtonType.Submit" />
-                </RadzenStack>
-            </RadzenColumn>
-        </RadzenRow>
-    </EditForm>
-</RadzenCard>
+                        <RadzenButton Text="Kaydet"
+                                      Icon="save"
+                                      Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;"
+                                      ButtonType="ButtonType.Submit" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </EditForm>
+    </RadzenCard>
+}
 
 @code {
+    private bool canAdd;
+
     private Kullanici kullanici = new()
     {
         KullaniciAktifPasif = "1",
@@ -200,7 +227,6 @@
     };
 
     private List<Firma> firmalar = new();
-
     private List<ModulYetki> modulYetkileri = new();
 
     private List<DurumOption> durumlar = new()
@@ -211,6 +237,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canAdd = isSeed || (yetki?.Kullanicilar == YetkiSeviyesi.TamYetki);
+
+        if (!canAdd)
+            return;
+
         firmalar = await FirmaService.GetAllAsync();
         kullanici.KullaniciId = await KullaniciService.GenerateNextKullaniciIdAsync();
         kullanici.Sifre = null;
@@ -219,11 +253,10 @@
         {
             new("Cariler",       () => kullanici.Yetkileri.Cariler,       v => kullanici.Yetkileri.Cariler = v),
             new("Cari Gruplar",  () => kullanici.Yetkileri.CariGruplar,   v => kullanici.Yetkileri.CariGruplar = v),
-            new("Döviz Kodlarý", () => kullanici.Yetkileri.DovizKodlari,  v => kullanici.Yetkileri.DovizKodlari = v),
+            new("DÃ¶viz KodlarÄ±", () => kullanici.Yetkileri.DovizKodlari,  v => kullanici.Yetkileri.DovizKodlari = v),
             new("Mutabakatlar",  () => kullanici.Yetkileri.Mutabakatlar,  v => kullanici.Yetkileri.Mutabakatlar = v),
             new("Firmalar",      () => kullanici.Yetkileri.Firmalar,      v => kullanici.Yetkileri.Firmalar = v),
-            new("Kullanýcýlar",  () => kullanici.Yetkileri.Kullanicilar,  v => kullanici.Yetkileri.Kullanicilar = v),
-            new("Loglar",        () => kullanici.Yetkileri.Loglar,        v => kullanici.Yetkileri.Loglar = v),
+            new("KullanÄ±cÄ±lar",  () => kullanici.Yetkileri.Kullanicilar,  v => kullanici.Yetkileri.Kullanicilar = v),
         };
     }
 
@@ -245,24 +278,24 @@
 
             if (string.IsNullOrWhiteSpace(kullanici.Sifre))
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Uyarý", "Þifre zorunludur.");
+                NotificationService.Notify(NotificationSeverity.Warning, "UyarÄ±", "Åžifre zorunludur.");
                 return;
             }
 
             if (kullanici.FirmaIds.Count == 0)
             {
-                NotificationService.Notify(NotificationSeverity.Warning, "Uyarý", "En az bir firma seçimi zorunludur.");
+                NotificationService.Notify(NotificationSeverity.Warning, "UyarÄ±", "En az bir firma seÃ§imi zorunludur.");
                 return;
             }
 
             await KullaniciService.AddAsync(kullanici);
 
-            NotificationService.Notify(NotificationSeverity.Success, "Baþarýlý", "Kullanýcý kaydý eklendi.");
+            NotificationService.Notify(NotificationSeverity.Success, "BaÅŸarÄ±lÄ±", "KullanÄ±cÄ± kaydÄ± eklendi.");
             NavigationManager.NavigateTo("/users");
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "Uyarý", ex.Message);
+            NotificationService.Notify(NotificationSeverity.Warning, "UyarÄ±", ex.Message);
         }
     }
 
@@ -282,10 +315,8 @@
 
         if (value.StartsWith("+90"))
             value = "0" + value.Substring(3);
-
         else if (value.StartsWith("90") && value.Length == 12)
             value = "0" + value.Substring(2);
-
         else if (value.StartsWith("5") && value.Length == 10)
             value = "0" + value;
 

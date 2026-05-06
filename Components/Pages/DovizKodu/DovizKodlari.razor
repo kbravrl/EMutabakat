@@ -3,89 +3,104 @@
 @attribute [Authorize]
 
 @inject IDovizKoduService DovizKoduService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
 <PageTitle>Döviz Kodları</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText TextStyle="TextStyle.H4">Döviz Kodları</RadzenText>
-        </RadzenColumn>
-
-        <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <RadzenButton Text="Yeni döviz kodu" Icon="add_circle" Style="font-size:15px;" Click="@GoToCreatePage" />
-        </RadzenColumn>
-    </RadzenRow>
-
-    <RadzenCard>
-        <RadzenRow Gap="15px" class="mb-3">
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown Data="@tcmbOptions"
-                                @bind-Value="selectedTcmb"
-                                Placeholder="TCMB"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
+    <RadzenStack Gap="1rem" class="p-4">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.H4">Döviz Kodları</RadzenText>
             </RadzenColumn>
 
-            <RadzenColumn Size="12" SizeMD="2">
-                <RadzenDropDown Data="@nameOptions"
-                                @bind-Value="selectedName"
-                                Placeholder="Ad"
-                                AllowClear="true"
-                                Style="width:100%;"
-                                Change="@(_ => ApplyFilters())" />
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMD="1">
-                <RadzenButton Text="Temizle"
-                              Icon="restart_alt"
-                              ButtonStyle="ButtonStyle.Light"
-                              Style="width:100%; font-size:15px;"
-                              Click="ClearFilters" />
+            <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+                @if (canAdd)
+                {
+                    <RadzenButton Text="Yeni döviz kodu" Icon="add_circle" Style="font-size:15px;" Click="@GoToCreatePage" />
+                }
             </RadzenColumn>
         </RadzenRow>
 
-        <RadzenDataGrid Data="@filteredDovizKodlari"
-                        TItem="DovizKodu"
-                        AllowPaging="true"
-                        AllowSorting="true"
-                        AllowFiltering="true"
-                        PageSize="10"
-                        EmptyText="Kayıt bulunamadı">
-            <Columns>
-                <RadzenDataGridColumn TItem="DovizKodu" Property="TCMB" Title="TCMB" />
-                <RadzenDataGridColumn TItem="DovizKodu" Property="Name" Title="Ad" />
+        <RadzenCard>
+            <RadzenRow Gap="15px" class="mb-3">
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenDropDown Data="@tcmbOptions"
+                                    @bind-Value="selectedTcmb"
+                                    Placeholder="TCMB"
+                                    AllowClear="true"
+                                    Style="width:100%;"
+                                    Change="@(_ => ApplyFilters())" />
+                </RadzenColumn>
 
-                <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false" Width="180px">
-                    <Template Context="item">
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                            <RadzenButton Icon="edit"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          Title="Düzenle"
-                                          Click="@(() => GoToEditPage(item.TCMB))" />
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenDropDown Data="@nameOptions"
+                                    @bind-Value="selectedName"
+                                    Placeholder="Ad"
+                                    AllowClear="true"
+                                    Style="width:100%;"
+                                    Change="@(_ => ApplyFilters())" />
+                </RadzenColumn>
 
-                            <RadzenButton Icon="delete"
-                                          Size="ButtonSize.Small"
-                                          Variant="Variant.Flat"
-                                          ButtonStyle="ButtonStyle.Danger"
-                                          Title="Sil"
-                                          Click="@(() => DeleteDovizKodu(item.TCMB, item.Name))" />
-                        </RadzenStack>
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
-    </RadzenCard>
-</RadzenStack>
+                <RadzenColumn Size="12" SizeMD="1">
+                    <RadzenButton Text="Temizle"
+                                  Icon="restart_alt"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Style="width:100%; font-size:15px;"
+                                  Click="ClearFilters" />
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenDataGrid Data="@filteredDovizKodlari"
+                            TItem="DovizKodu"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            AllowFiltering="true"
+                            PageSize="10"
+                            EmptyText="Kayıt bulunamadı">
+                <Columns>
+                    <RadzenDataGridColumn TItem="DovizKodu" Property="TCMB" Title="TCMB" />
+                    <RadzenDataGridColumn TItem="DovizKodu" Property="Name" Title="Ad" />
+
+                    <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false" Width="180px">
+                        <Template Context="item">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                @if (canEdit)
+                                {
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  Title="Düzenle"
+                                                  Click="@(() => GoToEditPage(item.TCMB))" />
+                                }
+
+                                @if (canDelete)
+                                {
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  Variant="Variant.Flat"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Title="Sil"
+                                                  Click="@(() => DeleteDovizKodu(item.TCMB, item.Name))" />
+                                }
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenCard>
+    </RadzenStack>
 
 @code {
     private List<DovizKodu> dovizKodlari = new();
     private List<DovizKodu> filteredDovizKodlari = new();
+
+    private bool canView;
+    private bool canAdd;
+    private bool canEdit;
+    private bool canDelete;
 
     private string? selectedTcmb;
     private string? selectedName;
@@ -95,6 +110,24 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        if (isSeed)
+        {
+            canView = canAdd = canEdit = canDelete = true;
+        }
+        else if (yetki != null)
+        {
+            canView   = yetki.DovizKodlari >= YetkiSeviyesi.Giris;
+            canAdd    = yetki.DovizKodlari == YetkiSeviyesi.TamYetki;
+            canEdit   = yetki.DovizKodlari >= YetkiSeviyesi.GirisDuzeltme;
+            canDelete = yetki.DovizKodlari == YetkiSeviyesi.TamYetki;
+        }
+
+        if (!canView)
+            return;
+
         await LoadAsync();
     }
 

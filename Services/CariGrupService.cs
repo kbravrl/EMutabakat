@@ -90,6 +90,9 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return null;
 
+            if (kullanici.IsSeedUser)
+                return null;
+
             var ids = kullanici.Firmalar
                .Select(uf => uf.FirmaId)
                .Distinct()

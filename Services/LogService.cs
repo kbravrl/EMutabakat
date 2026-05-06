@@ -79,6 +79,15 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return new List<int>();
 
+            if (kullanici.IsSeedUser)
+            {
+                return await context.Firmalar
+                    .Select(f => f.FirmaId)
+                    .Distinct()
+                    .Where(id => id > 0)
+                    .ToListAsync();
+            }
+
             return kullanici.Firmalar
                 .Select(f => f.FirmaId)
                 .Distinct()

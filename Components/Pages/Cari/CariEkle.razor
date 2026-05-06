@@ -6,166 +6,178 @@
 @inject IFirmaService FirmaService
 @inject ICariGrupService CariGrupService
 @inject IDovizKoduService DovizKoduService
+@inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <PageTitle>Cari Ekle</PageTitle>
 
-<RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
-    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
-        <RadzenText TextStyle="TextStyle.H4">Yeni Cari Ekle</RadzenText>
-    </RadzenStack>
+@if (!canAdd)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
+    <RadzenCard Class="p-4" Style="max-width:900px;margin-left:auto;margin-right:auto;">
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Yeni Cari Ekle</RadzenText>
+        </RadzenStack>
 
-    <RadzenDivider />
+        <RadzenDivider />
 
-    <EditForm Model="@cari" OnValidSubmit="@HandleValidSubmit">
-        <DataAnnotationsValidator />
+        <EditForm Model="@cari" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
 
-        <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
-            <RadzenRow Gap="16px">
+            <RadzenFieldset Text="Genel Bilgiler" Style="margin-bottom:16px">
+                <RadzenRow Gap="16px">
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Cari ID *" />
-                    <RadzenTextBox Name="CariId" @bind-Value="cari.CariId" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariId" Text="Cari ID zorunludur." Popup="true" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Cari ID *" />
+                        <RadzenTextBox Name="CariId" @bind-Value="cari.CariId" Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariId" Text="Cari ID zorunludur." Popup="true" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Firma *" />
-                    <RadzenDropDown Name="FirmaId"
-                                    Data="@firmalar"
-                                    TextProperty="FirmaAdi"
-                                    ValueProperty="FirmaId"
-                                    @bind-Value="cari.FirmaId"
-                                    Change="@OnFirmaChanged"
-                                    Placeholder="Firma seçiniz"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="FirmaId" Text="Firma seçimi zorunludur." Popup="true" />
-                    <ValidationMessage For="@(() => cari.FirmaId)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Firma *" />
+                        <RadzenDropDown Name="FirmaId"
+                                        Data="@firmalar"
+                                        TextProperty="FirmaAdi"
+                                        ValueProperty="FirmaId"
+                                        @bind-Value="cari.FirmaId"
+                                        Change="@OnFirmaChanged"
+                                        Placeholder="Firma seçiniz"
+                                        Style="width:100%;" />
+                        <RadzenRequiredValidator Component="FirmaId" Text="Firma seçimi zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.FirmaId)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Cari Grup *" />
-                    <RadzenDropDown Name="CariGrupId"
-                                    Data="@filteredCariGruplar"
-                                    TextProperty="CariGrupAdi"
-                                    ValueProperty="CariGrupId"
-                                    @bind-Value="cari.CariGrupId"
-                                    Placeholder="Cari grup seçiniz"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariGrupId" Text="Cari grup seçimi zorunludur." Popup="true" />
-                    <ValidationMessage For="@(() => cari.CariGrupId)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Cari Grup *" />
+                        <RadzenDropDown Name="CariGrupId"
+                                        Data="@filteredCariGruplar"
+                                        TextProperty="CariGrupAdi"
+                                        ValueProperty="CariGrupId"
+                                        @bind-Value="cari.CariGrupId"
+                                        Placeholder="Cari grup seçiniz"
+                                        Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariGrupId" Text="Cari grup seçimi zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariGrupId)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Cari Adı *" />
-                    <RadzenTextBox Name="CariAdi" @bind-Value="cari.CariAdi" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariAdi" Text="Cari adı zorunludur." Popup="true" />
-                    <ValidationMessage For="@(() => cari.CariAdi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Cari Adı *" />
+                        <RadzenTextBox Name="CariAdi" @bind-Value="cari.CariAdi" Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariAdi" Text="Cari adı zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariAdi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Cari Unvan" />
-                    <RadzenTextBox @bind-Value="cari.CariUnvan" Style="width:100%;" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Cari Unvan" />
+                        <RadzenTextBox @bind-Value="cari.CariUnvan" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12">
-                    <RadzenLabel Text="Adres" />
-                    <RadzenTextArea @bind-Value="cari.CariAdres" Style="width:100%;" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12">
+                        <RadzenLabel Text="Adres" />
+                        <RadzenTextArea @bind-Value="cari.CariAdres" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="İlçe" />
-                    <RadzenTextBox @bind-Value="cari.CariIlce" Style="width:100%;" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="İlçe" />
+                        <RadzenTextBox @bind-Value="cari.CariIlce" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="İl" />
-                    <RadzenTextBox @bind-Value="cari.CariIl" Style="width:100%;" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="İl" />
+                        <RadzenTextBox @bind-Value="cari.CariIl" Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Vergi Dairesi *" />
-                    <RadzenTextBox Name="CariVergiDairesi" @bind-Value="cari.CariVergiDairesi" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariVergiDairesi" Text="Vergi dairesi zorunludur." Popup="true" />
-                    <ValidationMessage For="@(() => cari.CariVergiDairesi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Vergi Dairesi *" />
+                        <RadzenTextBox Name="CariVergiDairesi" @bind-Value="cari.CariVergiDairesi" Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariVergiDairesi" Text="Vergi dairesi zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariVergiDairesi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Vergi Numarası *" />
-                    <RadzenTextBox Name="CariVergiNumarasi" @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" MaxLength="10" />
-                    <RadzenRequiredValidator Component="CariVergiNumarasi" Text="Vergi numarası zorunludur." Popup="true" />
-                    <ValidationMessage For="@(() => cari.CariVergiNumarasi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Vergi Numarası *" />
+                        <RadzenTextBox Name="CariVergiNumarasi" @bind-Value="cari.CariVergiNumarasi" Style="width:100%;" MaxLength="10" />
+                        <RadzenRequiredValidator Component="CariVergiNumarasi" Text="Vergi numarası zorunludur." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariVergiNumarasi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Web Adresi" />
-                    <RadzenTextBox @bind-Value="cari.CariWebAdresi" Style="width:100%;" />
-                    <ValidationMessage For="@(() => cari.CariWebAdresi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Web Adresi" />
+                        <RadzenTextBox @bind-Value="cari.CariWebAdresi" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariWebAdresi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenLabel Text="Yetkili Adı Soyadı" />
-                    <RadzenTextBox @bind-Value="cari.CariYetkiliAdiSoyadi" Style="width:100%;" />
-                    <ValidationMessage For="@(() => cari.CariYetkiliAdiSoyadi)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenLabel Text="Yetkili Adı Soyadı" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliAdiSoyadi" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliAdiSoyadi)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Yetkili Telefon" />
-                    <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
-                    <ValidationMessage For="@(() => cari.CariYetkiliTelefon)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Yetkili Telefon" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliTelefon)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Yetkili GSM" />
-                    <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
-                    <ValidationMessage For="@(() => cari.CariYetkiliGsm)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Yetkili GSM" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliGsm)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Yetkili Mail *" />
-                    <RadzenTextBox Name="CariYetkiliMail" @bind-Value="cari.CariYetkiliMail" Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariYetkiliMail" Text="Yetkili mail zorunludur." Popup="true" />
-                    <RadzenEmailValidator Component="CariYetkiliMail" Text="Geçerli bir mail adresi giriniz." Popup="true" />
-                    <ValidationMessage For="@(() => cari.CariYetkiliMail)" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Yetkili Mail *" />
+                        <RadzenTextBox Name="CariYetkiliMail" @bind-Value="cari.CariYetkiliMail" Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariYetkiliMail" Text="Yetkili mail zorunludur." Popup="true" />
+                        <RadzenEmailValidator Component="CariYetkiliMail" Text="Geçerli bir mail adresi giriniz." Popup="true" />
+                        <ValidationMessage For="@(() => cari.CariYetkiliMail)" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Döviz Kodu" />
-                    <RadzenDropDown Data="@dovizKodlari"
-                                    TextProperty="Name"
-                                    ValueProperty="TCMB"
-                                    @bind-Value="cari.CariDovizKodu"
-                                    Placeholder="Seçiniz"
-                                    Style="width:100%;" />
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Döviz Kodu" />
+                        <RadzenDropDown Data="@dovizKodlari"
+                                        TextProperty="Name"
+                                        ValueProperty="TCMB"
+                                        @bind-Value="cari.CariDovizKodu"
+                                        Placeholder="Seçiniz"
+                                        Style="width:100%;" />
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="4">
-                    <RadzenLabel Text="Aktif / Pasif *" />
-                    <RadzenDropDown Name="CariAktifPasif"
-                                    Data="@durumlar"
-                                    TextProperty="Text"
-                                    ValueProperty="Value"
-                                    @bind-Value="cari.CariAktifPasif"
-                                    Placeholder="Seçiniz"
-                                    Style="width:100%;" />
-                    <RadzenRequiredValidator Component="CariAktifPasif" Text="Aktif/Pasif bilgisi zorunludur." Popup="true" />
-                </RadzenColumn>
-                
-                
-                <RadzenColumn Size="12">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
-                        <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;" Click="@Cancel" />
-                        <RadzenButton Text="Kaydet" Icon="save" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;" ButtonType="ButtonType.Submit" />
-                    </RadzenStack>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel Text="Aktif / Pasif *" />
+                        <RadzenDropDown Name="CariAktifPasif"
+                                        Data="@durumlar"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="cari.CariAktifPasif"
+                                        Placeholder="Seçiniz"
+                                        Style="width:100%;" />
+                        <RadzenRequiredValidator Component="CariAktifPasif" Text="Aktif/Pasif bilgisi zorunludur." Popup="true" />
+                    </RadzenColumn>
 
-            </RadzenRow>
-        </RadzenFieldset>
-    </EditForm>
-</RadzenCard>
+                    <RadzenColumn Size="12">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
+                            <RadzenButton Text="İptal" Icon="close" ButtonStyle="ButtonStyle.Secondary"
+                                          Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;"
+                                          Click="@Cancel" />
+                            <RadzenButton Text="Kaydet" Icon="save" ButtonType="ButtonType.Submit"
+                                          Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;" />
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                </RadzenRow>
+            </RadzenFieldset>
+        </EditForm>
+    </RadzenCard>
+}
 
 @code {
+    private bool canAdd;
+
     private Cari cari = new()
     {
         CariAktifPasif = 1
@@ -174,14 +186,13 @@
     private List<Firma> firmalar = new();
     private List<CariGrup> cariGruplar = new();
     private List<CariGrup> filteredCariGruplar = new();
+    private List<DovizKodu> dovizKodlari = new();
 
     private class DurumOption
     {
         public int Value { get; set; }
         public string Text { get; set; } = string.Empty;
     }
-
-    private List<DovizKodu> dovizKodlari = new();
 
     private List<DurumOption> durumlar = new()
     {
@@ -191,6 +202,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canAdd = isSeed || (yetki?.Cariler == YetkiSeviyesi.TamYetki);
+
+        if (!canAdd)
+            return;
+
         firmalar = await FirmaService.GetAllAsync();
         cariGruplar = await CariGrupService.GetAllAsync();
         dovizKodlari = await DovizKoduService.GetAllAsync();
@@ -211,20 +230,12 @@
         try
         {
             await CariService.AddAsync(cari);
-
-            NotificationService.Notify(
-                NotificationSeverity.Success,
-                "Başarılı",
-                "Cari kaydı eklendi.");
-
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Cari kaydı eklendi.");
             NavigationManager.NavigateTo("/currents");
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(
-                NotificationSeverity.Error,
-                "Hata",
-                ex.Message);
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
         }
     }
 
