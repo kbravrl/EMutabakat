@@ -13,6 +13,7 @@ namespace EMutabakat.Services.Interfaces
         Task<Kullanici?> RegisterAsync(Kullanici kullanici);
         Task<Kullanici?> LoginAsync(string mail, string sifre);
         Task<string> GenerateNextKullaniciIdAsync();
+        Task<bool> IsCurrentUserSeedAsync();
         Task<(int created, int updated, List<string> errors)> ImportFromExcelAsync(Stream stream, string fileName, List<int> firmaIds);
         Task<byte[]> ExportToExcelAsync(List<Kullanici> kullanicilar);
     }

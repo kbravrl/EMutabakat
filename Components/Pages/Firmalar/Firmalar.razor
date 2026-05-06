@@ -16,14 +16,10 @@
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-            <AuthorizeView Roles="Admin">
-                <Authorized>
-                    <RadzenButton Text="Yeni firma ekle"
-                                  Icon="add_circle"
-                                  Style="font-size:15px;"
-                                  Click="@GoToCreatePage" />
-                </Authorized>
-            </AuthorizeView>
+            <RadzenButton Text="Yeni firma ekle"
+                          Icon="add_circle"
+                          Style="font-size:15px;"
+                          Click="@GoToCreatePage" />
         </RadzenColumn>
     </RadzenRow>
 
@@ -105,16 +101,12 @@
                                           Title="Detay"
                                           Click="@(() => GoToDetailsPage(firma.FirmaId))" />
 
-                            <AuthorizeView Roles="Admin">
-                                <Authorized>
-                                    <RadzenButton Icon="delete"
-                                                  Size="ButtonSize.Small"
-                                                  Variant="Variant.Flat"
-                                                  ButtonStyle="ButtonStyle.Danger"
-                                                  Title="Sil"
-                                                  Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
-                                </Authorized>
-                            </AuthorizeView>
+                            <RadzenButton Icon="delete"
+                                          Size="ButtonSize.Small"
+                                          Variant="Variant.Flat"
+                                          ButtonStyle="ButtonStyle.Danger"
+                                          Title="Sil"
+                                          Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
                         </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>

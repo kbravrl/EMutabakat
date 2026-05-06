@@ -9,12 +9,8 @@
                 <RadzenPanelMenuItem Text="Mutabakatlar" Path="/reconciliations" Icon="description" />
                 <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
 
-                <AuthorizeView Roles="Admin" Context="adminContext">
-                    <Authorized>
-                        <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
-                        <RadzenPanelMenuItem Text="Loglar" Path="/auth/logs" Icon="receipt_long" />
-                    </Authorized>
-                </AuthorizeView>
+                <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
+                <RadzenPanelMenuItem Text="Loglar" Path="/auth/logs" Icon="receipt_long" />
                 <RadzenPanelMenuItem Text="Çıkış Yap" Path="/logout" Icon="logout" />
             </Authorized>
 

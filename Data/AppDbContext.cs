@@ -13,6 +13,7 @@ namespace EMutabakat.Data
 
         public DbSet<Firma> Firmalar { get; set; }
         public DbSet<Kullanici> Kullanicilar { get; set; }
+        public DbSet<KullaniciYetki> KullaniciYetkileri { get; set; }
         public DbSet<CariGrup> CariGruplar { get; set; }
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
@@ -48,6 +49,12 @@ namespace EMutabakat.Data
                         j.ToTable("KullaniciFirmalar");
                     }
                 );
+
+            modelBuilder.Entity<Kullanici>()
+                .HasOne(k => k.Yetkileri)
+                .WithOne(y => y.Kullanici)
+                .HasForeignKey<KullaniciYetki>(y => y.KullaniciId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CariGrup>()
                 .HasOne(cg => cg.Firma)

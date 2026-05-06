@@ -32,12 +32,7 @@ namespace EMutabakat.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, kullanici.KullaniciId.ToString()),
                 new Claim(ClaimTypes.Name, kullanici.KullaniciMail),
-                new Claim(ClaimTypes.Email, kullanici.KullaniciMail),
-                new Claim(
-                    ClaimTypes.Role,
-                    string.IsNullOrWhiteSpace(kullanici.Rol)
-                        ? KullaniciRolleri.Standart
-                        : kullanici.Rol)
+                new Claim(ClaimTypes.Email, kullanici.KullaniciMail)
             };
 
             var firmaIds = kullanici.Firmalar?

@@ -28,12 +28,13 @@ namespace EMutabakat.Models
         [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
         public string? Sifre { get; set; }
 
-        [Required(ErrorMessage = "Rol seçimi zorunludur.")]
-        public string Rol { get; set; } = KullaniciRolleri.Standart;
-
         [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
         [RegularExpression("^[01]$", ErrorMessage = "Durum değeri yalnızca 0 veya 1 olabilir.")]
         public string KullaniciAktifPasif { get; set; } = "1";
+
+        public bool IsSeedUser { get; set; }
+
+        public KullaniciYetki Yetkileri { get; set; } = new();
 
         public ICollection<Firma> Firmalar { get; set; } = new List<Firma>();
 

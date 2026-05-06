@@ -76,13 +76,6 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return null;
 
-            if (kullanici.Rol == KullaniciRolleri.Admin)
-            {
-                return await context.Firmalar
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.FirmaId == id);
-            }
-
             return await context.Firmalar
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.FirmaId == id);
@@ -95,9 +88,6 @@ namespace EMutabakat.Services
             var current = await GetCurrentKullaniciAsync(context);
             if (current == null)
                 throw new UnauthorizedAccessException("Kullanıcı bulunamadı.");
-
-            if (current.Rol != KullaniciRolleri.Admin)
-                throw new UnauthorizedAccessException("Yalnızca adminler firma ekleyebilir.");
 
             try
             {
@@ -158,12 +148,9 @@ namespace EMutabakat.Services
                 if (kullanici == null)
                     return null;
 
-                if (kullanici.Rol != KullaniciRolleri.Admin)
-                {
-                    var allowedIds = kullanici.Firmalar.Select(f => f.FirmaId).ToList();
-                    if (!allowedIds.Contains(firma.FirmaId))
-                        return null;
-                }
+                var allowedIds = kullanici.Firmalar.Select(f => f.FirmaId).ToList();
+                if (!allowedIds.Contains(firma.FirmaId))
+                    return null;
 
                 firma.FirmaMail = firma.FirmaMail?.Trim().ToLower();
                 firma.FirmaSmtpUser = firma.FirmaSmtpUser?.Trim().ToLower();
@@ -230,11 +217,6 @@ namespace EMutabakat.Services
 
             if (kullanici == null)
                 return false;
-
-            if (kullanici.Rol != KullaniciRolleri.Admin)
-            {
-                return false;
-            }
 
             try
             {

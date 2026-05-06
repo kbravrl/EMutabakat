@@ -79,8 +79,20 @@ namespace EMutabakat.Data
                     KullaniciMail = adminMail,
                     KullaniciGsm = "05000000001",
                     Sifre = string.Empty,
-                    Rol = KullaniciRolleri.Admin,
-                    KullaniciAktifPasif = "1"
+                    KullaniciAktifPasif = "1",
+                    IsSeedUser = true,
+                    Yetkileri = new KullaniciYetki
+                    {
+                        Cariler = YetkiSeviyesi.TamYetki,
+                        CariGruplar = YetkiSeviyesi.TamYetki,
+                        DovizKodlari = YetkiSeviyesi.TamYetki,
+                        Mutabakatlar = YetkiSeviyesi.TamYetki,
+                        Firmalar = YetkiSeviyesi.TamYetki,
+                        Kullanicilar = YetkiSeviyesi.TamYetki,
+                        Loglar = YetkiSeviyesi.TamYetki,
+                        ImportYetki = true,
+                        ExportYetki = true
+                    }
                 };
 
                 admin.Sifre = hasher.HashPassword(admin, adminPassword);
@@ -96,8 +108,24 @@ namespace EMutabakat.Data
                     admin.KullaniciId = "P1";
                 }
 
-                admin.Rol = KullaniciRolleri.Admin;
                 admin.KullaniciAktifPasif = "1";
+                admin.IsSeedUser = true;
+
+                if (admin.Yetkileri == null)
+                {
+                    admin.Yetkileri = new KullaniciYetki
+                    {
+                        Cariler = YetkiSeviyesi.TamYetki,
+                        CariGruplar = YetkiSeviyesi.TamYetki,
+                        DovizKodlari = YetkiSeviyesi.TamYetki,
+                        Mutabakatlar = YetkiSeviyesi.TamYetki,
+                        Firmalar = YetkiSeviyesi.TamYetki,
+                        Kullanicilar = YetkiSeviyesi.TamYetki,
+                        Loglar = YetkiSeviyesi.TamYetki,
+                        ImportYetki = true,
+                        ExportYetki = true
+                    };
+                }
 
                 var verify = hasher.VerifyHashedPassword(admin, admin.Sifre, adminPassword);
                 if (verify == PasswordVerificationResult.Failed)
@@ -113,13 +141,14 @@ namespace EMutabakat.Data
                 await context.SaveChangesAsync();
             }
 
-            var usersWithoutRole = await context.Kullanicilar
-                .Where(k => string.IsNullOrWhiteSpace(k.Rol))
+            var usersWithoutPermissions = await context.Kullanicilar
+                .Include(k => k.Yetkileri)
+                .Where(k => k.Yetkileri == null)
                 .ToListAsync();
 
-            foreach (var user in usersWithoutRole)
+            foreach (var user in usersWithoutPermissions)
             {
-                user.Rol = KullaniciRolleri.Standart;
+                user.Yetkileri = new KullaniciYetki();
             }
 
             await context.SaveChangesAsync();

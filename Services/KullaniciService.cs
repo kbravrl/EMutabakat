@@ -48,6 +48,7 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
+                .Include(x => x.Yetkileri)
                 .Where(k => k.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)))
                 .OrderBy(x => x.KullaniciAdi)
                 .ThenBy(x => x.KullaniciSoyadi)
@@ -84,6 +85,7 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
+                .Include(x => x.Yetkileri)
                 .FirstOrDefaultAsync(x =>
                     x.KullaniciId == id &&
                     x.Firmalar.Any(f => allowedFirmaIds.Contains(f.FirmaId)));
@@ -121,7 +123,21 @@ namespace EMutabakat.Services
             return await context.Kullanicilar
                 .AsNoTracking()
                 .Include(x => x.Firmalar)
+                .Include(x => x.Yetkileri)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
+        }
+
+        public async Task<bool> IsCurrentUserSeedAsync()
+        {
+            var mail = GetUserEmail();
+            if (string.IsNullOrWhiteSpace(mail))
+                return false;
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Kullanicilar
+                .AsNoTracking()
+                .AnyAsync(k => k.KullaniciMail == mail && k.IsSeedUser);
         }
 
         public async Task<Kullanici?> RegisterAsync(Kullanici kullanici)
@@ -196,9 +212,6 @@ namespace EMutabakat.Services
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
                 throw new Exception("Mail zorunludur.");
 
-            if (!KullaniciRolleri.IsValid(kullanici.Rol))
-                throw new Exception("Geçerli bir rol seçiniz.");
-
             if (string.IsNullOrWhiteSpace(kullanici.Sifre))
                 throw new Exception("Şifre zorunludur.");
 
@@ -212,7 +225,6 @@ namespace EMutabakat.Services
             kullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             kullanici.KullaniciMail = kullanici.KullaniciMail.Trim().ToLower();
             kullanici.KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm);
-            kullanici.Rol = kullanici.Rol.Trim();
             kullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
             var mailExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciMail == kullanici.KullaniciMail);
@@ -228,6 +240,8 @@ namespace EMutabakat.Services
 
             kullanici.KullaniciId = await GenerateNextKullaniciIdAsync();
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre.Trim());
+
+            kullanici.Yetkileri ??= new KullaniciYetki();
 
             foreach (var firma in firmalar)
             {
@@ -253,6 +267,7 @@ namespace EMutabakat.Services
 
             var existingKullanici = await context.Kullanicilar
                 .Include(x => x.Firmalar)
+                .Include(x => x.Yetkileri)
                 .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.KullaniciId);
 
             if (existingKullanici == null)
@@ -270,9 +285,6 @@ namespace EMutabakat.Services
 
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciMail))
                 throw new Exception("Mail zorunludur.");
-
-            if (!KullaniciRolleri.IsValid(kullanici.Rol))
-                throw new Exception("Geçerli bir rol seçiniz.");
 
             if (string.IsNullOrWhiteSpace(kullanici.KullaniciAktifPasif))
                 throw new Exception("Aktif/Pasif bilgisi zorunludur.");
@@ -297,7 +309,6 @@ namespace EMutabakat.Services
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
             existingKullanici.KullaniciMail = normalizedMail;
             existingKullanici.KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm);
-            existingKullanici.Rol = kullanici.Rol.Trim();
             existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
             if (!string.IsNullOrWhiteSpace(kullanici.Sifre))
@@ -306,6 +317,24 @@ namespace EMutabakat.Services
                     throw new Exception("Şifre en az 6 karakter olmalıdır.");
 
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre.Trim());
+            }
+
+            if (kullanici.Yetkileri != null)
+            {
+                if (existingKullanici.Yetkileri == null)
+                {
+                    existingKullanici.Yetkileri = new KullaniciYetki();
+                }
+
+                existingKullanici.Yetkileri.Cariler = kullanici.Yetkileri.Cariler;
+                existingKullanici.Yetkileri.CariGruplar = kullanici.Yetkileri.CariGruplar;
+                existingKullanici.Yetkileri.DovizKodlari = kullanici.Yetkileri.DovizKodlari;
+                existingKullanici.Yetkileri.Mutabakatlar = kullanici.Yetkileri.Mutabakatlar;
+                existingKullanici.Yetkileri.Firmalar = kullanici.Yetkileri.Firmalar;
+                existingKullanici.Yetkileri.Kullanicilar = kullanici.Yetkileri.Kullanicilar;
+                existingKullanici.Yetkileri.Loglar = kullanici.Yetkileri.Loglar;
+                existingKullanici.Yetkileri.ImportYetki = kullanici.Yetkileri.ImportYetki;
+                existingKullanici.Yetkileri.ExportYetki = kullanici.Yetkileri.ExportYetki;
             }
 
             existingKullanici.Firmalar.Clear();
@@ -420,8 +449,7 @@ namespace EMutabakat.Services
                "KullaniciSoyadi",
                "KullaniciMail",
                "KullaniciGsm",
-               "Rol",
-               "KullanıcıAktifPasif",
+               "KullaniciAktifPasif",
                "Sifre"
             };
 
@@ -442,9 +470,8 @@ namespace EMutabakat.Services
                 row.CreateCell(2).SetCellValue(kullanici.KullaniciSoyadi ?? "");
                 row.CreateCell(3).SetCellValue(kullanici.KullaniciMail ?? "");
                 row.CreateCell(4).SetCellValue(kullanici.KullaniciGsm ?? "");
-                row.CreateCell(5).SetCellValue(kullanici.Rol ?? "");
-                row.CreateCell(6).SetCellValue(kullanici.KullaniciAktifPasif);
-                row.CreateCell(7).SetCellValue("");
+                row.CreateCell(5).SetCellValue(kullanici.KullaniciAktifPasif);
+                row.CreateCell(6).SetCellValue("");
             }
 
             for (int i = 0; i < headers.Length; i++)
@@ -586,10 +613,6 @@ namespace EMutabakat.Services
                         var kullaniciId = GetStringCell(row, headerMap["KullaniciId"])?.Trim() ?? string.Empty;
                         var kullaniciMail = GetStringCell(row, headerMap["KullaniciMail"])?.Trim() ?? string.Empty;
 
-                        var rol = headerMap.ContainsKey("Rol")
-                            ? (GetStringCell(row, headerMap["Rol"])?.Trim() ?? KullaniciRolleri.Standart)
-                            : KullaniciRolleri.Standart;
-
                         var aktifPasif = headerMap.ContainsKey("KullaniciAktifPasif")
                             ? (GetStringCell(row, headerMap["KullaniciAktifPasif"])?.Trim() ?? "1")
                             : "1";
@@ -617,14 +640,6 @@ namespace EMutabakat.Services
                             string.IsNullOrWhiteSpace(kullaniciMail))
                         {
                             var message = $"Satır {r + 1}: Zorunlu alanlar boş olamaz (KullaniciAdi, KullaniciSoyadi, KullaniciMail).";
-                            errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
-                            continue;
-                        }
-
-                        if (!KullaniciRolleri.IsValid(rol))
-                        {
-                            var message = $"Satır {r + 1}: Rol yalnızca '{KullaniciRolleri.Standart}' veya '{KullaniciRolleri.Admin}' olabilir.";
                             errors.Add(message);
                             await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
@@ -698,7 +713,6 @@ namespace EMutabakat.Services
                                 KullaniciMail = normalizedMail,
                                 KullaniciGsm = kullaniciGsm.Trim(),
                                 Sifre = string.Empty,
-                                Rol = rol.Trim(),
                                 KullaniciAktifPasif = aktifPasif.Trim()
                             };
 
@@ -717,14 +731,12 @@ namespace EMutabakat.Services
                             var normalizedAdi = kullaniciAdi.Trim();
                             var normalizedSoyadi = kullaniciSoyadi.Trim();
                             var normalizedGsm = (kullaniciGsm ?? string.Empty).Trim();
-                            var normalizedRol = rol.Trim();
                             var normalizedAktifPasif = aktifPasif.Trim();
 
                             var currentAdi = (existingUser.KullaniciAdi ?? string.Empty).Trim();
                             var currentSoyadi = (existingUser.KullaniciSoyadi ?? string.Empty).Trim();
                             var currentMail = (existingUser.KullaniciMail ?? string.Empty).Trim();
                             var currentGsm = (existingUser.KullaniciGsm ?? string.Empty).Trim();
-                            var currentRol = (existingUser.Rol ?? string.Empty).Trim();
                             var currentAktifPasif = (existingUser.KullaniciAktifPasif ?? string.Empty).Trim();
 
                             var currentFirmaIds = existingUser.Firmalar
@@ -742,7 +754,6 @@ namespace EMutabakat.Services
                                 currentSoyadi != normalizedSoyadi ||
                                 currentMail != normalizedMail ||
                                 currentGsm != normalizedGsm ||
-                                currentRol != normalizedRol ||
                                 currentAktifPasif != normalizedAktifPasif;
 
                             var firmaChanged = !currentFirmaIds.SequenceEqual(newFirmaIds);
@@ -757,7 +768,6 @@ namespace EMutabakat.Services
                                 existingUser.KullaniciSoyadi = normalizedSoyadi;
                                 existingUser.KullaniciMail = normalizedMail;
                                 existingUser.KullaniciGsm = normalizedGsm;
-                                existingUser.Rol = normalizedRol;
                                 existingUser.KullaniciAktifPasif = normalizedAktifPasif;
 
                                 if (passwordChanged)

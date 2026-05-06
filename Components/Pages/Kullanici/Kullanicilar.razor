@@ -1,6 +1,6 @@
 ﻿@page "/users"
 
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize]
 
 @inject IKullaniciService KullaniciService
 @inject NavigationManager NavigationManager
@@ -76,12 +76,6 @@
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciSoyadi" Title="Soyad" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciMail" Title="Mail" />
                 <RadzenDataGridColumn TItem="Kullanici" Property="KullaniciGsm" Title="GSM" />
-
-                <RadzenDataGridColumn TItem="Kullanici" Title="Rol">
-                    <Template Context="item">
-                        @item.Rol
-                    </Template>
-                </RadzenDataGridColumn>
 
                 <RadzenDataGridColumn TItem="Kullanici" Title="Firmalar">
                     <Template Context="item">
@@ -224,41 +218,41 @@
     }
 
     private async Task ExportExcel()
-{
-    try
     {
-        var bytes = await KullaniciService.ExportToExcelAsync(kullanicilar);
+        try
+        {
+            var bytes = await KullaniciService.ExportToExcelAsync(kullanicilar);
 
-        if (bytes == null || bytes.Length == 0)
+            if (bytes == null || bytes.Length == 0)
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    "Export edilecek kullanıcı kaydı bulunamadı.");
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(bytes);
+
+            await JS.InvokeVoidAsync(
+                "downloadFileFromBase64",
+                "Kullanicilar.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64);
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Kullanıcılar Excel olarak indirildi.");
+        }
+        catch (Exception ex)
         {
             NotificationService.Notify(
-                NotificationSeverity.Warning,
-                "Uyarı",
-                "Export edilecek kullanıcı kaydı bulunamadı.");
-            return;
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
         }
-
-        var base64 = Convert.ToBase64String(bytes);
-
-        await JS.InvokeVoidAsync(
-            "downloadFileFromBase64",
-            "Kullanicilar.xlsx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            base64);
-
-        NotificationService.Notify(
-            NotificationSeverity.Success,
-            "Başarılı",
-            "Kullanıcılar Excel olarak indirildi.");
     }
-    catch (Exception ex)
-    {
-        NotificationService.Notify(
-            NotificationSeverity.Error,
-            "Hata",
-            ex.Message);
-    }
-}
 
     private void ApplyFilters()
     {
