@@ -212,7 +212,7 @@ else
 
         firmalar = await FirmaService.GetAllAsync();
         cariGruplar = await CariGrupService.GetAllAsync();
-        dovizKodlari = await DovizKoduService.GetAllAsync();
+        dovizKodlari = await DovizKoduService.GetActiveAsync();
         cari.CariId = await CariService.GenerateNextCariIdAsync();
     }
 

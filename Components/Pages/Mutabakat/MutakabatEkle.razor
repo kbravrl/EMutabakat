@@ -248,7 +248,7 @@ else
 
         filteredCariler = new List<CariLookupItem>();
 
-        dovizKodlari = await DovizKoduService.GetAllAsync();
+        dovizKodlari = await DovizKoduService.GetActiveAsync();
 
         if (string.IsNullOrWhiteSpace(mutabakat.MutabakatDovizKodu))
         {

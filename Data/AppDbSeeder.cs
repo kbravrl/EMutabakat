@@ -16,16 +16,22 @@ namespace EMutabakat.Data
 
             var dovizKodlari = new List<DovizKodu>
             {
-                new() { TCMB = "TL", Name = "Türk lirası" },
-                new() { TCMB = "USD", Name = "Amerikan doları" },
-                new() { TCMB = "EUR", Name = "Euro" }
+                new() { TCMB = "TL", Name = "Türk Lirası", DovizKoduAktifPasif = 1 },
+                new() { TCMB = "USD", Name = "Amerikan Doları", DovizKoduAktifPasif = 1 },
+                new() { TCMB = "EUR", Name = "Euro", DovizKoduAktifPasif = 1 },
             };
 
             foreach (var doviz in dovizKodlari)
             {
-                if (!await context.DovizKodlari.AnyAsync(x => x.TCMB == doviz.TCMB))
+                var existing = await context.DovizKodlari.FirstOrDefaultAsync(x => x.TCMB == doviz.TCMB);
+                if (existing == null)
                 {
                     context.DovizKodlari.Add(doviz);
+                }
+                else if (existing.DovizKoduAktifPasif != 1)
+                {
+                    existing.DovizKoduAktifPasif = 1;
+                    existing.Name = doviz.Name;
                 }
             }
 
@@ -105,7 +111,7 @@ namespace EMutabakat.Data
             {
                 if (string.IsNullOrWhiteSpace(admin.KullaniciId))
                 {
-                    admin.KullaniciId = "P1";
+                    admin.KullaniciId = "1";
                 }
 
                 admin.KullaniciAktifPasif = "1";

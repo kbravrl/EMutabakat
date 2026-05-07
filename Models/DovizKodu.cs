@@ -14,5 +14,9 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Ad alanı zorunludur.")]
         [StringLength(100, ErrorMessage = "Ad en fazla 100 karakter olabilir.")]
         public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Aktif/Pasif bilgisi zorunludur.")]
+        [Range(0, 1, ErrorMessage = "Aktif/Pasif değeri 0 veya 1 olmalıdır.")]
+        public int DovizKoduAktifPasif { get; set; } = 1;
     }
 }

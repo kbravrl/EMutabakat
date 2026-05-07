@@ -476,6 +476,7 @@
 
         dovizOptions = mutabakatlar
             .Where(x => !string.IsNullOrWhiteSpace(x.MutabakatDovizKodu))
+            .Where(x => x.DovizKodu?.DovizKoduAktifPasif != 0)
             .Select(x => new FilterOption<string>
             {
                 Value = x.MutabakatDovizKodu,

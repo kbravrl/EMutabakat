@@ -232,7 +232,7 @@ else
                     .OrderBy(x => x.CariAdi)
                     .ToList();
 
-                dovizKodlari = await DovizKoduService.GetAllAsync();
+        dovizKodlari = await DovizKoduService.GetActiveAsync();
 
                 mutabakatTarihiTemp = mutabakat.MutabakatTarihi;
                 editContext = new EditContext(mutabakat);

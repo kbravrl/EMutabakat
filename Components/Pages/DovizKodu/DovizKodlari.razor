@@ -44,6 +44,17 @@
                                     Change="@(_ => ApplyFilters())" />
                 </RadzenColumn>
 
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenDropDown TValue="int?"
+                                    Data="@durumOptions"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="selectedDurum"
+                                    Placeholder="Durum"
+                                    Style="width:100%;"
+                                    Change="@(_ => ApplyFilters())" />
+                </RadzenColumn>
+
                 <RadzenColumn Size="12" SizeMD="1">
                     <RadzenButton Text="Temizle"
                                   Icon="restart_alt"
@@ -63,8 +74,20 @@
                 <Columns>
                     <RadzenDataGridColumn TItem="DovizKodu" Property="TCMB" Title="TCMB" />
                     <RadzenDataGridColumn TItem="DovizKodu" Property="Name" Title="Ad" />
+                    <RadzenDataGridColumn TItem="DovizKodu" Title="Durum">
+                        <Template Context="item">
+                            @if (item.DovizKoduAktifPasif == 1)
+                            {
+                                <RadzenBadge Text="Aktif" BadgeStyle="BadgeStyle.Success" />
+                            }
+                            else
+                            {
+                                <RadzenBadge Text="Pasif" BadgeStyle="BadgeStyle.Danger" />
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false" Width="180px">
+                    <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false">
                         <Template Context="item">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
                                 @if (canEdit)
@@ -104,9 +127,22 @@
 
     private string? selectedTcmb;
     private string? selectedName;
+    private int? selectedDurum = 1;
 
     private List<string> tcmbOptions = new();
     private List<string> nameOptions = new();
+
+    private class DurumOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private List<DurumOption> durumOptions = new()
+    {
+        new() { Text = "Aktif", Value = 1 },
+        new() { Text = "Pasif", Value = 0 }
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,6 +245,11 @@
             query = query.Where(x => x.Name == selectedName);
         }
 
+        if (selectedDurum.HasValue)
+        {
+            query = query.Where(x => x.DovizKoduAktifPasif == selectedDurum.Value);
+        }
+
         filteredDovizKodlari = query.OrderBy(x => x.Name).ToList();
     }
 
@@ -216,6 +257,7 @@
     {
         selectedTcmb = null;
         selectedName = null;
+        selectedDurum = 1;
         ApplyFilters();
     }
 }

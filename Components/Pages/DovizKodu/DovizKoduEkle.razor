@@ -38,6 +38,18 @@ else
                     <ValidationMessage For="@(() => model.Name)" />
                 </RadzenColumn>
 
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenLabel Text="Aktif / Pasif *" />
+                    <RadzenDropDown Name="DovizKoduAktifPasif"
+                                    Data="@durumlar"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="model.DovizKoduAktifPasif"
+                                    Placeholder="Seçiniz"
+                                    Style="width:100%;" />
+                    <ValidationMessage For="@(() => model.DovizKoduAktifPasif)" />
+                </RadzenColumn>
+
                 <RadzenColumn Size="12">
                     <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
                         <RadzenButton Text="İptal" Icon="close" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
@@ -52,6 +64,18 @@ else
 @code {
     private DovizKodu model = new();
     private bool canAdd;
+
+    private class DurumOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private List<DurumOption> durumlar = new()
+    {
+        new() { Value = 1, Text = "Aktif" },
+        new() { Value = 0, Text = "Pasif" }
+    };
 
     protected override async Task OnInitializedAsync()
     {

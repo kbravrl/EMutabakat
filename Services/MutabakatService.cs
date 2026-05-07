@@ -130,7 +130,7 @@ namespace EMutabakat.Services
                 throw new Exception("Döviz kodu zorunludur.");
 
             var dovizExists = await context.DovizKodlari
-                .AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+                .AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu && x.DovizKoduAktifPasif == 1);
 
             if (!dovizExists)
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
@@ -232,7 +232,7 @@ namespace EMutabakat.Services
                 throw new Exception("Döviz kodu zorunludur.");
 
             var dovizExists = await context.DovizKodlari
-                .AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu);
+                .AnyAsync(x => x.TCMB == mutabakat.MutabakatDovizKodu && x.DovizKoduAktifPasif == 1);
 
             if (!dovizExists)
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
@@ -1090,10 +1090,10 @@ namespace EMutabakat.Services
                             if (string.IsNullOrWhiteSpace(doviz))
                                 doviz = cari.CariDovizKodu ?? "TL";
 
-                            var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz);
+                            var dovizExists = await context.DovizKodlari.AnyAsync(d => d.TCMB == doviz && d.DovizKoduAktifPasif == 1);
                             if (!dovizExists)
                             {
-                                errors.Add($"Satır {r + 1}: DovizKodu/TCMB {doviz} geçerli değil.");
+                                errors.Add($"Satır {r + 1}: Seçilen Döviz kodu geçerli ve aktif değil.");
                                 continue;
                             }
 

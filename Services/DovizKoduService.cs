@@ -32,6 +32,16 @@ namespace EMutabakat.Services
                 .ToListAsync();
         }
 
+        public async Task<List<DovizKodu>> GetActiveAsync()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.DovizKodlari
+                .AsNoTracking()
+                .Where(x => x.DovizKoduAktifPasif == 1)
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+        }
+
         public async Task<DovizKodu?> GetByTcmbAsync(string tcmb)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -56,6 +66,12 @@ namespace EMutabakat.Services
 
             if (string.IsNullOrWhiteSpace(dovizKodu.Name))
                 throw new Exception("Döviz adı zorunludur.");
+
+            if (dovizKodu.DovizKoduAktifPasif != 0 && dovizKodu.DovizKoduAktifPasif != 1)
+                throw new Exception("Aktif/Pasif değeri geçersiz.");
+
+            if (dovizKodu.DovizKoduAktifPasif != 0 && dovizKodu.DovizKoduAktifPasif != 1)
+                throw new Exception("Aktif/Pasif değeri geçersiz.");
 
             var exists = await context.DovizKodlari.AnyAsync(x => x.TCMB == dovizKodu.TCMB);
             if (exists)
@@ -103,7 +119,8 @@ namespace EMutabakat.Services
                 var newEntity = new DovizKodu
                 {
                     TCMB = dovizKodu.TCMB,
-                    Name = dovizKodu.Name
+                Name = dovizKodu.Name,
+                DovizKoduAktifPasif = dovizKodu.DovizKoduAktifPasif
                 };
 
                 context.DovizKodlari.Add(newEntity);
@@ -140,6 +157,7 @@ namespace EMutabakat.Services
             }
 
             existing.Name = dovizKodu.Name;
+            existing.DovizKoduAktifPasif = dovizKodu.DovizKoduAktifPasif;
             await context.SaveChangesAsync();
 
             await _logService.AddAsync(

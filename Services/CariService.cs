@@ -359,10 +359,10 @@ namespace EMutabakat.Services
             if (!string.IsNullOrWhiteSpace(cari.CariDovizKodu))
             {
                 var dovizExists = await context.DovizKodlari
-                    .AnyAsync(x => x.TCMB == cari.CariDovizKodu);
+                    .AnyAsync(x => x.TCMB == cari.CariDovizKodu && x.DovizKoduAktifPasif == 1);
 
                 if (!dovizExists)
-                    throw new Exception("Geçerli bir döviz kodu seçiniz.");
+                    throw new Exception($"Seçilen Döviz kodu geçerli ve aktif değil.");
             }
         }
 
