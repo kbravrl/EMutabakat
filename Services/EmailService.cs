@@ -77,8 +77,9 @@ namespace EMutabakat.Services
         {
             var donem = mutabakat.MutabakatTarihi.ToString("MM.yyyy");
             var prefix = isReminder ? "[Hatırlatma] " : "";
+            var cariFirmaAdi = mutabakat.Cari.Firma.FirmaAdi;
 
-            return $"{prefix}{firma.FirmaAdi} Cari Hesap Mutabakatı - {donem}";
+            return $"{prefix}{firma.FirmaAdi} - {donem} - {cariFirmaAdi}";
         }
 
         private string BuildHtmlBody(Mutabakat mutabakat, Firma firma, string approveUrl, string rejectUrl)
@@ -90,21 +91,14 @@ namespace EMutabakat.Services
                 : bakiyeVal.ToString("N2");
             string doviz = GetDovizName(mutabakat.MutabakatDovizKodu);
             string bakiyeTipi = GetBakiyeTipiText(mutabakat.MutabakatBakiyeTipi);
+            string yetkiliAdi = mutabakat.Cari.CariYetkiliAdiSoyadi;
 
             return $@"
     <div style='font-family:Arial; line-height:1.6'>
 
         <h2 style='text-align:center;'>MUTABAKAT</h2>
 
-        <p><b>Gönderen Firma :</b> {firma.FirmaAdi}</p>
-        <p><b>Vergi Dairesi :</b> {firma.FirmaVergiDairesi ?? "-"}</p>
-        <p><b>Vergi No :</b> {firma.FirmaVergiNumarasi ?? "-"}</p>
-
-        <br/>
-
-        <p><b>Muhatap Firma :</b> {mutabakat.Cari.CariUnvan}</p>
-        <p><b>Vergi Dairesi :</b> {mutabakat.Cari.CariVergiDairesi ?? "-"}</p>
-        <p><b>Vergi No :</b> {mutabakat.Cari.CariVergiNumarasi ?? "-"}</p>
+        <p>Sayın {yetkiliAdi},</p>
 
         <br/>
 
