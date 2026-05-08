@@ -21,5 +21,7 @@ namespace EMutabakat.Models
         [Required]
         public string Message { get; set; } = string.Empty;
 
+        public string? Details { get; set; }
+
     }
 }

@@ -2,6 +2,8 @@
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using System.Text.Json;
 
 namespace EMutabakat.Services
 {
@@ -95,7 +97,7 @@ namespace EMutabakat.Services
                 .ToList();
         }
 
-        public async Task AddAsync(string level, string source, string message, string? userEmail = null)
+        public async Task AddAsync(string level, string source, string message, string? userEmail = null, string? details = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -105,11 +107,83 @@ namespace EMutabakat.Services
                 Level = string.IsNullOrWhiteSpace(level) ? "Info" : level.Trim(),
                 Source = string.IsNullOrWhiteSpace(source) ? "System" : source.Trim(),
                 Message = string.IsNullOrWhiteSpace(message) ? "Log message is empty." : message.Trim(),
-                UserEmail = string.IsNullOrWhiteSpace(userEmail) ? null : userEmail.Trim()
+                UserEmail = string.IsNullOrWhiteSpace(userEmail) ? null : userEmail.Trim(),
+                Details = details
             };
 
             context.AppLogs.Add(log);
             await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// İki nesneyi karşılaştırarak değişen alanları detaylı olarak loglar.
+        /// </summary>
+        public async Task AddChangeAsync(string source, string entityId, object oldEntity, object newEntity, string? userEmail = null)
+        {
+            var changes = CompareObjects(oldEntity, newEntity);
+
+            string? details;
+            string message;
+
+            if (changes.Count == 0)
+            {
+                message = $"{source} güncellendi, değişiklik yok | {entityId}";
+                details = null;
+            }
+            else
+            {
+                message = $"{source} güncellendi ({changes.Count} alan değişti) | {entityId}";
+                details = JsonSerializer.Serialize(changes, new JsonSerializerOptions { WriteIndented = false });
+            }
+
+            await AddAsync("Bilgi", source, message, userEmail, details);
+        }
+
+        /// <summary>
+        /// İki nesnenin public property'lerini karşılaştırır, değişen alanları döner.
+        /// </summary>
+        private static List<FieldChange> CompareObjects(object oldObj, object newObj)
+        {
+            var changes = new List<FieldChange>();
+
+            if (oldObj == null || newObj == null)
+                return changes;
+
+            var type = oldObj.GetType();
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanRead && IsPrimitiveOrString(p.PropertyType));
+
+            foreach (var prop in properties)
+            {
+                var oldVal = prop.GetValue(oldObj);
+                var newVal = prop.GetValue(newObj);
+
+                var oldStr = oldVal?.ToString() ?? string.Empty;
+                var newStr = newVal?.ToString() ?? string.Empty;
+
+                if (!string.Equals(oldStr, newStr, StringComparison.Ordinal))
+                {
+                    changes.Add(new FieldChange
+                    {
+                        Field = prop.Name,
+                        OldValue = string.IsNullOrEmpty(oldStr) ? null : oldStr,
+                        NewValue = string.IsNullOrEmpty(newStr) ? null : newStr
+                    });
+                }
+            }
+
+            return changes;
+        }
+
+        private static bool IsPrimitiveOrString(Type t)
+        {
+            var underlying = Nullable.GetUnderlyingType(t) ?? t;
+            return underlying.IsPrimitive
+                || underlying == typeof(string)
+                || underlying == typeof(decimal)
+                || underlying == typeof(DateTime)
+                || underlying == typeof(DateTimeOffset)
+                || underlying == typeof(Guid);
         }
 
         public async Task DeleteAllAsync()
@@ -144,5 +218,12 @@ namespace EMutabakat.Services
             context.AppLogs.RemoveRange(logs);
             await context.SaveChangesAsync();
         }
+    }
+
+    public class FieldChange
+    {
+        public string Field { get; set; } = string.Empty;
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
     }
 }

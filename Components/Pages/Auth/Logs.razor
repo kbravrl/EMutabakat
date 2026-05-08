@@ -40,24 +40,64 @@ else
         </RadzenRow>
 
         <RadzenCard>
-            <RadzenDataGrid Data="@logs"
+            <RadzenDataGrid @ref="grid"
+                            Data="@logs"
                             TItem="AppLog"
                             AllowPaging="true"
                             AllowSorting="true"
                             AllowFiltering="true"
                             PageSize="20"
-                            EmptyText="Kayıt bulunamadı">
+                            EmptyText="Kayıt bulunamadı"
+                            ExpandMode="DataGridExpandMode.Single"
+                            RowExpand="@(log => expandedLog = log)"
+                            RowCollapse="@(log => { if (expandedLog?.Id == log.Id) expandedLog = null; })">
+
+                <Template Context="log">
+                    @{
+                        var changes = ParseDetails(log.Details);
+                    }
+                    @if (changes != null && changes.Count > 0)
+                    {
+                        <div style="padding:10px 16px 14px 16px;">
+                            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                                <thead>
+                                    <tr style="background:#f5f5f5;">
+                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:25%; color:#555;">Alan</th>
+                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#c0392b;">Eski Değer</th>
+                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#27ae60;">Yeni Değer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var change in changes)
+                                    {
+                                        <tr style="border-bottom:1px solid #f0f0f0;">
+                                            <td style="padding:6px 12px; font-weight:600; color:#444;">@change.Field</td>
+                                            <td style="padding:6px 12px; color:#c0392b; word-break:break-word;">@(change.OldValue ?? "(boş)")</td>
+                                            <td style="padding:6px 12px; color:#27ae60; word-break:break-word;">@(change.NewValue ?? "(boş)")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="padding:10px 16px; font-size:13px; color:#999;">
+                            Bu kayıt için değişiklik detayı bulunmuyor.
+                        </div>
+                    }
+                </Template>
 
                 <Columns>
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Id"
                                           Title="ID"
-                                          Width="120px" />
+                                          Width="80px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="CreatedAt"
                                           Title="Tarih"
-                                          Width="190px">
+                                          Width="200px">
                         <Template Context="item">
                             @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
                         </Template>
@@ -66,7 +106,7 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Level"
                                           Title="Seviye"
-                                          Width="130px">
+                                          Width="150px">
                         <Template Context="item">
                             @if ((item.Level ?? string.Empty).Equals("Hata", StringComparison.OrdinalIgnoreCase) ||
                                  (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
@@ -93,14 +133,19 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="UserEmail"
                                           Title="Kullanıcı"
-                                          Width="220px" />
+                                          Width="250px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Message"
-                                          Title="Mesaj" />
+                                          Title="Mesaj">
+                        <Template Context="item">
+                            <span style="white-space:normal; word-break:break-word;">@item.Message</span>
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
         </RadzenCard>
+
     </RadzenStack>
 }
 
@@ -108,6 +153,8 @@ else
     private List<AppLog> logs = new();
     private bool canView;
     private bool canClear;
+    private AppLog? expandedLog;
+    private RadzenDataGrid<AppLog> grid = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,68 +182,90 @@ else
         logs = await LogService.GetRecentAsync(500);
     }
 
-    private async Task ClearLogs()
-{
-    var result = await DialogService.OpenAsync<ClearLogsDialog>(
-        "Logları Temizle",
-        null,
-        new DialogOptions
-        {
-            Width = "430px",
-            Height = "auto",
-            Resizable = false,
-            Draggable = true
-        });
-
-    if (result is not ClearLogsDialog.ClearLogsDialogResult clearResult)
-        return;
-
-    if (clearResult.ClearType == "All")
+    private List<FieldChangeDisplay>? ParseDetails(string? json)
     {
-        var confirmed = await DialogService.Confirm(
-            "Tüm log kayıtlarını silmek istediğinize emin misiniz?",
-            "Tüm Logları Sil",
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<FieldChangeDisplay>>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private class FieldChangeDisplay
+    {
+        public string Field { get; set; } = string.Empty;
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
+    }
+
+    private async Task ClearLogs()
+    {
+        var result = await DialogService.OpenAsync<ClearLogsDialog>(
+            "Logları Temizle",
+            null,
+            new DialogOptions
+            {
+                Width = "430px",
+                Height = "auto",
+                Resizable = false,
+                Draggable = true
+            });
+
+        if (result is not ClearLogsDialog.ClearLogsDialogResult clearResult)
+            return;
+
+        if (clearResult.ClearType == "All")
+        {
+            var confirmed = await DialogService.Confirm(
+                "Tüm log kayıtlarını silmek istediğinize emin misiniz?",
+                "Tüm Logları Sil",
+                new ConfirmOptions
+                {
+                    OkButtonText = "Evet, tümünü sil",
+                    CancelButtonText = "Vazgeç"
+                });
+
+            if (confirmed != true)
+                return;
+
+            await LogService.DeleteAllAsync();
+            await LoadLogs();
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                "Tüm log kayıtları silindi.");
+
+            return;
+        }
+
+        if (clearResult.DayCount <= 0)
+            return;
+
+        var confirmedLastDays = await DialogService.Confirm(
+            $"Son {clearResult.DayCount} günün log kayıtlarını silmek istediğinize emin misiniz?",
+            "Logları Sil",
             new ConfirmOptions
             {
-                OkButtonText = "Evet, tümünü sil",
+                OkButtonText = "Evet, sil",
                 CancelButtonText = "Vazgeç"
             });
 
-        if (confirmed != true)
+        if (confirmedLastDays != true)
             return;
 
-        await LogService.DeleteAllAsync();
+        await LogService.DeleteLastDaysAsync(clearResult.DayCount);
         await LoadLogs();
 
         NotificationService.Notify(
             NotificationSeverity.Success,
             "Başarılı",
-            "Tüm log kayıtları silindi.");
-
-        return;
+            $"Son {clearResult.DayCount} günün log kayıtları silindi.");
     }
-
-    if (clearResult.DayCount <= 0)
-        return;
-
-    var confirmedLastDays = await DialogService.Confirm(
-        $"Son {clearResult.DayCount} günün log kayıtlarını silmek istediğinize emin misiniz?",
-        "Logları Sil",
-        new ConfirmOptions
-        {
-            OkButtonText = "Evet, sil",
-            CancelButtonText = "Vazgeç"
-        });
-
-    if (confirmedLastDays != true)
-        return;
-
-    await LogService.DeleteLastDaysAsync(clearResult.DayCount);
-    await LoadLogs();
-
-    NotificationService.Notify(
-        NotificationSeverity.Success,
-        "Başarılı",
-        $"Son {clearResult.DayCount} günün log kayıtları silindi.");
-}
 }
