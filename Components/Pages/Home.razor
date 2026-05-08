@@ -86,6 +86,7 @@
                                 ValueProperty="Value"
                                 @bind-Value="selectedBakiyeTipi"
                                 AllowClear="true"
+                                Disabled="@isAnalysisLoading"
                                 Change="@(_ => OnFiltersChanged())" />
             </RadzenColumn>
 
@@ -98,10 +99,24 @@
                                 ValueProperty="Value"
                                 @bind-Value="selectedPeriod"
                                 AllowClear="true"
+                                Disabled="@isAnalysisLoading"
                                 Change="@(_ => OnFiltersChanged())" />
             </RadzenColumn>
         </RadzenRow>
 
+        @if (isAnalysisLoading)
+        {
+            <div style="min-height:340px;margin-top:15px;border-top:1px dashed #ddd;display:flex;align-items:center;justify-content:center">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="0.75rem">
+                    <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate"
+                                               ShowValue="false"
+                                               Size="ProgressBarCircularSize.Large" />
+                    <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Özet mutabakat analizi yükleniyor...</RadzenText>
+                </RadzenStack>
+            </div>
+        }
+        else
+        {
         <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="3">
@@ -220,10 +235,13 @@
                 </table>
             </div>
         </div>
+        }
     </RadzenCard>
 </RadzenStack>
 
 @code {
+    private bool isAnalysisLoading = true;
+
     private int firmaCount;
     private int cariCount;
     private int mutabakatCount;
@@ -293,6 +311,9 @@
 
     private void OnFiltersChanged()
     {
+        if (isAnalysisLoading)
+            return;
+
         UpdateAnalysis();
         StateHasChanged();
     }
@@ -452,6 +473,11 @@
 
     private async Task LoadDashboardAsync()
     {
+        isAnalysisLoading = true;
+        await Task.Yield();
+
+        await Task.Delay(500);
+
         try
         {
             var firmalar = await FirmaService.GetAllAsync();
@@ -483,6 +509,10 @@
         catch (Exception ex)
         {
             NotificationService.Notify(NotificationSeverity.Warning, "Uyarı", ex.Message);
+        }
+        finally
+        {
+            isAnalysisLoading = false;
         }
     }
 }
