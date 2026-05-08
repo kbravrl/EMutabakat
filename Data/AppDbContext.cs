@@ -57,6 +57,13 @@ namespace EMutabakat.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<CariGrup>()
+                .HasKey(cg => new { cg.CariGrupId, cg.FirmaId });
+
+            modelBuilder.Entity<CariGrup>()
+                .HasIndex(cg => new { cg.FirmaId, cg.CariGrupAdi })
+                .IsUnique();
+
+            modelBuilder.Entity<CariGrup>()
                 .HasOne(cg => cg.Firma)
                 .WithMany()
                 .HasForeignKey(cg => cg.FirmaId)
@@ -78,7 +85,7 @@ namespace EMutabakat.Data
             modelBuilder.Entity<Cari>()
                 .HasOne(c => c.CariGrup)
                 .WithMany()
-                .HasForeignKey(c => c.CariGrupId)
+                .HasForeignKey(c => new { c.CariGrupId, c.FirmaId })
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Cari>()

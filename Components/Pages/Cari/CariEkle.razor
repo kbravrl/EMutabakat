@@ -119,13 +119,13 @@ else
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili Telefon" />
-                        <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" MaxLength="11" />
                         <ValidationMessage For="@(() => cari.CariYetkiliTelefon)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili GSM" />
-                        <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" MaxLength="11" />
                         <ValidationMessage For="@(() => cari.CariYetkiliGsm)" />
                     </RadzenColumn>
 

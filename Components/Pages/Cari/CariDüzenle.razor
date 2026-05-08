@@ -121,13 +121,13 @@ else
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili Telefon" />
-                        <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliTelefon" Style="width:100%;" MaxLength="11" />
                         <ValidationMessage For="@(() => cari.CariYetkiliTelefon)" />
                     </RadzenColumn>
 
                     <RadzenColumn Size="12" SizeMD="4">
                         <RadzenLabel Text="Yetkili GSM" />
-                        <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" />
+                        <RadzenTextBox @bind-Value="cari.CariYetkiliGsm" Style="width:100%;" MaxLength="11" />
                         <ValidationMessage For="@(() => cari.CariYetkiliGsm)" />
                     </RadzenColumn>
 
@@ -162,7 +162,7 @@ else
                     <RadzenColumn Size="12">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="10px" JustifyContent="JustifyContent.End" Class="mt-3">
                             <RadzenButton Text="İptal" Icon="close" Style="background:#f5f5f5;color:#333;border:1px solid #e8e8e8;border-radius:8px;padding:8px 14px; font-size:15px;" ButtonStyle="ButtonStyle.Secondary" Click="@Cancel" />
-                            <RadzenButton Text="Kaydet" Icon="save" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;" ButtonType="ButtonType.Submit" Click="@HandleValidSubmit" />
+                            <RadzenButton Text="Kaydet" Icon="save" Style="background:#eaf2ff;color:#0b57d0;border:1px solid #d7e6ff;border-radius:8px;padding:8px 14px; font-size:15px;" ButtonType="ButtonType.Submit" />
                         </RadzenStack>
                     </RadzenColumn>
 

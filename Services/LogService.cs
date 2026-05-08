@@ -115,9 +115,6 @@ namespace EMutabakat.Services
             await context.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// İki nesneyi karşılaştırarak değişen alanları detaylı olarak loglar.
-        /// </summary>
         public async Task AddChangeAsync(string source, string entityId, object oldEntity, object newEntity, string? userEmail = null)
         {
             var changes = CompareObjects(oldEntity, newEntity);
@@ -133,15 +130,27 @@ namespace EMutabakat.Services
             else
             {
                 message = $"{source} güncellendi ({changes.Count} alan değişti) | {entityId}";
-                details = JsonSerializer.Serialize(changes, new JsonSerializerOptions { WriteIndented = false });
+                var payload = new LogDetailPayload { Type = "changes", Changes = changes };
+                details = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = false });
             }
 
             await AddAsync("Bilgi", source, message, userEmail, details);
         }
 
-        /// <summary>
-        /// İki nesnenin public property'lerini karşılaştırır, değişen alanları döner.
-        /// </summary>
+        public async Task AddImportResultAsync(string source, string message, List<string> errors, string? userEmail = null)
+        {
+            string? details = null;
+
+            if (errors.Count > 0)
+            {
+                var payload = new LogDetailPayload { Type = "errors", Errors = errors };
+                details = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = false });
+            }
+
+            var level = errors.Count > 0 ? "Uyarı" : "Bilgi";
+            await AddAsync(level, source, message, userEmail, details);
+        }
+
         private static List<FieldChange> CompareObjects(object oldObj, object newObj)
         {
             var changes = new List<FieldChange>();
@@ -226,4 +235,14 @@ namespace EMutabakat.Services
         public string? OldValue { get; set; }
         public string? NewValue { get; set; }
     }
+
+    public class LogDetailPayload
+    {
+        /// <summary>"changes", "errors" veya "info"</summary>
+        public string Type { get; set; } = string.Empty;
+        public List<FieldChange>? Changes { get; set; }
+        public List<string>? Errors { get; set; }
+        public Dictionary<string, string>? Info { get; set; }
+    }
+
 }

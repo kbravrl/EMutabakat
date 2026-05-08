@@ -5,6 +5,7 @@
 @inject IKullaniciService KullaniciService
 @inject NotificationService NotificationService
 @inject DialogService DialogService
+@inject IJSRuntime JS
 
 <PageTitle>Loglar</PageTitle>
 
@@ -15,27 +16,21 @@
 else
 {
     <RadzenStack Gap="1rem" class="p-4">
-        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-2">
             <RadzenColumn Size="12" SizeMD="6">
                 <RadzenText TextStyle="TextStyle.H4">Sistem Logları</RadzenText>
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-                <RadzenStack Orientation="Orientation.Horizontal"
-                             Gap="8px"
-                             AlignItems="AlignItems.Center"
-                             JustifyContent="JustifyContent.End">
-
-                    @if (canClear)
-                    {
-                        <RadzenButton Text="Logları temizle"
-                                      Icon="delete"
-                                      Style="font-size:15px;"
-                                      ButtonStyle="ButtonStyle.Danger"
-                                      Click="@ClearLogs" />
-                    }
-
-                </RadzenStack>
+                @if (canClear)
+                {
+                    <RadzenButton Text="Logları temizle"
+                                  Icon="delete"
+                                  Style="font-size:15px;"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Click="@ClearLogs" />
+                }
             </RadzenColumn>
         </RadzenRow>
 
@@ -56,10 +51,23 @@ else
                     @{
                         var changes = ParseDetails(log.Details);
                     }
+
+                    @if (isMobile)
+                    {
+                        <div style="padding:10px 16px 6px 16px; font-size:13px; border-bottom:1px solid #f0f0f0;">
+                            <RadzenStack Gap="4px">
+                                <div><span style="color:#888; min-width:70px; display:inline-block;">Tarih:</span> @log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                                <div><span style="color:#888; min-width:70px; display:inline-block;">Kaynak:</span> @log.Source</div>
+                                <div><span style="color:#888; min-width:70px; display:inline-block;">Kullanıcı:</span> @(log.UserEmail ?? "-")</div>
+                                <div style="margin-top:2px;"><span style="color:#888; min-width:70px; display:inline-block;">Mesaj:</span> <span style="word-break:break-word;">@log.Message</span></div>
+                            </RadzenStack>
+                        </div>
+                    }
+
                     @if (changes != null && changes.Count > 0)
                     {
-                        <div style="padding:10px 16px 14px 16px;">
-                            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                        <div style="padding:10px 16px 14px 16px; overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:320px;">
                                 <thead>
                                     <tr style="background:#f5f5f5;">
                                         <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:25%; color:#555;">Alan</th>
@@ -80,7 +88,7 @@ else
                             </table>
                         </div>
                     }
-                    else
+                    else if (!isMobile)
                     {
                         <div style="padding:10px 16px; font-size:13px; color:#999;">
                             Bu kayıt için değişiklik detayı bulunmuyor.
@@ -92,21 +100,22 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Id"
                                           Title="ID"
-                                          Width="80px" />
+                                          Width="70px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="CreatedAt"
                                           Title="Tarih"
-                                          Width="200px">
+                                          Width="155px"
+                                          Visible="@(!isMobile)">
                         <Template Context="item">
-                            @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+                            @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")
                         </Template>
                     </RadzenDataGridColumn>
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Level"
                                           Title="Seviye"
-                                          Width="150px">
+                                          Width="120px">
                         <Template Context="item">
                             @if ((item.Level ?? string.Empty).Equals("Hata", StringComparison.OrdinalIgnoreCase) ||
                                  (item.Level ?? string.Empty).Equals("Error", StringComparison.OrdinalIgnoreCase))
@@ -128,18 +137,34 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Source"
                                           Title="Kaynak"
-                                          Width="180px" />
+                                          Width="120px"
+                                          Visible="@(!isMobile)" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="UserEmail"
                                           Title="Kullanıcı"
-                                          Width="250px" />
+                                          Width="210px"
+                                          Visible="@(!isMobile)" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Message"
-                                          Title="Mesaj">
+                                          Title="Mesaj"
+                                          Visible="@(!isMobile)">
                         <Template Context="item">
                             <span style="white-space:normal; word-break:break-word;">@item.Message</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    @* Mobilde mesajı kısa göster *@
+                    <RadzenDataGridColumn TItem="AppLog"
+                                          Title="Mesaj"
+                                          Visible="@isMobile"
+                                          Sortable="false"
+                                          Filterable="false">
+                        <Template Context="item">
+                            <span style="font-size:12px; word-break:break-word; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+                                @item.Message
+                            </span>
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
@@ -155,6 +180,7 @@ else
     private bool canClear;
     private AppLog? expandedLog;
     private RadzenDataGrid<AppLog> grid = default!;
+    private bool isMobile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,6 +203,16 @@ else
         await LoadLogs();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var width = await JS.InvokeAsync<int>("eval", "window.innerWidth");
+            isMobile = width < 768;
+            StateHasChanged();
+        }
+    }
+
     private async Task LoadLogs()
     {
         logs = await LogService.GetRecentAsync(500);
@@ -189,12 +225,26 @@ else
 
         try
         {
-            return JsonSerializer.Deserialize<List<FieldChangeDisplay>>(json);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            // Önce wrapper formatını dene: { "type": "changes", "changes": [...] }
+            var payload = JsonSerializer.Deserialize<LogDetailPayloadDisplay>(json, options);
+            if (payload?.Changes != null && payload.Changes.Count > 0)
+                return payload.Changes;
+
+            // Fallback: doğrudan liste formatı
+            return JsonSerializer.Deserialize<List<FieldChangeDisplay>>(json, options);
         }
         catch
         {
             return null;
         }
+    }
+
+    private class LogDetailPayloadDisplay
+    {
+        public string? Type { get; set; }
+        public List<FieldChangeDisplay>? Changes { get; set; }
     }
 
     private class FieldChangeDisplay

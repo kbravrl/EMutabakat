@@ -199,6 +199,7 @@
 
     private List<FilterOptionInt> firmaOptions = new();
     private List<FilterOptionString> cariGrupOptions = new();
+    private List<CariGrup> allGroups = new();
     private List<FilterOptionInt> durumOptions = new()
     {
         new() { Text = "Aktif", Value = 1 },
@@ -242,9 +243,11 @@
 
 
         var allGroups = await CariGrupService.GetAllAsync();
+        this.allGroups = allGroups;
         cariGrupOptions = allGroups
             .Where(g => !string.IsNullOrWhiteSpace(g.CariGrupId))
-            .Select(g => new FilterOptionString { Value = g.CariGrupId, Text = g.CariGrupAdi ?? string.Empty })
+            .GroupBy(g => g.CariGrupId)
+            .Select(g => new FilterOptionString { Value = g.Key, Text = g.First().CariGrupAdi ?? string.Empty })
             .OrderBy(x => x.Text)
             .ToList();
 

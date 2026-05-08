@@ -153,7 +153,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Cari",
-                $"Yeni cari eklendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                $"Yeni cari eklendi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Grubu: {cari.CariGrupId}, Cari Adı: {cari.CariAdi}",
                 GetUserEmail()
             );
 
@@ -217,13 +217,19 @@ namespace EMutabakat.Services
                         .SetProperty(m => m.CariId, cari.CariId)
                         .SetProperty(m => m.FirmaId, cari.FirmaId));
 
+                await context.SilinenMutabakatlar
+                    .Where(sm => sm.CariId == cari.OriginalCariId && sm.FirmaId == cari.OriginalFirmaId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(sm => sm.CariId, cari.CariId)
+                        .SetProperty(sm => sm.FirmaId, cari.FirmaId));
+
                 context.Cariler.Remove(existingCari);
                 await context.SaveChangesAsync();
 
                 await _logService.AddAsync(
                     "Uyarı",
                     "Cari",
-                    $"Cari güncellendi (id değişti): Cari id: {cari.OriginalCariId} -> {cari.CariId} Firma id: {cari.OriginalFirmaId}->{cari.FirmaId}",
+                    $"Cari güncellendi (anahtar değişti) | Eski: Cari Id: {cari.OriginalCariId}, Firma Id: {cari.OriginalFirmaId} → Yeni: Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}",
                     GetUserEmail()
                 );
 
@@ -234,6 +240,25 @@ namespace EMutabakat.Services
                     .Include(x => x.DovizKodu)
                     .FirstOrDefaultAsync(x => x.CariId == cari.CariId && x.FirmaId == cari.FirmaId);
             }
+
+            var oldSnapshot = new
+            {
+                existingCari.CariAdi,
+                existingCari.CariUnvan,
+                existingCari.CariAdres,
+                existingCari.CariIlce,
+                existingCari.CariIl,
+                existingCari.CariVergiDairesi,
+                existingCari.CariVergiNumarasi,
+                existingCari.CariWebAdresi,
+                existingCari.CariYetkiliAdiSoyadi,
+                existingCari.CariYetkiliTelefon,
+                existingCari.CariYetkiliGsm,
+                existingCari.CariYetkiliMail,
+                existingCari.CariGrupId,
+                existingCari.CariDovizKodu,
+                existingCari.CariAktifPasif
+            };
 
             existingCari.CariAdi = cari.CariAdi;
             existingCari.CariUnvan = cari.CariUnvan;
@@ -253,10 +278,28 @@ namespace EMutabakat.Services
 
             await context.SaveChangesAsync();
 
-            await _logService.AddAsync(
-                "Uyarı",
+            await _logService.AddChangeAsync(
                 "Cari",
-                $"Cari güncellendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                $"Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}",
+                oldSnapshot,
+                new
+                {
+                    cari.CariAdi,
+                    cari.CariUnvan,
+                    cari.CariAdres,
+                    cari.CariIlce,
+                    cari.CariIl,
+                    cari.CariVergiDairesi,
+                    cari.CariVergiNumarasi,
+                    cari.CariWebAdresi,
+                    cari.CariYetkiliAdiSoyadi,
+                    cari.CariYetkiliTelefon,
+                    cari.CariYetkiliGsm,
+                    cari.CariYetkiliMail,
+                    cari.CariGrupId,
+                    cari.CariDovizKodu,
+                    cari.CariAktifPasif
+                },
                 GetUserEmail()
             );
 
@@ -283,7 +326,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Uyarı",
                     "Cari",
-                    $"Cari silindi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi} ",
+                    $"Cari silindi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Adı: {cari.CariAdi}",
                     GetUserEmail()
                 );
 
@@ -294,7 +337,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Hata",
                     "Cari",
-                    $"Cari silinemedi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
+                    $"Cari silinemedi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Adı: {cari.CariAdi}",
                     GetUserEmail()
                 );
 
@@ -348,13 +391,10 @@ namespace EMutabakat.Services
                 throw new Exception("Seçilen firma bulunamadı.");
 
             var cariGrup = await context.CariGruplar
-                .FirstOrDefaultAsync(x => x.CariGrupId == cari.CariGrupId);
+                .FirstOrDefaultAsync(x => x.CariGrupId == cari.CariGrupId && x.FirmaId == cari.FirmaId);
 
             if (cariGrup == null)
-                throw new Exception("Seçilen cari grup bulunamadı.");
-
-            if (cariGrup.FirmaId != cari.FirmaId)
-                throw new Exception("Seçilen cari grup, seçilen firmaya ait değildir.");
+                throw new Exception("Seçilen cari grup bulunamadı veya bu firmaya ait değil.");
 
             if (!string.IsNullOrWhiteSpace(cari.CariDovizKodu))
             {
@@ -472,7 +512,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Cari",
-                $"Excel import başladı. Dosya: {fileName}, FirmaId: {firmaId}",
+                $"Cari Excel import başladı. Dosya: {fileName}, FirmaId: {firmaId}",
                 GetUserEmail()
             );
 
@@ -589,7 +629,25 @@ namespace EMutabakat.Services
                         if (existing == null)
                         {
                             context.Cariler.Add(cari);
-                            created++;
+                            try
+                            {
+                                await context.SaveChangesAsync();
+                                created++;
+
+                                await _logService.AddAsync(
+                                    "Bilgi",
+                                    "Cari",
+                                    $"Yeni cari eklendi (import) | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Grubu: {cari.CariGrupId}, Cari Adı: {cari.CariAdi}",
+                                    GetUserEmail()
+                                );
+                            }
+                            catch (DbUpdateException)
+                            {
+                                context.ChangeTracker.Clear();
+                                var msg = $"Satır {r + 1}: Bu firmada '{cari.CariAdi}' adında başka bir cari zaten mevcut.";
+                                errors.Add(msg);
+                                await _logService.AddAsync("Hata", "Cari", msg, GetUserEmail());
+                            }
                         }
                         else
                         {
@@ -605,6 +663,25 @@ namespace EMutabakat.Services
 
                             if (hasChange)
                             {
+                                var oldSnapshot = new
+                                {
+                                    existing.CariAdi,
+                                    existing.CariUnvan,
+                                    existing.CariAdres,
+                                    existing.CariIlce,
+                                    existing.CariIl,
+                                    existing.CariVergiDairesi,
+                                    existing.CariVergiNumarasi,
+                                    existing.CariWebAdresi,
+                                    existing.CariYetkiliAdiSoyadi,
+                                    existing.CariYetkiliTelefon,
+                                    existing.CariYetkiliGsm,
+                                    existing.CariYetkiliMail,
+                                    existing.CariGrupId,
+                                    existing.CariDovizKodu,
+                                    existing.CariAktifPasif
+                                };
+
                                 existing.CariAdi = cari.CariAdi;
                                 existing.CariUnvan = cari.CariUnvan;
                                 existing.CariAdres = cari.CariAdres;
@@ -621,14 +698,43 @@ namespace EMutabakat.Services
                                 existing.CariDovizKodu = cari.CariDovizKodu;
                                 existing.CariAktifPasif = cari.CariAktifPasif;
 
-                                updated++;
+                                try
+                                {
+                                    await context.SaveChangesAsync();
+                                    updated++;
 
-                                await _logService.AddAsync(
-                                    "Uyarı",
-                                    "Cari",
-                                    $"Cari güncellendi: Cari Id: {cari.CariId} Cari Adı: {cari.CariAdi}",
-                                    GetUserEmail()
-                                );
+                                    await _logService.AddChangeAsync(
+                                        "Cari",
+                                        $"Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}",
+                                        oldSnapshot,
+                                        new
+                                        {
+                                            cari.CariAdi,
+                                            cari.CariUnvan,
+                                            cari.CariAdres,
+                                            cari.CariIlce,
+                                            cari.CariIl,
+                                            cari.CariVergiDairesi,
+                                            cari.CariVergiNumarasi,
+                                            cari.CariWebAdresi,
+                                            cari.CariYetkiliAdiSoyadi,
+                                            cari.CariYetkiliTelefon,
+                                            cari.CariYetkiliGsm,
+                                            cari.CariYetkiliMail,
+                                            cari.CariGrupId,
+                                            cari.CariDovizKodu,
+                                            cari.CariAktifPasif
+                                        },
+                                        GetUserEmail()
+                                    );
+                                }
+                                catch (DbUpdateException)
+                                {
+                                    context.ChangeTracker.Clear();
+                                    var msg = $"Satır {r + 1}: Bu firmada '{cari.CariAdi}' adında başka bir cari zaten mevcut.";
+                                    errors.Add(msg);
+                                    await _logService.AddAsync("Hata", "Cari", msg, GetUserEmail());
+                                }
                             }
                         }
                     }
@@ -646,15 +752,13 @@ namespace EMutabakat.Services
                 }
 
                 if (errors.Count > 0)
-                    return (0, 0, errors);
-
-                await context.SaveChangesAsync();
+                    return (created, updated, errors);
 
                 await _logService.AddAsync(
                     "Bilgi",
                     "Cari",
                     
-                    $"Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {created}, Güncellenen: {updated}",
+                    $"Cari Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {created}, Güncellenen: {updated}",
                     GetUserEmail()
                 );
 
