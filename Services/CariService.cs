@@ -153,7 +153,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Cari",
-                $"Yeni cari eklendi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Grubu: {cari.CariGrupId}, Cari Adı: {cari.CariAdi}",
+                $"Yeni cari eklendi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Adı: {cari.CariAdi}",
                 GetUserEmail()
             );
 
@@ -229,7 +229,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Uyarı",
                     "Cari",
-                    $"Cari güncellendi (anahtar değişti) | Eski: Cari Id: {cari.OriginalCariId}, Firma Id: {cari.OriginalFirmaId} → Yeni: Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}",
+                    $"Cari güncellendi | Eski: Cari Id: {cari.OriginalCariId}, Firma Id: {cari.OriginalFirmaId} → Yeni: Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}",
                     GetUserEmail()
                 );
 
@@ -332,13 +332,18 @@ namespace EMutabakat.Services
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "Cari",
                     $"Cari silinemedi | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Adı: {cari.CariAdi}",
-                    GetUserEmail()
+                    GetUserEmail(),
+                    detail
                 );
 
                 throw new Exception("Bu cari kaydı başka kayıtlarda kullanıldığı için silinemez.");
@@ -509,13 +514,6 @@ namespace EMutabakat.Services
             var created = 0;
             var updated = 0;
 
-            await _logService.AddAsync(
-                "Bilgi",
-                "Cari",
-                $"Cari Excel import başladı. Dosya: {fileName}, FirmaId: {firmaId}",
-                GetUserEmail()
-            );
-
             try
             {
                 IWorkbook workbook;
@@ -530,6 +528,7 @@ namespace EMutabakat.Services
                 if (sheet == null)
                 {
                     errors.Add("Excel sayfası bulunamadı.");
+                    await _logService.AddImportResultAsync("Cari", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -537,6 +536,7 @@ namespace EMutabakat.Services
                 if (headerRow == null)
                 {
                     errors.Add("Excel başlık satırı bulunamadı.");
+                    await _logService.AddImportResultAsync("Cari", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -571,13 +571,17 @@ namespace EMutabakat.Services
                 }
 
                 if (errors.Count > 0)
+                {
+                    await _logService.AddImportResultAsync("Cari", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
+                }
 
                 await using var context = await _contextFactory.CreateDbContextAsync();
 
                 if (firmaId <= 0)
                 {
                     errors.Add("Firma seçimi zorunludur.");
+                    await _logService.AddImportResultAsync("Cari", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -585,6 +589,7 @@ namespace EMutabakat.Services
                 if (!firmaExists)
                 {
                     errors.Add("Seçilen firma bulunamadı.");
+                    await _logService.AddImportResultAsync("Cari", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -634,19 +639,12 @@ namespace EMutabakat.Services
                                 await context.SaveChangesAsync();
                                 created++;
 
-                                await _logService.AddAsync(
-                                    "Bilgi",
-                                    "Cari",
-                                    $"Yeni cari eklendi (import) | Cari Id: {cari.CariId}, Firma Id: {cari.FirmaId}, Cari Grubu: {cari.CariGrupId}, Cari Adı: {cari.CariAdi}",
-                                    GetUserEmail()
-                                );
                             }
                             catch (DbUpdateException)
                             {
                                 context.ChangeTracker.Clear();
                                 var msg = $"Satır {r + 1}: Bu firmada '{cari.CariAdi}' adında başka bir cari zaten mevcut.";
                                 errors.Add(msg);
-                                await _logService.AddAsync("Hata", "Cari", msg, GetUserEmail());
                             }
                         }
                         else
@@ -733,7 +731,6 @@ namespace EMutabakat.Services
                                     context.ChangeTracker.Clear();
                                     var msg = $"Satır {r + 1}: Bu firmada '{cari.CariAdi}' adında başka bir cari zaten mevcut.";
                                     errors.Add(msg);
-                                    await _logService.AddAsync("Hata", "Cari", msg, GetUserEmail());
                                 }
                             }
                         }
@@ -741,24 +738,13 @@ namespace EMutabakat.Services
                     catch (Exception ex)
                     {
                         errors.Add($"Satır {r + 1}: {ex.Message}");
-
-                        await _logService.AddAsync(
-                            "Hata",
-                            "Cari",
-                            $"Satır {r + 1} hatası: {ex.Message}",
-                            GetUserEmail()
-                        );
                     }
                 }
 
-                if (errors.Count > 0)
-                    return (created, updated, errors);
-
-                await _logService.AddAsync(
-                    "Bilgi",
+                await _logService.AddImportResultAsync(
                     "Cari",
-                    
-                    $"Cari Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {created}, Güncellenen: {updated}",
+                    $"Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {created}, Güncellenen: {updated}",
+                    errors,
                     GetUserEmail()
                 );
 
@@ -766,14 +752,19 @@ namespace EMutabakat.Services
             }
             catch (Exception ex)
             {
-                await _logService.AddAsync(
-                    "Hata",
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
+                errors.Add($"İşlem sırasında hata oluştu: {detail}");
+
+                await _logService.AddImportResultAsync(
                     "Cari",
-                    $"Import genel hata: {ex.Message}",
+                    $"Excel import genel hata. Dosya: {fileName}",
+                    errors,
                     GetUserEmail()
                 );
 
-                errors.Add($"İşlem sırasında hata oluştu: {ex.Message}");
                 return (0, 0, errors);
             }
         }

@@ -60,8 +60,7 @@ namespace EMutabakat.Data
                 .HasKey(cg => new { cg.CariGrupId, cg.FirmaId });
 
             modelBuilder.Entity<CariGrup>()
-                .HasIndex(cg => new { cg.FirmaId, cg.CariGrupAdi })
-                .IsUnique();
+                .HasIndex(cg => new { cg.FirmaId, cg.CariGrupAdi });
 
             modelBuilder.Entity<CariGrup>()
                 .HasOne(cg => cg.Firma)

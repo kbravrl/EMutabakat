@@ -1,16 +1,7 @@
 ﻿using EMutabakat.Data;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NPOI.SS.UserModel;
-using NPOI.XSSF.UserModel;
-using NPOI.HSSF.UserModel;
-using System.IO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace EMutabakat.Services
 {
@@ -136,7 +127,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Bilgi",
                     "Firma",
-                    $"Yeni firma eklendi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
+                    $"Yeni firma eklendi | Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
                     GetUserEmail()
                 );
 
@@ -144,11 +135,16 @@ namespace EMutabakat.Services
             }
             catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "Firma",
-                    $"Firma ekleme hatası. Firma Adı: {firma.FirmaAdi}, Hata: {ex.Message}",
-                    GetUserEmail()
+                    $"Firma ekleme hatası. Firma Adı: {firma.FirmaAdi}",
+                    GetUserEmail(),
+                    detail
                 );
 
                 throw;
@@ -193,12 +189,12 @@ namespace EMutabakat.Services
                         .SetProperty(x => x.FirmaMersisNumarasi, firma.FirmaMersisNumarasi)
                         .SetProperty(x => x.FirmaWebAdresi, firma.FirmaWebAdresi)
                         .SetProperty(x => x.FirmaYetkiliAdiSoyadi, firma.FirmaYetkiliAdiSoyadi)
-                        .SetProperty(x => x.FirmaMail, firma.FirmaMail) // 🔥 normalized
+                        .SetProperty(x => x.FirmaMail, firma.FirmaMail)
                         .SetProperty(x => x.FirmaTelefon, firma.FirmaTelefon)
                         .SetProperty(x => x.FirmaGsm, firma.FirmaGsm)
                         .SetProperty(x => x.FirmaSmtpHost, firma.FirmaSmtpHost)
                         .SetProperty(x => x.FirmaSmtpPort, firma.FirmaSmtpPort)
-                        .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser) // 🔥 normalized
+                        .SetProperty(x => x.FirmaSmtpUser, firma.FirmaSmtpUser)
                         .SetProperty(x => x.FirmaSmtpPassword, firma.FirmaSmtpPassword)
                         .SetProperty(x => x.FirmaSmtpSecure, firma.FirmaSmtpSecure)
                         .SetProperty(x => x.FirmaAktifPasif, firma.FirmaAktifPasif));
@@ -206,10 +202,51 @@ namespace EMutabakat.Services
                 if (updated == 0)
                     return null;
 
-                await _logService.AddAsync(
-                    "Uyarı",
+                await _logService.AddChangeAsync(
                     "Firma",
-                    $"Firma güncellendi. Firma Id: {firma.FirmaId}, Firma Adı: {existingFirma.FirmaAdi} -> {firma.FirmaAdi}",
+                    $"Firma Id: {firma.FirmaId}, Firma Adı: {existingFirma.FirmaAdi}",
+                    new
+                    {
+                        existingFirma.FirmaAdi,
+                        existingFirma.FirmaUnvan,
+                        existingFirma.FirmaAdres,
+                        existingFirma.FirmaIlce,
+                        existingFirma.FirmaIl,
+                        existingFirma.FirmaVergiDairesi,
+                        existingFirma.FirmaVergiNumarasi,
+                        existingFirma.FirmaMersisNumarasi,
+                        existingFirma.FirmaWebAdresi,
+                        existingFirma.FirmaYetkiliAdiSoyadi,
+                        existingFirma.FirmaMail,
+                        existingFirma.FirmaTelefon,
+                        existingFirma.FirmaGsm,
+                        existingFirma.FirmaSmtpHost,
+                        existingFirma.FirmaSmtpPort,
+                        existingFirma.FirmaSmtpUser,
+                        existingFirma.FirmaSmtpSecure,
+                        existingFirma.FirmaAktifPasif
+                    },
+                    new
+                    {
+                        firma.FirmaAdi,
+                        firma.FirmaUnvan,
+                        firma.FirmaAdres,
+                        firma.FirmaIlce,
+                        firma.FirmaIl,
+                        firma.FirmaVergiDairesi,
+                        firma.FirmaVergiNumarasi,
+                        firma.FirmaMersisNumarasi,
+                        firma.FirmaWebAdresi,
+                        firma.FirmaYetkiliAdiSoyadi,
+                        FirmaMail = firma.FirmaMail,
+                        firma.FirmaTelefon,
+                        firma.FirmaGsm,
+                        firma.FirmaSmtpHost,
+                        firma.FirmaSmtpPort,
+                        FirmaSmtpUser = firma.FirmaSmtpUser,
+                        firma.FirmaSmtpSecure,
+                        firma.FirmaAktifPasif
+                    },
                     GetUserEmail()
                 );
 
@@ -217,11 +254,16 @@ namespace EMutabakat.Services
             }
             catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "Firma",
-                    $"Firma güncelleme hatası. Firma Id: {firma.FirmaId}, Hata: {ex.Message}",
-                    GetUserEmail()
+                    $"Firma güncelleme hatası. Firma Id: {firma.FirmaId}",
+                    GetUserEmail(),
+                    detail
                 );
 
                 throw;
@@ -251,7 +293,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Uyarı",
                     "Firma",
-                    $"Firma silindi. Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
+                    $"Firma silindi | Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
                     GetUserEmail()
                 );
 
@@ -259,11 +301,16 @@ namespace EMutabakat.Services
             }
             catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "Firma",
-                    $"Firma silinemedi: Firma Id: {firma.FirmaId} Firma Adı: {firma.FirmaAdi}",
-                    GetUserEmail()
+                    $"Firma silinemedi | Firma Id: {firma.FirmaId}, Firma Adı: {firma.FirmaAdi}",
+                    GetUserEmail(),
+                    detail
                 );
                 throw new Exception("Bu firma kaydı başka kayıtlarda kullanıldığı için silinemez.");
             }

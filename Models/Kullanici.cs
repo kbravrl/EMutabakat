@@ -9,6 +9,9 @@ namespace EMutabakat.Models
         [Required(ErrorMessage = "Kullanıcı ID zorunludur.")]
         public string KullaniciId { get; set; } = string.Empty;
 
+        [NotMapped]
+        public string OriginalKullaniciId { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "Ad zorunludur.")]
         [StringLength(50, ErrorMessage = "Ad en fazla 50 karakter olabilir.")]
         public string KullaniciAdi { get; set; } = string.Empty;

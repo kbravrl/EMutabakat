@@ -155,52 +155,52 @@
                             EmptyText="Kayıt bulunamadı.">
 
                 <Columns>
-                    <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" Width="80px"/>
+                    <RadzenDataGridColumn TItem="Mutabakat" Property="MutabakatId" Title="ID" Width="80px" OrderIndex="0" />
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Firma">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Firma" OrderIndex="1">
                         <Template Context="item">
                             @item.Firma?.FirmaAdi
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari" OrderIndex="2">
                         <Template Context="item">
                             @item.Cari?.CariAdi
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari Grup">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Cari Grup" OrderIndex="3">
                         <Template Context="item">
                             @(item.Cari?.CariGrup?.CariGrupAdi ?? "-")
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz" OrderIndex="4">
                         <Template Context="item">
                             @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye" OrderIndex="5">
                         <Template Context="item">
                             @item.MutabakatBakiye.ToString("N2")
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Bakiye Tipi" OrderIndex="6">
                         <Template Context="item">
                             @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum" OrderIndex="7">
                         <Template Context="item">
                             <RadzenBadge Text="@GetStatusText(item.Status)"
                                          BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi">
+                    <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi" OrderIndex="8">
                         <Template Context="item">
                             @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
                         </Template>
@@ -208,7 +208,8 @@
 
                     <RadzenDataGridColumn TItem="Mutabakat"
                                           Property="MutabakatCevapTarihSaat"
-                                          Title="Cevap Tarihi">
+                                          Title="Cevap Tarihi"
+                                          OrderIndex="9">
                         <Template Context="item">
                             @(item.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy"))
                         </Template>
@@ -216,7 +217,7 @@
 
                     @if (canEdit)
                     {
-                        <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false">
+                        <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false" OrderIndex="10">
                             <Template Context="item">
                                 <RadzenCheckBox TValue="bool"
                                                 Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
@@ -226,7 +227,7 @@
                         </RadzenDataGridColumn>
                     }
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px" OrderIndex="11">
                         <Template Context="item">
                             <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
@@ -242,7 +243,7 @@
                                 }
 
                                 @if (canEdit && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
-                                                                item.Status == Mutabakat.MutabakatStatus.Hatirlatma))
+                                                item.Status == Mutabakat.MutabakatStatus.Hatirlatma))
                                 {
                                     <RadzenButton Icon="refresh"
                                                   Size="ButtonSize.Small"

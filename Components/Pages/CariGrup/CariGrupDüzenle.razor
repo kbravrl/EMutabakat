@@ -1,4 +1,4 @@
-﻿@page "/current-groups/edit/{id}"
+﻿@page "/current-groups/edit/{id}/{firmaId:int}"
 
 @attribute [Authorize]
 
@@ -88,6 +88,7 @@ else
 
 @code {
     [Parameter] public string id { get; set; } = string.Empty;
+    [Parameter] public int firmaId { get; set; }
 
     private bool canEdit;
     private CariGrup? cariGrup;
@@ -109,10 +110,11 @@ else
             return;
 
         firmalar = await FirmaService.GetAllAsync();
-        cariGrup = await CariGrupService.GetByIdAsync(id);
+        cariGrup = await CariGrupService.GetByIdAsync(id, firmaId);
         if (cariGrup != null)
         {
             cariGrup.OriginalCariGrupId = cariGrup.CariGrupId;
+            cariGrup.OriginalFirmaId = cariGrup.FirmaId;
         }
     }
 

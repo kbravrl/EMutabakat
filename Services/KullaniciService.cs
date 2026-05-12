@@ -194,7 +194,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Kullanıcı",
-                $"Yeni kayıt (register): {kullanici.KullaniciMail}",
+                $"Yeni kullanıcı kaydı oluşturuldu | Mail: {kullanici.KullaniciMail}",
                 GetUserEmail()
             );
 
@@ -220,7 +220,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Bilgi",
                     "Kullanıcı",
-                    $"Başarılı login: {normalizedMail}",
+                    $"Kullanıcı girişi başarılı | Mail: {normalizedMail}",
                     normalizedMail
                 );
 
@@ -288,7 +288,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Kullanıcı",
-                $"Yeni kullanıcı eklendi: {kullanici.KullaniciAdi} {kullanici.KullaniciSoyadi}",
+                $"Yeni kullanıcı eklendi | Id: {kullanici.KullaniciId}, Ad: {kullanici.KullaniciAdi} {kullanici.KullaniciSoyadi}, Mail: {kullanici.KullaniciMail}",
                 GetUserEmail()
             );
 
@@ -299,10 +299,15 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            kullanici.KullaniciId = kullanici.KullaniciId?.Trim() ?? string.Empty;
+            kullanici.OriginalKullaniciId = string.IsNullOrWhiteSpace(kullanici.OriginalKullaniciId)
+                ? kullanici.KullaniciId
+                : kullanici.OriginalKullaniciId.Trim();
+
             var existingKullanici = await context.Kullanicilar
                 .Include(x => x.Firmalar)
                 .Include(x => x.Yetkileri)
-                .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.KullaniciId);
+                .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.OriginalKullaniciId);
 
             if (existingKullanici == null)
                 return null;
@@ -346,11 +351,90 @@ namespace EMutabakat.Services
             var normalizedMail = kullanici.KullaniciMail?.Trim().ToLower();
 
             var mailExists = await context.Kullanicilar.AnyAsync(x =>
-                x.KullaniciId != kullanici.KullaniciId &&
+                x.KullaniciId != kullanici.OriginalKullaniciId &&
                 x.KullaniciMail == normalizedMail);
 
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı başka bir kullanıcı zaten var.");
+
+            var keyChanged = !string.Equals(kullanici.OriginalKullaniciId, kullanici.KullaniciId, StringComparison.Ordinal);
+
+            if (keyChanged)
+            {
+                var idExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciId == kullanici.KullaniciId);
+                if (idExists)
+                    throw new Exception("Bu Kullanıcı ID zaten kullanılıyor.");
+
+                var newKullanici = new Kullanici
+                {
+                    KullaniciId = kullanici.KullaniciId,
+                    KullaniciAdi = kullanici.KullaniciAdi.Trim(),
+                    KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim(),
+                    KullaniciMail = normalizedMail ?? string.Empty,
+                    KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm),
+                    KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim(),
+                    IsSeedUser = existingKullanici.IsSeedUser,
+                    Sifre = !string.IsNullOrWhiteSpace(kullanici.Sifre)
+                        ? _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre.Trim())
+                        : existingKullanici.Sifre
+                };
+
+                newKullanici.Yetkileri = new KullaniciYetki
+                {
+                    KullaniciId = newKullanici.KullaniciId,
+                    Cariler = kullanici.Yetkileri?.Cariler ?? existingKullanici.Yetkileri?.Cariler ?? YetkiSeviyesi.Giris,
+                    CariGruplar = kullanici.Yetkileri?.CariGruplar ?? existingKullanici.Yetkileri?.CariGruplar ?? YetkiSeviyesi.Giris,
+                    DovizKodlari = kullanici.Yetkileri?.DovizKodlari ?? existingKullanici.Yetkileri?.DovizKodlari ?? YetkiSeviyesi.Giris,
+                    Mutabakatlar = kullanici.Yetkileri?.Mutabakatlar ?? existingKullanici.Yetkileri?.Mutabakatlar ?? YetkiSeviyesi.Giris,
+                    Firmalar = kullanici.Yetkileri?.Firmalar ?? existingKullanici.Yetkileri?.Firmalar ?? YetkiSeviyesi.Giris,
+                    Kullanicilar = kullanici.Yetkileri?.Kullanicilar ?? existingKullanici.Yetkileri?.Kullanicilar ?? YetkiSeviyesi.Giris,
+                    ImportYetki = kullanici.Yetkileri?.ImportYetki ?? existingKullanici.Yetkileri?.ImportYetki ?? false,
+                    ExportYetki = kullanici.Yetkileri?.ExportYetki ?? existingKullanici.Yetkileri?.ExportYetki ?? false,
+                    LogYetki = kullanici.Yetkileri?.LogYetki ?? existingKullanici.Yetkileri?.LogYetki ?? false
+                };
+
+                context.Kullanicilar.Add(newKullanici);
+
+                foreach (var firma in desiredFirmalar)
+                {
+                    newKullanici.Firmalar.Add(firma);
+                }
+
+                await context.SaveChangesAsync();
+
+                var oldSnapshot = CreateSnapshot(existingKullanici, false);
+                var keyChangeSnapshot = CreateSnapshot(newKullanici, !string.IsNullOrWhiteSpace(kullanici.Sifre));
+
+                context.ChangeTracker.Clear();
+
+                var oldKullanici = await context.Kullanicilar
+                    .Include(x => x.Yetkileri)
+                    .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.OriginalKullaniciId);
+
+                if (oldKullanici != null)
+                {
+                    if (oldKullanici.Yetkileri != null)
+                    {
+                        context.KullaniciYetkileri.Remove(oldKullanici.Yetkileri);
+                    }
+
+                    oldKullanici.Firmalar.Clear();
+                    context.Kullanicilar.Remove(oldKullanici);
+                    await context.SaveChangesAsync();
+                }
+
+                await _logService.AddChangeAsync(
+                    "Kullanıcı",
+                    $"Id: {newKullanici.KullaniciId}, Mail: {newKullanici.KullaniciMail}",
+                    oldSnapshot,
+                    keyChangeSnapshot,
+                    GetUserEmail()
+                );
+
+                return newKullanici;
+            }
+
+            var snapshot = CreateSnapshot(existingKullanici, false);
 
             existingKullanici.KullaniciAdi = kullanici.KullaniciAdi.Trim();
             existingKullanici.KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim();
@@ -358,12 +442,14 @@ namespace EMutabakat.Services
             existingKullanici.KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm);
             existingKullanici.KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim();
 
+            var sifreDegisti = false;
             if (!string.IsNullOrWhiteSpace(kullanici.Sifre))
             {
                 if (kullanici.Sifre.Trim().Length < 6)
                     throw new Exception("Şifre en az 6 karakter olmalıdır.");
 
                 existingKullanici.Sifre = _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre.Trim());
+                sifreDegisti = true;
             }
 
             if (kullanici.Yetkileri != null)
@@ -391,12 +477,15 @@ namespace EMutabakat.Services
                 existingKullanici.Firmalar.Add(firma);
             }
 
+            var newSnapshot = CreateSnapshot(existingKullanici, sifreDegisti);
+
             await context.SaveChangesAsync();
 
-            await _logService.AddAsync(
-                "Uyarı",
+            await _logService.AddChangeAsync(
                 "Kullanıcı",
-                $"Kullanıcı güncellendi: Id: {kullanici.KullaniciId}",
+                $"Id: {kullanici.KullaniciId}, Mail: {existingKullanici.KullaniciMail}",
+                snapshot,
+                newSnapshot,
                 GetUserEmail()
             );
 
@@ -426,20 +515,25 @@ namespace EMutabakat.Services
 
                 await _logService.AddAsync(
                     "Uyarı",
-                    "Kullancı",
-                    $"Kullanıcı silindi: Id: {id}",
+                    "Kullanıcı",
+                    $"Kullanıcı silindi | Id: {id}, Ad: {kullanici.KullaniciAdi} {kullanici.KullaniciSoyadi}, Mail: {kullanici.KullaniciMail}",
                     GetUserEmail()
                 );
 
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "Kullanıcı",
-                    $"Kullanıcı silinemedi: Id: {id}",
-                    GetUserEmail()
+                    $"Kullanıcı silinemedi | Id: {id}",
+                    GetUserEmail(),
+                    detail
                 );
 
                 throw;
@@ -486,6 +580,36 @@ namespace EMutabakat.Services
                 gsm = "0" + gsm;
 
             return gsm;
+        }
+
+        private static object CreateSnapshot(Kullanici kullanici, bool sifreDegisti)
+        {
+            return new
+            {
+                kullanici.KullaniciId,
+                kullanici.KullaniciAdi,
+                kullanici.KullaniciSoyadi,
+                KullaniciMail = kullanici.KullaniciMail ?? string.Empty,
+                KullaniciGsm = kullanici.KullaniciGsm ?? string.Empty,
+                kullanici.KullaniciAktifPasif,
+                SifreDegisti = sifreDegisti,
+                Firmalar = kullanici.Firmalar
+                    .Select(f => f.FirmaId)
+                    .OrderBy(id => id)
+                    .ToList(),
+                Yetkiler = new
+                {
+                    Cariler = kullanici.Yetkileri?.Cariler ?? YetkiSeviyesi.Giris,
+                    CariGruplar = kullanici.Yetkileri?.CariGruplar ?? YetkiSeviyesi.Giris,
+                    DovizKodlari = kullanici.Yetkileri?.DovizKodlari ?? YetkiSeviyesi.Giris,
+                    Mutabakatlar = kullanici.Yetkileri?.Mutabakatlar ?? YetkiSeviyesi.Giris,
+                    Firmalar = kullanici.Yetkileri?.Firmalar ?? YetkiSeviyesi.Giris,
+                    Kullanicilar = kullanici.Yetkileri?.Kullanicilar ?? YetkiSeviyesi.Giris,
+                    ImportYetki = kullanici.Yetkileri?.ImportYetki ?? false,
+                    ExportYetki = kullanici.Yetkileri?.ExportYetki ?? false,
+                    LogYetki = kullanici.Yetkileri?.LogYetki ?? false
+                }
+            };
         }
 
         public async Task<byte[]> ExportToExcelAsync(List<Kullanici> kullanicilar)
@@ -555,13 +679,6 @@ namespace EMutabakat.Services
             var errors = new List<string>();
             var created = 0;
             var updated = 0;
-
-            await _logService.AddAsync(
-                "Bilgi",
-                "Kullanıcı",
-                $"Excel import başladı. Dosya: {fileName}",
-                GetUserEmail()
-            );
 
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -633,11 +750,11 @@ namespace EMutabakat.Services
 
                 string[] required = new[]
                 {
-            "KullaniciId",
-            "KullaniciAdi",
-            "KullaniciSoyadi",
-            "KullaniciMail"
-        };
+                   "KullaniciId",
+                   "KullaniciAdi",
+                   "KullaniciSoyadi",
+                   "KullaniciMail"
+                };
 
                 foreach (var h in required)
                 {
@@ -646,10 +763,10 @@ namespace EMutabakat.Services
                         var message = $"Gerekli sütun '{h}' bulunamadı.";
                         errors.Add(message);
 
-                        await _logService.AddAsync(
-                            "Hata",
+                        await _logService.AddImportResultAsync(
                             "Kullanıcı",
-                            message,
+                            $"Excel import başarısız. Dosya: {fileName}",
+                            errors,
                             GetUserEmail()
                         );
 
@@ -689,7 +806,6 @@ namespace EMutabakat.Services
                         {
                             var message = $"Satır {r + 1}: KullaniciId boş olamaz.";
                             errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -699,7 +815,6 @@ namespace EMutabakat.Services
                         {
                             var message = $"Satır {r + 1}: Zorunlu alanlar boş olamaz (KullaniciAdi, KullaniciSoyadi, KullaniciMail).";
                             errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -707,7 +822,6 @@ namespace EMutabakat.Services
                         {
                             var message = $"Satır {r + 1}: KullaniciAktifPasif değeri yalnızca 0 veya 1 olabilir.";
                             errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -730,7 +844,6 @@ namespace EMutabakat.Services
                         {
                             var message = $"Satır {r + 1}: '{kullaniciId}' değeri Excel içinde tekrar ediyor.";
                             errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -744,7 +857,6 @@ namespace EMutabakat.Services
                         {
                             var message = $"Satır {r + 1}: '{kullaniciMail}' mail adresi başka bir kullanıcıda kayıtlı.";
                             errors.Add(message);
-                            await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                             continue;
                         }
 
@@ -758,7 +870,6 @@ namespace EMutabakat.Services
                             {
                                 var message = $"Satır {r + 1}: Yeni kullanıcı için şifre zorunludur.";
                                 errors.Add(message);
-                                await _logService.AddAsync("Hata", "Kullanıcı", message, GetUserEmail());
                                 continue;
                             }
 
@@ -860,32 +971,25 @@ namespace EMutabakat.Services
 
                         var message = $"Satır {r + 1}: {detail}";
                         errors.Add(message);
-
-                        await _logService.AddAsync(
-                            "Hata",
-                            "Kullanıcı",
-                            message,
-                            GetUserEmail()
-                        );
                     }
                 }
 
                 if (errors.Count > 0)
                 {
-                    await _logService.AddAsync(
-                        "Uyarı",
+                    await _logService.AddImportResultAsync(
                         "Kullanıcı",
                         $"Excel import tamamlandı ancak hatalar var. Dosya: {fileName}, Hata sayısı: {errors.Count}",
+                        errors,
                         GetUserEmail()
                     );
                 }
 
                 await context.SaveChangesAsync();
 
-                await _logService.AddAsync(
-                    "Bilgi",
+                await _logService.AddImportResultAsync(
                     "Kullanıcı",
-                    $"Excel import tamamlandı. Dosya: {fileName}, Eklenen kullanıcı sayısı: {created}, Güncellenen kullanıcı sayısı: {updated}",
+                    $"Excel import tamamlandı. Dosya: {fileName}, Eklenen: {created}, Güncellenen: {updated}",
+                    errors,
                     GetUserEmail()
                 );
 
@@ -895,20 +999,15 @@ namespace EMutabakat.Services
             {
                 var detail = ex.Message;
                 var inner = ex.InnerException;
-
-                while (inner != null)
-                {
-                    detail += " -> " + inner.Message;
-                    inner = inner.InnerException;
-                }
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
 
                 var message = $"İşlem sırasında hata oluştu: {detail}";
                 errors.Add(message);
 
-                await _logService.AddAsync(
-                    "Hata",
+                await _logService.AddImportResultAsync(
                     "Kullanıcı",
-                    message,
+                    $"Excel import genel hata. Dosya: {fileName}",
+                    errors,
                     GetUserEmail()
                 );
 

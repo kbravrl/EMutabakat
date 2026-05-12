@@ -261,6 +261,7 @@ else
                     .Select(x => x.FirmaId)
                     .Distinct()
                     .ToList() ?? new List<int>();
+                kullanici.OriginalKullaniciId = kullanici.KullaniciId;
                 kullanici.Sifre = null;
                 kullanici.Yetkileri ??= new KullaniciYetki();
 

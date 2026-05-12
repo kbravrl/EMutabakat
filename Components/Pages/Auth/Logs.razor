@@ -51,56 +51,58 @@ else
                     @{
                         var changes = ParseDetails(log.Details);
                     }
-
-                    @if (isMobile)
-                    {
-                        <div style="padding:10px 16px 6px 16px; font-size:13px; border-bottom:1px solid #f0f0f0;">
-                            <RadzenStack Gap="4px">
-                                <div><span style="color:#888; min-width:70px; display:inline-block;">Tarih:</span> @log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
-                                <div><span style="color:#888; min-width:70px; display:inline-block;">Kaynak:</span> @log.Source</div>
-                                <div><span style="color:#888; min-width:70px; display:inline-block;">Kullanıcı:</span> @(log.UserEmail ?? "-")</div>
-                                <div style="margin-top:2px;"><span style="color:#888; min-width:70px; display:inline-block;">Mesaj:</span> <span style="word-break:break-word;">@log.Message</span></div>
-                            </RadzenStack>
-                        </div>
-                    }
-
                     @if (changes != null && changes.Count > 0)
                     {
+                        var isErrorList = changes.All(c => c.OldValue == null && c.Field.StartsWith("Hata "));
                         <div style="padding:10px 16px 14px 16px; overflow-x:auto;">
                             <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:320px;">
                                 <thead>
                                     <tr style="background:#f5f5f5;">
-                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:25%; color:#555;">Alan</th>
-                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#c0392b;">Eski Değer</th>
-                                        <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#27ae60;">Yeni Değer</th>
+                                        @if (isErrorList)
+                                        {
+                                            <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:10%; color:#555;">#</th>
+                                            <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:90%; color:#c0392b;">Hata Mesajı</th>
+                                        }
+                                        else
+                                        {
+                                            <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:25%; color:#555;">Alan</th>
+                                            <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#c0392b;">Eski Değer</th>
+                                            <th style="text-align:left; padding:6px 12px; border-bottom:1px solid #e0e0e0; width:37.5%; color:#27ae60;">Yeni Değer</th>
+                                        }
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var change in changes)
                                     {
                                         <tr style="border-bottom:1px solid #f0f0f0;">
-                                            <td style="padding:6px 12px; font-weight:600; color:#444;">@change.Field</td>
-                                            <td style="padding:6px 12px; color:#c0392b; word-break:break-word;">@(change.OldValue ?? "(boş)")</td>
-                                            <td style="padding:6px 12px; color:#27ae60; word-break:break-word;">@(change.NewValue ?? "(boş)")</td>
+                                            @if (isErrorList)
+                                            {
+                                                <td style="padding:6px 12px; font-weight:600; color:#888;">@change.Field</td>
+                                                <td style="padding:6px 12px; color:#c0392b; word-break:break-word;">@(change.NewValue ?? "(boş)")</td>
+                                            }
+                                            else
+                                            {
+                                                <td style="padding:6px 12px; font-weight:600; color:#444;">@change.Field</td>
+                                                <td style="padding:6px 12px; color:#c0392b; word-break:break-word;">@(change.OldValue ?? "(boş)")</td>
+                                                <td style="padding:6px 12px; color:#27ae60; word-break:break-word;">@(change.NewValue ?? "(boş)")</td>
+                                            }
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
                     }
-                    else if (!isMobile)
-                    {
-                        <div style="padding:10px 16px; font-size:13px; color:#999;">
-                            Bu kayıt için değişiklik detayı bulunmuyor.
-                        </div>
-                    }
+
+                     <div style="padding:10px 16px; font-size:13px; color:#999;">
+                         Bu kayıt için değişiklik detayı bulunmuyor.
+                     </div>
                 </Template>
 
                 <Columns>
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Id"
                                           Title="ID"
-                                          Width="70px" />
+                                          Width="100px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="CreatedAt"
@@ -137,13 +139,13 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Source"
                                           Title="Kaynak"
-                                          Width="120px"
+                                          Width="140px"
                                           Visible="@(!isMobile)" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="UserEmail"
                                           Title="Kullanıcı"
-                                          Width="210px"
+                                          Width="220px"
                                           Visible="@(!isMobile)" />
 
                     <RadzenDataGridColumn TItem="AppLog"
@@ -152,19 +154,6 @@ else
                                           Visible="@(!isMobile)">
                         <Template Context="item">
                             <span style="white-space:normal; word-break:break-word;">@item.Message</span>
-                        </Template>
-                    </RadzenDataGridColumn>
-
-                    @* Mobilde mesajı kısa göster *@
-                    <RadzenDataGridColumn TItem="AppLog"
-                                          Title="Mesaj"
-                                          Visible="@isMobile"
-                                          Sortable="false"
-                                          Filterable="false">
-                        <Template Context="item">
-                            <span style="font-size:12px; word-break:break-word; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
-                                @item.Message
-                            </span>
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
@@ -226,13 +215,21 @@ else
         try
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-            // Önce wrapper formatını dene: { "type": "changes", "changes": [...] }
             var payload = JsonSerializer.Deserialize<LogDetailPayloadDisplay>(json, options);
+
             if (payload?.Changes != null && payload.Changes.Count > 0)
                 return payload.Changes;
 
-            // Fallback: doğrudan liste formatı
+            if (payload?.Errors != null && payload.Errors.Count > 0)
+                return payload.Errors
+                    .Select((e, i) => new FieldChangeDisplay
+                    {
+                        Field = $"Hata {i + 1}",
+                        OldValue = null,
+                        NewValue = e
+                    })
+                    .ToList();
+
             return JsonSerializer.Deserialize<List<FieldChangeDisplay>>(json, options);
         }
         catch
@@ -245,6 +242,7 @@ else
     {
         public string? Type { get; set; }
         public List<FieldChangeDisplay>? Changes { get; set; }
+        public List<string>? Errors { get; set; }
     }
 
     private class FieldChangeDisplay

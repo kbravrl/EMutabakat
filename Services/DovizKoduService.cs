@@ -83,7 +83,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "DovizKodu",
-                $"Yeni döviz kodu eklendi: TCMB: {dovizKodu.TCMB} Adı: {dovizKodu.Name}",
+                $"Yeni döviz kodu eklendi | TCMB: {dovizKodu.TCMB}, Adı: {dovizKodu.Name}",
                 GetUserEmail()
             );
 
@@ -144,10 +144,21 @@ namespace EMutabakat.Services
                 context.DovizKodlari.Remove(existing);
                 await context.SaveChangesAsync();
 
-                await _logService.AddAsync(
-                    "Uyarı",
+                await _logService.AddChangeAsync(
                     "DovizKodu",
-                    $"Döviz kodu güncellendi (kod değişti): {normalizedOriginal} -> {dovizKodu.TCMB}",
+                    $"TCMB: {dovizKodu.TCMB}",
+                    new
+                    {
+                        TCMB = normalizedOriginal,
+                        existing.Name,
+                        existing.DovizKoduAktifPasif
+                    },
+                    new
+                    {
+                        dovizKodu.TCMB,
+                        dovizKodu.Name,
+                        dovizKodu.DovizKoduAktifPasif
+                    },
                     GetUserEmail()
                 );
 
@@ -156,14 +167,17 @@ namespace EMutabakat.Services
                     .FirstOrDefaultAsync(x => x.TCMB == dovizKodu.TCMB);
             }
 
+            var oldSnapshot = new { existing.Name, existing.DovizKoduAktifPasif };
+
             existing.Name = dovizKodu.Name;
             existing.DovizKoduAktifPasif = dovizKodu.DovizKoduAktifPasif;
             await context.SaveChangesAsync();
 
-            await _logService.AddAsync(
-                "Uyarı",
+            await _logService.AddChangeAsync(
                 "DovizKodu",
-                $"Döviz kodu güncellendi: TCMB: {dovizKodu.TCMB} Adı: {dovizKodu.Name}",
+                $"TCMB: {dovizKodu.TCMB}",
+                oldSnapshot,
+                new { dovizKodu.Name, dovizKodu.DovizKoduAktifPasif },
                 GetUserEmail()
             );
 
@@ -190,7 +204,7 @@ namespace EMutabakat.Services
                 await _logService.AddAsync(
                     "Uyarı",
                     "DovizKodu",
-                    $"Döviz kodu silindi: TCMB: {entity.TCMB} Adı: {entity.Name}",
+                    $"Döviz kodu silindi | TCMB: {entity.TCMB}, Adı: {entity.Name}",
                     GetUserEmail()
                 );
 
@@ -198,11 +212,16 @@ namespace EMutabakat.Services
             }
             catch (Exception ex)
             {
+                var detail = ex.Message;
+                var inner = ex.InnerException;
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
+
                 await _logService.AddAsync(
                     "Hata",
                     "DovizKodu",
-                    $"Döviz kodu silinemedi: TCMB: {entity.TCMB} Adı: {entity.Name}",
-                    GetUserEmail()
+                    $"Döviz kodu silinemedi | TCMB: {entity.TCMB}, Adı: {entity.Name}",
+                    GetUserEmail(),
+                    detail
                 );
 
                 throw new Exception("Bu döviz kodu başka kayıtlarda kullanıldığı için silinemez.");

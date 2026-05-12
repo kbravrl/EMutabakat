@@ -283,6 +283,18 @@ namespace EMutabakat.Services
 
             if (!keyChanged)
             {
+                var oldSnapshot = new
+                {
+                    MutabakatId = oldMutabakatId,
+                    CariId = oldCariId,
+                    FirmaId = oldFirmaId,
+                    Tarih = oldTarih.ToString("yyyy-MM-dd"),
+                    Doviz = oldDoviz,
+                    BakiyeTipi = oldBakiyeTipi,
+                    Bakiye = oldBakiye,
+                    Aciklama = oldAciklama
+                };
+
                 existingMutabakat.MutabakatId = mutabakat.MutabakatId;
                 existingMutabakat.MutabakatDovizKodu = mutabakat.MutabakatDovizKodu;
                 existingMutabakat.MutabakatBakiye = mutabakat.MutabakatBakiye;
@@ -293,10 +305,21 @@ namespace EMutabakat.Services
 
                 await context.SaveChangesAsync();
 
-                await _logService.AddAsync(
-                    "Uyarı",
+                await _logService.AddChangeAsync(
                     "Mutabakat",
-                    $"Mutabakat güncellendi. MutabakatId: {oldMutabakatId}->{existingMutabakat.MutabakatId}, CariId: {oldCariId}->{existingMutabakat.CariId}, FirmaId: {oldFirmaId}->{existingMutabakat.FirmaId}, Tarih: {oldTarih:yyyy-MM-dd}->{existingMutabakat.MutabakatTarihi:yyyy-MM-dd}, Döviz: {oldDoviz}->{existingMutabakat.MutabakatDovizKodu}, BakiyeTipi: {oldBakiyeTipi}->{existingMutabakat.MutabakatBakiyeTipi}, Bakiye: {oldBakiye}->{existingMutabakat.MutabakatBakiye}, Açıklama: {oldAciklama}->{existingMutabakat.MutabakatAciklama}",
+                    $"Mutabakat Id: {existingMutabakat.MutabakatId}, Cari Id: {existingMutabakat.CariId}, Firma Id: {existingMutabakat.FirmaId}",
+                    oldSnapshot,
+                    new
+                    {
+                        MutabakatId = existingMutabakat.MutabakatId,
+                        CariId = existingMutabakat.CariId,
+                        FirmaId = existingMutabakat.FirmaId,
+                        Tarih = existingMutabakat.MutabakatTarihi.ToString("yyyy-MM-dd"),
+                        Doviz = existingMutabakat.MutabakatDovizKodu,
+                        BakiyeTipi = existingMutabakat.MutabakatBakiyeTipi,
+                        Bakiye = existingMutabakat.MutabakatBakiye,
+                        Aciklama = existingMutabakat.MutabakatAciklama
+                    },
                     GetUserEmail()
                 );
 
@@ -332,10 +355,31 @@ namespace EMutabakat.Services
             context.Mutabakatlar.Add(newMutabakat);
             await context.SaveChangesAsync();
 
-            await _logService.AddAsync(
-                "Uyarı",
+            await _logService.AddChangeAsync(
                 "Mutabakat",
-                $"Mutabakat anahtar alanlarıyla birlikte güncellendi. MutabakatId: {oldMutabakatId}->{newMutabakat.MutabakatId}, CariId: {oldCariId}->{newMutabakat.CariId}, FirmaId: {oldFirmaId}->{newMutabakat.FirmaId}, Tarih: {oldTarih:yyyy-MM-dd}->{newMutabakat.MutabakatTarihi:yyyy-MM-dd}, Döviz: {oldDoviz}->{newMutabakat.MutabakatDovizKodu}, BakiyeTipi: {oldBakiyeTipi}->{newMutabakat.MutabakatBakiyeTipi}, Bakiye: {oldBakiye}->{newMutabakat.MutabakatBakiye}, Açıklama: {oldAciklama}->{newMutabakat.MutabakatAciklama}",
+                $"Mutabakat Id: {newMutabakat.MutabakatId}, Cari Id: {newMutabakat.CariId}, Firma Id: {newMutabakat.FirmaId}",
+                new
+                {
+                    MutabakatId = oldMutabakatId,
+                    CariId = oldCariId,
+                    FirmaId = oldFirmaId,
+                    Tarih = oldTarih.ToString("yyyy-MM-dd"),
+                    Doviz = oldDoviz,
+                    BakiyeTipi = oldBakiyeTipi,
+                    Bakiye = oldBakiye,
+                    Aciklama = oldAciklama
+                },
+                new
+                {
+                    MutabakatId = newMutabakat.MutabakatId,
+                    CariId = newMutabakat.CariId,
+                    FirmaId = newMutabakat.FirmaId,
+                    Tarih = newMutabakat.MutabakatTarihi.ToString("yyyy-MM-dd"),
+                    Doviz = newMutabakat.MutabakatDovizKodu,
+                    BakiyeTipi = newMutabakat.MutabakatBakiyeTipi,
+                    Bakiye = newMutabakat.MutabakatBakiye,
+                    Aciklama = newMutabakat.MutabakatAciklama
+                },
                 GetUserEmail()
             );
 
@@ -978,13 +1022,6 @@ namespace EMutabakat.Services
             var createdCount = 0;
             var mailSentCount = 0;
 
-            await _logService.AddAsync(
-                "Bilgi",
-                "Mutabakat",
-                $"Excel import başladı. Dosya: {fileName}, Mail Gönder: {sendMail}",
-                GetUserEmail()
-            );
-
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             try
@@ -1000,6 +1037,7 @@ namespace EMutabakat.Services
                 if (sheet == null)
                 {
                     errors.Add("Excel sayfası bulunamadı.");
+                    await _logService.AddImportResultAsync("Mutabakat", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -1007,6 +1045,7 @@ namespace EMutabakat.Services
                 if (headerRow == null)
                 {
                     errors.Add("Excel başlık satırı bulunamadı.");
+                    await _logService.AddImportResultAsync("Mutabakat", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                     return (0, 0, errors);
                 }
 
@@ -1033,6 +1072,7 @@ namespace EMutabakat.Services
                             continue;
 
                         errors.Add($"Gerekli sütun '{h}' bulunamadı.");
+                        await _logService.AddImportResultAsync("Mutabakat", $"Excel import başarısız. Dosya: {fileName}", errors, GetUserEmail());
                         return (0, 0, errors);
                     }
                 }
@@ -1211,10 +1251,10 @@ namespace EMutabakat.Services
                     {
                         await tx.RollbackAsync();
 
-                        await _logService.AddAsync(
-                            "Hata",
+                        await _logService.AddImportResultAsync(
                             "Mutabakat",
-                            $"Excel import rollback oldu. Dosya: {fileName}, Hata sayısı: {errors.Count}",
+                            $"Excel import rollback oldu. Dosya: {fileName}",
+                            errors,
                             GetUserEmail()
                         );
 
@@ -1290,10 +1330,10 @@ namespace EMutabakat.Services
                         {
                             await tx.RollbackAsync();
 
-                            await _logService.AddAsync(
-                                "Hata",
+                            await _logService.AddImportResultAsync(
                                 "Mutabakat",
-                                $"Excel import mail aşamasında rollback oldu. Dosya: {fileName}, Hata sayısı: {errors.Count}",
+                                $"Excel import mail aşamasında rollback oldu. Dosya: {fileName}",
+                                errors,
                                 GetUserEmail()
                             );
 
@@ -1305,10 +1345,10 @@ namespace EMutabakat.Services
 
                     await tx.CommitAsync();
 
-                    await _logService.AddAsync(
-                        "Bilgi",
+                    await _logService.AddImportResultAsync(
                         "Mutabakat",
                         $"Excel import tamamlandı. Dosya: {fileName}, Oluşturulan: {createdCount}, Gönderilen Mail: {mailSentCount}",
+                        errors,
                         GetUserEmail()
                     );
 
@@ -1320,18 +1360,14 @@ namespace EMutabakat.Services
 
                     var detail = exMailAny.Message;
                     var inner = exMailAny.InnerException;
-                    while (inner != null)
-                    {
-                        detail += " -> " + inner.Message;
-                        inner = inner.InnerException;
-                    }
+                    while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
 
                     errors.Add($"Import sırasında hata oluştu: {detail}");
 
-                    await _logService.AddAsync(
-                        "Hata",
+                    await _logService.AddImportResultAsync(
                         "Mutabakat",
-                        $"Excel import genel işlem hatası: {detail}",
+                        $"Excel import genel işlem hatası. Dosya: {fileName}",
+                        errors,
                         GetUserEmail()
                     );
 
@@ -1342,18 +1378,14 @@ namespace EMutabakat.Services
             {
                 var detail = ex.Message;
                 var inner = ex.InnerException;
-                while (inner != null)
-                {
-                    detail += " -> " + inner.Message;
-                    inner = inner.InnerException;
-                }
+                while (inner != null) { detail += " → " + inner.Message; inner = inner.InnerException; }
 
                 errors.Add($"İşlem sırasında hata oluştu: {detail}");
 
-                await _logService.AddAsync(
-                    "Hata",
+                await _logService.AddImportResultAsync(
                     "Mutabakat",
-                    $"Mutabakat import dış hata: {detail}",
+                    $"Mutabakat import dış hata. Dosya: {fileName}",
+                    errors,
                     GetUserEmail()
                 );
 
