@@ -85,41 +85,44 @@
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Firma"
-                                          Title="İşlemler"
-                                          Sortable="false"
-                                          Filterable="false"
-                                          Width="220px">
-                        <Template Context="firma">
-                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                                @if (canEdit)
-                                {
-                                    <RadzenButton Icon="edit"
+                    @if (canEdit || canDelete)
+                    {
+                        <RadzenDataGridColumn TItem="Firma"
+                                              Title="İşlemler"
+                                              Sortable="false"
+                                              Filterable="false"
+                                              Width="220px">
+                            <Template Context="firma">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                    @if (canEdit)
+                                    {
+                                        <RadzenButton Icon="edit"
+                                                      Size="ButtonSize.Small"
+                                                      Variant="Variant.Flat"
+                                                      Title="Düzenle"
+                                                      Click="@(() => GoToEditPage(firma.FirmaId))" />
+                                    }
+
+                                    <RadzenButton Icon="visibility"
                                                   Size="ButtonSize.Small"
                                                   Variant="Variant.Flat"
-                                                  Title="Düzenle"
-                                                  Click="@(() => GoToEditPage(firma.FirmaId))" />
-                                }
+                                                  ButtonStyle="ButtonStyle.Info"
+                                                  Title="Detay"
+                                                  Click="@(() => GoToDetailsPage(firma.FirmaId))" />
 
-                                <RadzenButton Icon="visibility"
-                                              Size="ButtonSize.Small"
-                                              Variant="Variant.Flat"
-                                              ButtonStyle="ButtonStyle.Info"
-                                              Title="Detay"
-                                              Click="@(() => GoToDetailsPage(firma.FirmaId))" />
-
-                                @if (canDelete)
-                                {
-                                    <RadzenButton Icon="delete"
-                                                  Size="ButtonSize.Small"
-                                                  Variant="Variant.Flat"
-                                                  ButtonStyle="ButtonStyle.Danger"
-                                                  Title="Sil"
-                                                  Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
-                                }
-                            </RadzenStack>
-                        </Template>
-                    </RadzenDataGridColumn>
+                                    @if (canDelete)
+                                    {
+                                        <RadzenButton Icon="delete"
+                                                      Size="ButtonSize.Small"
+                                                      Variant="Variant.Flat"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Title="Sil"
+                                                      Click="@(() => DeleteFirma(firma.FirmaId, firma.FirmaAdi))" />
+                                    }
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
                 </Columns>
             </RadzenDataGrid>
         </RadzenCard>
@@ -215,8 +218,7 @@
             .Where(x => string.IsNullOrWhiteSpace(selectedIl) || x.FirmaIl == selectedIl)
             .Where(x => string.IsNullOrWhiteSpace(selectedIlce) || x.FirmaIlce == selectedIlce)
             .Where(x => !selectedDurum.HasValue || x.FirmaAktifPasif == selectedDurum.Value)
-            .OrderByDescending(x => x.FirmaAktifPasif)
-            .ThenBy(x => x.FirmaAdi)
+            .OrderBy(x => x.FirmaId)
             .ToList();
 
     private void ClearFilters()

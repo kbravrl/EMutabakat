@@ -114,33 +114,36 @@
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Kullanici" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
-                        <Template Context="item">
-                            @if (!item.IsSeedUser || IsCurrentUser(item.KullaniciMail))
-                            {
-                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                                    @if (canEdit)
-                                    {
-                                        <RadzenButton Icon="edit"
-                                                      Size="ButtonSize.Small"
-                                                      Variant="Variant.Flat"
-                                                      Title="Düzenle"
-                                                      Click="@(() => GoToEditPage(item.KullaniciId))" />
-                                    }
+                    @if (canEdit || canDelete)
+                    {
+                        <RadzenDataGridColumn TItem="Kullanici" Title="İşlemler" Sortable="false" Filterable="false" Width="220px">
+                            <Template Context="item">
+                                @if (!item.IsSeedUser || IsCurrentUser(item.KullaniciMail))
+                                {
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                        @if (canEdit)
+                                        {
+                                            <RadzenButton Icon="edit"
+                                                          Size="ButtonSize.Small"
+                                                          Variant="Variant.Flat"
+                                                          Title="Düzenle"
+                                                          Click="@(() => GoToEditPage(item.KullaniciId))" />
+                                        }
 
-                                    @if (canDelete && !item.IsSeedUser)
-                                    {
-                                        <RadzenButton Icon="delete"
-                                                      Size="ButtonSize.Small"
-                                                      Variant="Variant.Flat"
-                                                      ButtonStyle="ButtonStyle.Danger"
-                                                      Title="Sil"
-                                                      Click="@(() => DeleteKullanici(item.KullaniciId, item.KullaniciAdi, item.KullaniciSoyadi))" />
-                                    }
-                                </RadzenStack>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
+                                        @if (canDelete && !item.IsSeedUser)
+                                        {
+                                            <RadzenButton Icon="delete"
+                                                          Size="ButtonSize.Small"
+                                                          Variant="Variant.Flat"
+                                                          ButtonStyle="ButtonStyle.Danger"
+                                                          Title="Sil"
+                                                          Click="@(() => DeleteKullanici(item.KullaniciId, item.KullaniciAdi, item.KullaniciSoyadi))" />
+                                        }
+                                    </RadzenStack>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
                 </Columns>
             </RadzenDataGrid>
         </RadzenCard>
@@ -336,7 +339,6 @@
         filteredKullanicilar = query
             .OrderBy(x => GetKullaniciSortValue(x.KullaniciId))
             .ThenBy(x => x.KullaniciId)
-            .ThenBy(x => x.KullaniciAdi)
             .ToList();
     }
 

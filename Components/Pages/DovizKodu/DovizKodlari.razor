@@ -87,30 +87,33 @@
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false">
-                        <Template Context="item">
-                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                                @if (canEdit)
-                                {
-                                    <RadzenButton Icon="edit"
-                                                  Size="ButtonSize.Small"
-                                                  Variant="Variant.Flat"
-                                                  Title="Düzenle"
-                                                  Click="@(() => GoToEditPage(item.TCMB))" />
-                                }
+                    @if (canEdit || canDelete)
+                    {
+                        <RadzenDataGridColumn TItem="DovizKodu" Title="İşlemler" Sortable="false" Filterable="false">
+                            <Template Context="item">
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                    @if (canEdit)
+                                    {
+                                        <RadzenButton Icon="edit"
+                                                      Size="ButtonSize.Small"
+                                                      Variant="Variant.Flat"
+                                                      Title="Düzenle"
+                                                      Click="@(() => GoToEditPage(item.TCMB))" />
+                                    }
 
-                                @if (canDelete)
-                                {
-                                    <RadzenButton Icon="delete"
-                                                  Size="ButtonSize.Small"
-                                                  Variant="Variant.Flat"
-                                                  ButtonStyle="ButtonStyle.Danger"
-                                                  Title="Sil"
-                                                  Click="@(() => DeleteDovizKodu(item.TCMB, item.Name))" />
-                                }
-                            </RadzenStack>
-                        </Template>
-                    </RadzenDataGridColumn>
+                                    @if (canDelete)
+                                    {
+                                        <RadzenButton Icon="delete"
+                                                      Size="ButtonSize.Small"
+                                                      Variant="Variant.Flat"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Title="Sil"
+                                                      Click="@(() => DeleteDovizKodu(item.TCMB, item.Name))" />
+                                    }
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
                 </Columns>
             </RadzenDataGrid>
         </RadzenCard>
@@ -250,7 +253,7 @@
             query = query.Where(x => x.DovizKoduAktifPasif == selectedDurum.Value);
         }
 
-        filteredDovizKodlari = query.OrderBy(x => x.Name).ToList();
+        filteredDovizKodlari = query.OrderBy(x => x.TCMB).ToList();
     }
 
     private void ClearFilters()
