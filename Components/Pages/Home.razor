@@ -13,36 +13,41 @@
 
 <PageTitle>Kontrol Paneli</PageTitle>
 
-<RadzenStack Gap="1rem" class="p-4">
-    <RadzenText TextStyle="TextStyle.H4">Kontrol Paneli</RadzenText>
-
+<RadzenStack Gap="1.5rem" class="p-4">
+    <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenColumn Size="12" SizeMD="8">
+            <RadzenText TextStyle="TextStyle.H4">Kontrol Paneli</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Özet metrikler ve mutabakat performansı</RadzenText>
+        </RadzenColumn>
+    </RadzenRow>
+    
     <RadzenRow Gap="16px">
         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
-            <RadzenCard>
+            <RadzenCard Style="border-left:4px solid #4c6ef5;">
                 <RadzenStack Gap="0.5rem">
-                    <RadzenText TextStyle="TextStyle.Subtitle2">Firmalar</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H5">@firmaCount</RadzenText>
-                    <RadzenButton Text="Firmalara git" Icon="business" Style="font-size:14px;" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
+                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#4c6ef5">Firmalar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">@firmaCount</RadzenText>
+                    <RadzenButton Text="Firmalara git" Icon="business" Style="font-size:14px;" ButtonStyle="ButtonStyle.Light" Click='@(() => NavigationManager.NavigateTo("/companies"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
-            <RadzenCard>
+            <RadzenCard Style="border-left:4px solid #20c997;">
                 <RadzenStack Gap="0.5rem">
-                    <RadzenText TextStyle="TextStyle.Subtitle2">Cariler</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H5">@cariCount</RadzenText>
-                    <RadzenButton Text="Carilere git" Icon="account_circle" Style="font-size:14px;" Click='@(() => NavigationManager.NavigateTo("/currents"))' />
+                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#20c997">Cariler</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">@cariCount</RadzenText>
+                    <RadzenButton Text="Carilere git" Icon="account_circle" Style="font-size:14px;" ButtonStyle="ButtonStyle.Light" Click='@(() => NavigationManager.NavigateTo("/currents"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
 
         <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
-            <RadzenCard>
+            <RadzenCard Style="border-left:4px solid #f59f00;">
                 <RadzenStack Gap="0.5rem">
-                    <RadzenText TextStyle="TextStyle.Subtitle2">Mutabakatlar</RadzenText>
-                    <RadzenText TextStyle="TextStyle.H5">@mutabakatCount</RadzenText>
-                    <RadzenButton Text="Mutabakatlara git" Icon="description" Style="font-size:14px;"  Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
+                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#f59f00">Mutabakatlar</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H4">@mutabakatCount</RadzenText>
+                    <RadzenButton Text="Mutabakatlara git" Icon="description" Style="font-size:14px;" ButtonStyle="ButtonStyle.Light" Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
                 </RadzenStack>
             </RadzenCard>
         </RadzenColumn>
@@ -50,11 +55,11 @@
         <AuthorizeView Roles="Admin">
             <Authorized>
                 <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
-                    <RadzenCard>
+                    <RadzenCard Style="border-left:4px solid #845ef7;">
                         <RadzenStack Gap="0.5rem">
-                            <RadzenText TextStyle="TextStyle.Subtitle2">Kullanıcılar</RadzenText>
-                            <RadzenText TextStyle="TextStyle.H5">@kullaniciCount</RadzenText>
-                            <RadzenButton Text="Kullanıcılara git" Icon="people" Style="font-size:14px;" Click='@(() => NavigationManager.NavigateTo("/users"))' />
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#845ef7">Kullanıcılar</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H4">@kullaniciCount</RadzenText>
+                            <RadzenButton Text="Kullanıcılara git" Icon="people" Style="font-size:14px;" ButtonStyle="ButtonStyle.Light" Click='@(() => NavigationManager.NavigateTo("/users"))' />
                         </RadzenStack>
                     </RadzenCard>
                 </RadzenColumn>
@@ -62,20 +67,30 @@
         </AuthorizeView>
     </RadzenRow>
 
-    <div style="background:#8e44ad;color:white;padding:15px;border-radius:4px;display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:15px">
-            <span style="font-size:18px;font-weight:600">★ Özel Mutabakat Analizi</span>
-        </div>
-        <div>
-            <RadzenButton ButtonStyle="ButtonStyle.Light"
-                          Style="color:white;background:transparent;border:0; font-size:15px;"
-                          Icon="search"
-                          Text="Detaylı incele"
-                          Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
-        </div>
-    </div>
+    <RadzenCard Style="background:linear-gradient(135deg,#5f3dc4,#7950f2);color:white;">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenText TextStyle="TextStyle.H5" Style="color:white">Özel Mutabakat Analizi</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Style="color:rgba(255,255,255,0.8)">Dönem ve bakiye tipine göre analizleri inceleyin.</RadzenText>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4" Style="text-align:right">
+                <RadzenButton ButtonStyle="ButtonStyle.Light"
+                              Style="color:white;background:transparent;border:1px solid rgba(255,255,255,0.6); font-size:14px;"
+                              Icon="search"
+                              Text="Detaylı incele"
+                              Click='@(() => NavigationManager.NavigateTo("/reconciliations"))' />
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
 
     <RadzenCard>
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-2">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenText TextStyle="TextStyle.H6">Özet Mutabakat Analizi</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Seçili dönem ve bakiye tipine göre özet durum.</RadzenText>
+            </RadzenColumn>
+        </RadzenRow>
+
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeMD="3">
                 <RadzenDropDown TValue="string"
@@ -117,124 +132,170 @@
         }
         else
         {
-        <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
-            <RadzenRow>
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center">
-                        <div style="color:#888">İlk Gönderim Tarihi:</div>
-                        <div>@(firstSendDate?.ToString("dd.MM.yyyy") ?? "---")</div>
-                    </div>
-                </RadzenColumn>
+            <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
+                <RadzenRow Gap="16px">
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">İlk Gönderim</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(firstSendDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center">
-                        <div style="color:#888">Tahmini Bitiş Tarihi:</div>
-                        <div>@(estimatedEndDate?.ToString("dd.MM.yyyy") ?? "---")</div>
-                    </div>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Tahmini Bitiş</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(estimatedEndDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center">
-                        <div style="color:#888">Günlük Ortalama:</div>
-                        <div style="font-size:20px;font-weight:600">@gunlukOrtalama</div>
-                    </div>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Günlük Ortalama</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@gunlukOrtalama</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center">
-                        <div style="color:#888">Kalan Gün:</div>
-                        <div style="font-size:20px;font-weight:600">@kalanGun</div>
-                    </div>
-                </RadzenColumn>
-            </RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Kalan Gün</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@kalanGun</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
 
-            <RadzenRow style="margin-top:15px">
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center;padding:16px">
-                        <div style="font-size:28px;font-weight:700">@mutabikCount</div>
-                        <div style="color:#888">Mutabık</div>
-                    </div>
-                </RadzenColumn>
+                <RadzenRow Gap="16px" style="margin-top:15px">
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.H5" Style="color:#27ae60;font-weight:700">@mutabikCount</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Mutabık</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center;padding:16px">
-                        <div style="font-size:28px;font-weight:700">@onayBekleyenCount</div>
-                        <div style="color:#888">Onay Bekleyen</div>
-                    </div>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.H5" Style="color:#f39c12;font-weight:700">@onayBekleyenCount</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Onay Bekleyen</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center;padding:16px">
-                        <div style="font-size:28px;font-weight:700">@gonderilmeyenCount</div>
-                        <div style="color:#888">Gönderilmeyen</div>
-                    </div>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.H5" Style="color:#e74c3c;font-weight:700">@gonderilmeyenCount</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Gönderilmeyen</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3">
-                    <div style="text-align:center;padding:16px">
-                        <div style="font-size:28px;font-weight:700">@mutabakatCount</div>
-                        <div style="color:#888">Toplam</div>
-                    </div>
-                </RadzenColumn>
-            </RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenCard Style="text-align:center">
+                            <RadzenText TextStyle="TextStyle.H5" Style="color:#4c6ef5;font-weight:700">@mutabakatCount</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Toplam</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
 
-            <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" style="margin-top:15px">
-                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #27ae60;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                            @mutabikYuzde%
-                        </div>
-                        <div style="color:#27ae60;font-weight:700">Mutabık</div>
-                        <div style="color:#888">@mutabikCount</div>
-                    </div>
-                </RadzenColumn>
+                <RadzenRow Gap="16px" JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" style="margin-top:15px">
+                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
+                        <RadzenCard>
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #27ae60;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                                    @mutabikYuzde%
+                                </div>
+                                <div style="color:#27ae60;font-weight:700">Mutabık</div>
+                                <div style="color:#888">@mutabikCount</div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #f39c12;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                            @onayBekleyenYuzde%
-                        </div>
-                        <div style="color:#f39c12;font-weight:700">Onay Bekleyen</div>
-                        <div style="color:#888">@onayBekleyenCount</div>
-                    </div>
-                </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
+                        <RadzenCard>
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #f39c12;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                                    @onayBekleyenYuzde%
+                                </div>
+                                <div style="color:#f39c12;font-weight:700">Onay Bekleyen</div>
+                                <div style="color:#888">@onayBekleyenCount</div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
 
-                <RadzenColumn Size="12" SizeMD="3" Style="text-align:center">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-                        <div style="width:100px;height:100px;border-radius:50%;border:10px solid #e74c3c;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                            @gonderilmeyenYuzde%
-                        </div>
-                        <div style="color:#e74c3c;font-weight:700">Gönderilmeyen</div>
-                        <div style="color:#888">@gonderilmeyenCount</div>
-                    </div>
-                </RadzenColumn>
-            </RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
+                        <RadzenCard>
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #e74c3c;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
+                                    @gonderilmeyenYuzde%
+                                </div>
+                                <div style="color:#e74c3c;font-weight:700">Gönderilmeyen</div>
+                                <div style="color:#888">@gonderilmeyenCount</div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
 
-            <div style="margin-top:15px">
-                <table style="width:100%;border-collapse:collapse">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">&nbsp;</th>
-                            <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam Adet</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in tableRows)
-                        {
-                            <tr>
-                                <td style="padding:6px;border-bottom:1px solid #f1f1f1">
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div style=@($"width:14px;height:14px;background:{row.Color};border-radius:2px")></div>
-                                        <div>@row.Label</div>
-                                    </div>
-                                </td>
-                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Count</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <RadzenRow Gap="16px" style="margin-top:20px">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin-bottom:4px">Durum Dağılımı</RadzenText>
+                            <table style="width:100%;border-collapse:collapse">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Durum</th>
+                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam Adet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in tableRows)
+                                    {
+                                        <tr>
+                                            <td style="padding:6px;border-bottom:1px solid #f1f1f1">
+                                                <div>
+                                                    @row.Label
+                                                </div>
+                                            </td>
+                                            <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenCard>
+                            <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin-bottom:4px">Döviz Bazlı Bakiye Dağılımı</RadzenText>
+                            <table style="width:100%;border-collapse:collapse">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Döviz</th>
+                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Borç</th>
+                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Alacak</th>
+                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (currencyBalanceRows.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="4" style="padding:8px;border-bottom:1px solid #f1f1f1;color:#888">Kayıt bulunamadı.</td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var row in currencyBalanceRows)
+                                        {
+                                            <tr>
+                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1">@row.Currency</td>
+                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Borc.ToString("N2")</td>
+                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Alacak.ToString("N2")</td>
+                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Total.ToString("N2")</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
             </div>
-        </div>
         }
     </RadzenCard>
 </RadzenStack>
@@ -273,6 +334,7 @@
     private int dayCount = 0;
 
     private List<DashboardRow> tableRows = new();
+    private List<CurrencyBalanceRow> currencyBalanceRows = new();
 
     private List<FilterOption<int?>> statusOptions = new()
     {
@@ -302,6 +364,14 @@
         public string Label { get; set; } = string.Empty;
         public string Color { get; set; } = "#3498db";
         public int Count { get; set; }
+    }
+
+    private class CurrencyBalanceRow
+    {
+        public string Currency { get; set; } = string.Empty;
+        public decimal Borc { get; set; }
+        public decimal Alacak { get; set; }
+        public decimal Total { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
@@ -340,6 +410,7 @@
         gonderilmeyenYuzde = 0;
 
         tableRows = new List<DashboardRow>();
+        currencyBalanceRows = new List<CurrencyBalanceRow>();
     }
 
     private void UpdateAnalysis()
@@ -393,6 +464,23 @@
                 new DashboardRow { Label = "Mutabık", Color = "#27ae60", Count = mutabikCount },
                 new DashboardRow { Label = "Mutabık Değil", Color = "#e74c3c", Count = mutabikDegilCount }
             };
+
+            currencyBalanceRows = filtered
+                .GroupBy(x => string.IsNullOrWhiteSpace(x.MutabakatDovizKodu) ? "TL" : x.MutabakatDovizKodu)
+                .Select(group =>
+                {
+                    var borc = group.Where(x => x.MutabakatBakiyeTipi == "B").Sum(x => x.MutabakatBakiye);
+                    var alacak = group.Where(x => x.MutabakatBakiyeTipi == "A").Sum(x => x.MutabakatBakiye);
+                    return new CurrencyBalanceRow
+                    {
+                        Currency = group.Key,
+                        Borc = borc,
+                        Alacak = alacak,
+                        Total = borc + alacak
+                    };
+                })
+                .OrderByDescending(x => x.Total)
+                .ToList();
 
             if (filtered.Count > 0)
             {
