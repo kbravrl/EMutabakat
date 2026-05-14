@@ -2,10 +2,11 @@ using EMutabakat.Models;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using EMutabakat.Tests.Testing;
+using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Integration.Services
 {
     public class CariGrupServiceTests
     {
@@ -27,16 +28,12 @@ namespace EMutabakat.Tests.Services
         private CariGrupService CreateService(string dbName, string? userEmail = null)
         {
             var factory = TestDbContextFactory.CreateMockFactory(dbName);
-            // userEmail null ise anonim (GetAllowedFirmaIds null döner → tüm kayıtlar görünür)
             var httpAccessor = userEmail != null
                 ? FakeHttpContextAccessor.CreateAuthenticated(userEmail)
                 : FakeHttpContextAccessor.CreateAnonymous();
             return new CariGrupService(factory.Object, _mockLog.Object, httpAccessor.Object);
         }
 
-        /// <summary>
-        /// Test veritabanına örnek firma ekler.
-        /// </summary>
         private static async Task SeedFirmaAsync(string dbName, int firmaId = 1)
         {
             await using var ctx = TestDbContextFactory.Create(dbName);
@@ -70,7 +67,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GenerateNextCariGrupIdAsync();
 
-            Assert.Equal("P1", result);
+            result.Should().Be("P1");
         }
 
         [Fact]
@@ -90,7 +87,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.GenerateNextCariGrupIdAsync();
 
-            Assert.Equal("P6", result);
+            result.Should().Be("P6");
         }
 
         // ─── AddAsync ────────────────────────────────────────────────────────────
@@ -112,9 +109,9 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.AddAsync(grup);
 
-            Assert.NotNull(result);
-            Assert.Equal("P1", result.CariGrupId);
-            Assert.Equal("Yeni Grup", result.CariGrupAdi);
+            result.Should().NotBeNull();
+            result.CariGrupId.Should().Be("P1");
+            result.CariGrupAdi.Should().Be("Yeni Grup");
         }
 
         [Fact]
@@ -124,7 +121,7 @@ namespace EMutabakat.Tests.Services
 
             var grup = new CariGrup { CariGrupId = "P1", FirmaId = 0, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+            await FluentActions.Invoking(() => service.AddAsync(grup)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -136,7 +133,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var grup = new CariGrup { CariGrupId = "  ", FirmaId = 1, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+            await FluentActions.Invoking(() => service.AddAsync(grup)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -148,7 +145,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var grup = new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "", CariGrupAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+            await FluentActions.Invoking(() => service.AddAsync(grup)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -165,7 +162,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var grup = new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Yeni", CariGrupAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+            await FluentActions.Invoking(() => service.AddAsync(grup)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -175,7 +172,7 @@ namespace EMutabakat.Tests.Services
 
             var grup = new CariGrup { CariGrupId = "P1", FirmaId = 999, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+            await FluentActions.Invoking(() => service.AddAsync(grup)).Should().ThrowAsync<Exception>();
         }
 
         // ─── GetByIdAsync ────────────────────────────────────────────────────────
@@ -191,12 +188,11 @@ namespace EMutabakat.Tests.Services
                 await ctx.SaveChangesAsync();
             }
 
-            // Anonim kullanıcı → GetAllowedFirmaIds null → tüm kayıtlar erişilebilir
             var service = CreateService(dbName, userEmail: null);
             var result = await service.GetByIdAsync("P1", 1);
 
-            Assert.NotNull(result);
-            Assert.Equal("Grup A", result!.CariGrupAdi);
+            result.Should().NotBeNull();
+            result!.CariGrupAdi.Should().Be("Grup A");
         }
 
         [Fact]
@@ -206,7 +202,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GetByIdAsync("YOK", 1);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── UpdateAsync ─────────────────────────────────────────────────────────
@@ -235,9 +231,9 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated);
 
-            Assert.NotNull(result);
-            Assert.Equal("Yeni Ad", result!.CariGrupAdi);
-            Assert.Equal(0, result.CariGrupAktifPasif);
+            result.Should().NotBeNull();
+            result!.CariGrupAdi.Should().Be("Yeni Ad");
+            result.CariGrupAktifPasif.Should().Be(0);
         }
 
         [Fact]
@@ -259,7 +255,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── DeleteAsync ─────────────────────────────────────────────────────────
@@ -278,7 +274,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.DeleteAsync("P1", 1);
 
-            Assert.True(result);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -288,7 +284,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.DeleteAsync("YOK", 1);
 
-            Assert.False(result);
+            result.Should().BeFalse();
         }
 
         [Fact]
@@ -306,7 +302,7 @@ namespace EMutabakat.Tests.Services
             await service.DeleteAsync("P1", 1);
 
             var result = await service.GetByIdAsync("P1", 1);
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── GetAllAsync ─────────────────────────────────────────────────────────
@@ -325,11 +321,10 @@ namespace EMutabakat.Tests.Services
                 await ctx.SaveChangesAsync();
             }
 
-            // Anonim kullanıcı → GetAllowedFirmaIds null → tüm kayıtlar
             var service = CreateService(dbName, userEmail: null);
             var result = await service.GetAllAsync();
 
-            Assert.Equal(2, result.Count);
+            result.Should().HaveCount(2);
         }
     }
 }

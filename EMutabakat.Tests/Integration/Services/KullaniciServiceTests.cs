@@ -2,11 +2,12 @@ using EMutabakat.Models;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using EMutabakat.Tests.Testing;
+using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Moq;
 using Xunit;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Integration.Services
 {
     public class KullaniciServiceTests
     {
@@ -34,9 +35,6 @@ namespace EMutabakat.Tests.Services
             return new KullaniciService(factory.Object, _mockLog.Object, httpAccessor.Object);
         }
 
-        /// <summary>
-        /// Test için şifrelenmiş kullanıcı oluşturur.
-        /// </summary>
         private static Kullanici CreateHashedKullanici(string mail, string plainPassword, bool aktif = true)
         {
             var kullanici = new Kullanici
@@ -46,7 +44,7 @@ namespace EMutabakat.Tests.Services
                 KullaniciSoyadi = "Kullanıcı",
                 KullaniciMail = mail.Trim().ToLower(),
                 KullaniciAktifPasif = aktif ? "1" : "0",
-                Yetkileri = new KullaniciYetki()
+                Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
             };
             var hasher = new PasswordHasher<Kullanici>();
             kullanici.Sifre = hasher.HashPassword(kullanici, plainPassword);
@@ -70,8 +68,8 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.LoginAsync("user@test.com", "sifre123");
 
-            Assert.NotNull(result);
-            Assert.Equal("user@test.com", result!.KullaniciMail);
+            result.Should().NotBeNull();
+            result!.KullaniciMail.Should().Be("user@test.com");
         }
 
         [Fact]
@@ -89,7 +87,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.LoginAsync("user@test.com", "yanlisSifre");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -99,7 +97,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.LoginAsync("yok@test.com", "herhangi");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -117,7 +115,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.LoginAsync("pasif@test.com", "sifre123");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -135,7 +133,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.LoginAsync("USER@TEST.COM", "sifre123");
 
-            Assert.NotNull(result);
+            result.Should().NotBeNull();
         }
 
         // ─── RegisterAsync ───────────────────────────────────────────────────────
@@ -158,8 +156,8 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.RegisterAsync(kullanici);
 
-            Assert.NotNull(result);
-            Assert.Equal("ali@test.com", result!.KullaniciMail);
+            result.Should().NotBeNull();
+            result!.KullaniciMail.Should().Be("ali@test.com");
         }
 
         [Fact]
@@ -188,7 +186,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.RegisterAsync(yeni);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── GetByMailAsync ──────────────────────────────────────────────────────
@@ -208,8 +206,8 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.GetByMailAsync("bul@test.com");
 
-            Assert.NotNull(result);
-            Assert.Equal("bul@test.com", result!.KullaniciMail);
+            result.Should().NotBeNull();
+            result!.KullaniciMail.Should().Be("bul@test.com");
         }
 
         [Fact]
@@ -219,7 +217,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GetByMailAsync("yok@test.com");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── GenerateNextKullaniciIdAsync ────────────────────────────────────────
@@ -231,7 +229,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GenerateNextKullaniciIdAsync();
 
-            Assert.Equal("P1", result);
+            result.Should().Be("P1");
         }
 
         [Fact]
@@ -241,8 +239,8 @@ namespace EMutabakat.Tests.Services
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
                 ctx.Kullanicilar.AddRange(
-                    new Kullanici { KullaniciId = "P1", KullaniciAdi = "A", KullaniciSoyadi = "B", KullaniciMail = "a@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki() },
-                    new Kullanici { KullaniciId = "P3", KullaniciAdi = "C", KullaniciSoyadi = "D", KullaniciMail = "c@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki() }
+                    new Kullanici { KullaniciId = "P1", KullaniciAdi = "A", KullaniciSoyadi = "B", KullaniciMail = "a@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki { KullaniciId = "P1" } },
+                    new Kullanici { KullaniciId = "P3", KullaniciAdi = "C", KullaniciSoyadi = "D", KullaniciMail = "c@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki { KullaniciId = "P3" } }
                 );
                 await ctx.SaveChangesAsync();
             }
@@ -250,7 +248,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.GenerateNextKullaniciIdAsync();
 
-            Assert.Equal("P4", result);
+            result.Should().Be("P4");
         }
 
         // ─── IsCurrentUserSeedAsync ──────────────────────────────────────────────
@@ -269,7 +267,7 @@ namespace EMutabakat.Tests.Services
                     KullaniciMail = "seed@test.com",
                     KullaniciAktifPasif = "1",
                     IsSeedUser = true,
-                    Yetkileri = new KullaniciYetki()
+                    Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
                 });
                 await ctx.SaveChangesAsync();
             }
@@ -277,7 +275,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "seed@test.com");
             var result = await service.IsCurrentUserSeedAsync();
 
-            Assert.True(result);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -294,7 +292,7 @@ namespace EMutabakat.Tests.Services
                     KullaniciMail = "normal@test.com",
                     KullaniciAktifPasif = "1",
                     IsSeedUser = false,
-                    Yetkileri = new KullaniciYetki()
+                    Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
                 });
                 await ctx.SaveChangesAsync();
             }
@@ -302,7 +300,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "normal@test.com");
             var result = await service.IsCurrentUserSeedAsync();
 
-            Assert.False(result);
+            result.Should().BeFalse();
         }
 
         // ─── GetCurrentUserEmail ─────────────────────────────────────────────────
@@ -314,7 +312,7 @@ namespace EMutabakat.Tests.Services
 
             var result = service.GetCurrentUserEmail();
 
-            Assert.Equal("test@test.com", result);
+            result.Should().Be("test@test.com");
         }
 
         [Fact]
@@ -326,7 +324,7 @@ namespace EMutabakat.Tests.Services
 
             var result = service.GetCurrentUserEmail();
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
     }
 }

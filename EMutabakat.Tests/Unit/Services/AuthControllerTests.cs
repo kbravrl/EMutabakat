@@ -1,6 +1,7 @@
 using EMutabakat.Controllers;
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
+using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Moq;
 using System.Security.Claims;
 using Xunit;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Unit.Services
 {
     public class AuthControllerTests
     {
@@ -23,7 +24,6 @@ namespace EMutabakat.Tests.Services
         {
             var controller = new AuthController(_mockKullaniciService.Object);
 
-            // HttpContext mock'u — cookie sign-in için IAuthenticationService gerekli
             var authServiceMock = new Mock<IAuthenticationService>();
             authServiceMock
                 .Setup(x => x.SignInAsync(
@@ -82,7 +82,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await controller.Login(model);
 
-            Assert.IsType<OkResult>(result);
+            result.Should().BeOfType<OkResult>();
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await controller.Login(model);
 
-            Assert.IsType<UnauthorizedResult>(result);
+            result.Should().BeOfType<UnauthorizedResult>();
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await controller.Login(model);
 
-            Assert.IsType<BadRequestObjectResult>(result);
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
 
         [Fact]
@@ -164,14 +164,14 @@ namespace EMutabakat.Tests.Services
             var model = new LoginModel { Mail = "user@test.com", Sifre = "sifre123" };
             await controller.Login(model);
 
-            Assert.NotNull(capturedPrincipal);
+            capturedPrincipal.Should().NotBeNull();
             var firmaClaims = capturedPrincipal!.Claims
                 .Where(c => c.Type == "firma_id")
                 .Select(c => c.Value)
                 .ToList();
 
-            Assert.Contains("1", firmaClaims);
-            Assert.Contains("2", firmaClaims);
+            firmaClaims.Should().Contain("1");
+            firmaClaims.Should().Contain("2");
         }
 
         // ─── Logout ──────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await controller.Logout();
 
-            Assert.IsType<OkResult>(result);
+            result.Should().BeOfType<OkResult>();
         }
     }
 }

@@ -2,10 +2,11 @@ using EMutabakat.Models;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using EMutabakat.Tests.Testing;
+using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Integration.Services
 {
     public class FirmaServiceTests
     {
@@ -33,9 +34,6 @@ namespace EMutabakat.Tests.Services
             return new FirmaService(factory.Object, _mockLog.Object, httpAccessor.Object);
         }
 
-        /// <summary>
-        /// Test için örnek firma oluşturur.
-        /// </summary>
         private static Firma CreateSampleFirma(int id = 1)
         {
             return new Firma
@@ -56,9 +54,6 @@ namespace EMutabakat.Tests.Services
             };
         }
 
-        /// <summary>
-        /// Test için seed kullanıcı oluşturur.
-        /// </summary>
         private static async Task SeedUserAsync(string dbName, string email, bool isSeed = false, List<int>? firmaIds = null)
         {
             await using var ctx = TestDbContextFactory.Create(dbName);
@@ -70,8 +65,11 @@ namespace EMutabakat.Tests.Services
                 KullaniciMail = email,
                 KullaniciAktifPasif = "1",
                 IsSeedUser = isSeed,
-                Yetkileri = new KullaniciYetki()
+                Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
             };
+
+            ctx.Kullanicilar.Add(kullanici);
+            await ctx.SaveChangesAsync();
 
             if (firmaIds != null)
             {
@@ -81,10 +79,8 @@ namespace EMutabakat.Tests.Services
                     if (firma != null)
                         kullanici.Firmalar.Add(firma);
                 }
+                await ctx.SaveChangesAsync();
             }
-
-            ctx.Kullanicilar.Add(kullanici);
-            await ctx.SaveChangesAsync();
         }
 
         // ─── GetAllAsync ─────────────────────────────────────────────────────────
@@ -96,8 +92,8 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GetAllAsync();
 
-            Assert.NotNull(result);
-            Assert.Empty(result);
+            result.Should().NotBeNull();
+            result.Should().BeEmpty();
         }
 
         [Fact]
@@ -109,12 +105,12 @@ namespace EMutabakat.Tests.Services
                 ctx.Firmalar.AddRange(CreateSampleFirma(1), CreateSampleFirma(2));
                 await ctx.SaveChangesAsync();
             }
-            await SeedUserAsync(dbName, "seed@test.com", isSeed: true);
+            await SeedUserAsync(dbName, "seed@test.com", isSeed: true, firmaIds: new List<int> { 1, 2 });
 
             var service = CreateService(dbName, "seed@test.com");
             var result = await service.GetAllAsync();
 
-            Assert.Equal(2, result.Count);
+            result.Should().HaveCount(2);
         }
 
         [Fact]
@@ -131,8 +127,8 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "user@test.com");
             var result = await service.GetAllAsync();
 
-            Assert.Equal(2, result.Count);
-            Assert.All(result, f => Assert.Contains(f.FirmaId, new[] { 1, 2 }));
+            result.Should().HaveCount(2);
+            result.Should().OnlyContain(f => new[] { 1, 2 }.Contains(f.FirmaId));
         }
 
         // ─── GetByIdAsync ────────────────────────────────────────────────────────
@@ -146,13 +142,13 @@ namespace EMutabakat.Tests.Services
                 ctx.Firmalar.Add(CreateSampleFirma(1));
                 await ctx.SaveChangesAsync();
             }
-            await SeedUserAsync(dbName, "user@test.com", isSeed: true);
+            await SeedUserAsync(dbName, "user@test.com", isSeed: true, firmaIds: new List<int> { 1 });
 
             var service = CreateService(dbName, "user@test.com");
             var result = await service.GetByIdAsync(1);
 
-            Assert.NotNull(result);
-            Assert.Equal(1, result!.FirmaId);
+            result.Should().NotBeNull();
+            result!.FirmaId.Should().Be(1);
         }
 
         [Fact]
@@ -164,7 +160,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "user@test.com");
             var result = await service.GetByIdAsync(999);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -180,7 +176,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "yok@test.com");
             var result = await service.GetByIdAsync(1);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── AddAsync ────────────────────────────────────────────────────────────
@@ -196,8 +192,8 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.AddAsync(firma);
 
-            Assert.NotNull(result);
-            Assert.Equal("Test Firma 1", result.FirmaAdi);
+            result.Should().NotBeNull();
+            result.FirmaAdi.Should().Be("Test Firma 1");
         }
 
         [Fact]
@@ -207,7 +203,7 @@ namespace EMutabakat.Tests.Services
 
             var firma = CreateSampleFirma(1);
 
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.AddAsync(firma));
+            await FluentActions.Invoking(() => service.AddAsync(firma)).Should().ThrowAsync<UnauthorizedAccessException>();
         }
 
         [Fact]
@@ -223,12 +219,9 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.AddAsync(firma);
 
-            // FirmaService.AddAsync mail'i ToLower() ile normalize eder.
-            // Türkçe locale'de "I".ToLower() = "ı" olabileceğinden
-            // büyük harf içermeyen bir mail ile test ediyoruz.
-            Assert.NotNull(result);
-            Assert.Equal(result.FirmaMail, result.FirmaMail!.ToLower());
-            Assert.Equal(result.FirmaSmtpUser, result.FirmaSmtpUser!.ToLower());
+            result.Should().NotBeNull();
+            result.FirmaMail.Should().Be(result.FirmaMail!.ToLower());
+            result.FirmaSmtpUser.Should().Be(result.FirmaSmtpUser!.ToLower());
         }
 
         // ─── UpdateAsync ─────────────────────────────────────────────────────────
@@ -236,12 +229,22 @@ namespace EMutabakat.Tests.Services
         [Fact]
         public async Task UpdateAsync_MevcutFirma_GuncellenirVeDoner()
         {
-            // FirmaService.UpdateAsync ExecuteUpdateAsync kullanıyor.
-            // Bu metot InMemory provider tarafından desteklenmediğinden
-            // bu test gerçek bir PostgreSQL bağlantısı gerektirir.
-            // Entegrasyon testi olarak işaretlenmiştir.
-            await Task.CompletedTask;
-            Assert.True(true, "Bu test entegrasyon ortamında çalıştırılmalıdır.");
+            var dbName = nameof(UpdateAsync_MevcutFirma_GuncellenirVeDoner);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.Firmalar.Add(CreateSampleFirma(1));
+                await ctx.SaveChangesAsync();
+            }
+            await SeedUserAsync(dbName, "user@test.com", isSeed: true, firmaIds: new List<int> { 1 });
+
+            var service = CreateService(dbName, "user@test.com");
+            var updated = CreateSampleFirma(1);
+            updated.FirmaAdi = "Güncellenmiş Firma";
+
+            var result = await service.UpdateAsync(updated);
+
+            result.Should().NotBeNull();
+            result!.FirmaAdi.Should().Be("Güncellenmiş Firma");
         }
 
         [Fact]
@@ -255,7 +258,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -267,7 +270,7 @@ namespace EMutabakat.Tests.Services
                 ctx.Firmalar.Add(CreateSampleFirma(1));
                 await ctx.SaveChangesAsync();
             }
-            await SeedUserAsync(dbName, "user@test.com", isSeed: false, firmaIds: new List<int> { 2 }); // Firma 1'e erişim yok
+            await SeedUserAsync(dbName, "user@test.com", isSeed: false, firmaIds: new List<int> { 2 });
 
             var service = CreateService(dbName, "user@test.com");
             var updated = CreateSampleFirma(1);
@@ -275,7 +278,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated);
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── DeleteAsync ─────────────────────────────────────────────────────────
@@ -294,7 +297,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "user@test.com");
             var result = await service.DeleteAsync(1);
 
-            Assert.True(result);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -306,7 +309,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "user@test.com");
             var result = await service.DeleteAsync(999);
 
-            Assert.False(result);
+            result.Should().BeFalse();
         }
 
         [Fact]
@@ -322,7 +325,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName, "yok@test.com");
             var result = await service.DeleteAsync(1);
 
-            Assert.False(result);
+            result.Should().BeFalse();
         }
     }
 }

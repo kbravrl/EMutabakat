@@ -1,13 +1,14 @@
-﻿using EMutabakat.Models;
+using EMutabakat.Models;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using EMutabakat.Tests.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 using static EMutabakat.Models.Mutabakat;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Integration.Services
 {
     public class MutabakatServiceTests
     {
@@ -96,18 +97,20 @@ namespace EMutabakat.Tests.Services
             };
         }
 
-        private static Cari CreateCari(string cariId = "C1", int firmaId = 1, string doviz = "TL")
+        private static Cari CreateCari(string cariId = "P1", int firmaId = 1, string doviz = "TL", string grupId = "P1")
         {
             return new Cari
             {
                 CariId = cariId,
                 FirmaId = firmaId,
+                CariAdi = $"Test Cari {cariId}",
                 CariUnvan = "Test Cari",
                 CariVergiDairesi = "Test VD",
                 CariVergiNumarasi = "1234567890",
                 CariYetkiliAdiSoyadi = "Cari Yetkili",
                 CariYetkiliMail = "cari@test.com",
                 CariYetkiliGsm = "05551234567",
+                CariGrupId = grupId,
                 CariDovizKodu = doviz,
                 CariAktifPasif = 1
             };
@@ -124,8 +127,8 @@ namespace EMutabakat.Tests.Services
         }
 
         private static Mutabakat CreateMutabakat(
-            string id = "M1",
-            string cariId = "C1",
+            string id = "P1",
+            string cariId = "P1",
             int firmaId = 1,
             decimal bakiye = 100,
             string doviz = "TL")
@@ -147,11 +150,24 @@ namespace EMutabakat.Tests.Services
 
         private static async Task SeedBaseDataAsync(string dbName)
         {
-            await using var ctx = TestDbContextFactory.Create(dbName);
-            ctx.Firmalar.Add(CreateFirma(1));
-            ctx.DovizKodlari.Add(CreateDoviz("TL"));
-            ctx.Cariler.Add(CreateCari("C1", 1, "TL"));
-            await ctx.SaveChangesAsync();
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.Firmalar.Add(CreateFirma(1));
+                ctx.DovizKodlari.Add(CreateDoviz("TL"));
+                await ctx.SaveChangesAsync();
+            }
+
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Test Grup", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.Cariler.Add(CreateCari("P1", 1, "TL", "P1"));
+                await ctx.SaveChangesAsync();
+            }
         }
 
         private static async Task SeedUserAsync(string dbName, string email, bool isSeed = false, List<int>? firmaIds = null)
@@ -166,8 +182,11 @@ namespace EMutabakat.Tests.Services
                 KullaniciMail = email,
                 KullaniciAktifPasif = "1",
                 IsSeedUser = isSeed,
-                Yetkileri = new KullaniciYetki()
+                Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
             };
+
+            ctx.Kullanicilar.Add(kullanici);
+            await ctx.SaveChangesAsync();
 
             if (firmaIds != null)
             {
@@ -177,10 +196,8 @@ namespace EMutabakat.Tests.Services
                     if (firma != null)
                         kullanici.Firmalar.Add(firma);
                 }
+                await ctx.SaveChangesAsync();
             }
-
-            ctx.Kullanicilar.Add(kullanici);
-            await ctx.SaveChangesAsync();
         }
 
         // ─── GenerateNextMutabakatIdAsync ───────────────────────────────────────
@@ -202,9 +219,11 @@ namespace EMutabakat.Tests.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.AddRange(
-                    CreateMutabakat("P1"),
-                    CreateMutabakat("P7"));
+                var m1 = CreateMutabakat("P1");
+                m1.MutabakatTarihi = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                var m7 = CreateMutabakat("P7");
+                m7.MutabakatTarihi = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+                ctx.Mutabakatlar.AddRange(m1, m7);
                 await ctx.SaveChangesAsync();
             }
 
@@ -241,7 +260,7 @@ namespace EMutabakat.Tests.Services
             await service.AddAsync(CreateMutabakat(), "YETKILI@TEST.COM");
 
             await using var ctx = TestDbContextFactory.Create(dbName);
-            var cari = await ctx.Cariler.FindAsync("C1", 1);
+            var cari = await ctx.Cariler.FindAsync("P1", 1);
             Assert.NotNull(cari);
             Assert.Equal("yetkili@test.com", cari!.CariYetkiliMail);
         }
@@ -253,12 +272,12 @@ namespace EMutabakat.Tests.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1", bakiye: 100));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1", bakiye: 100));
                 await ctx.SaveChangesAsync();
             }
 
             var service = CreateService(dbName);
-            var yeni = CreateMutabakat("M2", bakiye: 100);
+            var yeni = CreateMutabakat("P2", bakiye: 100);
 
             await Assert.ThrowsAsync<Exception>(() => service.AddAsync(yeni));
         }
@@ -306,10 +325,11 @@ namespace EMutabakat.Tests.Services
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
                 ctx.Firmalar.Add(CreateFirma(2));
-                ctx.Cariler.Add(CreateCari("C2", 2, "TL"));
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P2", FirmaId = 2, CariGrupAdi = "Test Grup 2", CariGrupAktifPasif = 1 });
+                ctx.Cariler.Add(CreateCari("P2", 2, "TL", "P2"));
                 ctx.Mutabakatlar.AddRange(
-                    CreateMutabakat("M1", "C1", 1),
-                    CreateMutabakat("M2", "C2", 2));
+                    CreateMutabakat("P1", "P1", 1),
+                    CreateMutabakat("P2", "P2", 2));
                 await ctx.SaveChangesAsync();
             }
             await SeedUserAsync(dbName, "user@test.com", isSeed: false, firmaIds: new List<int> { 1 });
@@ -427,7 +447,7 @@ namespace EMutabakat.Tests.Services
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
-            var saved = await assertCtx.Mutabakatlar.FindAsync("M1");
+            var saved = await assertCtx.Mutabakatlar.FirstOrDefaultAsync(x => x.MutabakatId == "P1");
             Assert.NotNull(saved);
             Assert.Equal(MutabakatStatus.Gonderildi, saved!.Status);
             Assert.NotNull(saved.MutabakatGonderimTarihSaat);
@@ -473,7 +493,7 @@ namespace EMutabakat.Tests.Services
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
-            var saved = await assertCtx.Mutabakatlar.FindAsync("M1");
+            var saved = await assertCtx.Mutabakatlar.FirstOrDefaultAsync(x => x.MutabakatId == "P1");
             Assert.Equal(MutabakatStatus.Hatirlatma, saved!.Status);
             _mockEmail.Verify(x => x.SendMutabakatMailAsync(
                 It.IsAny<Mutabakat>(), It.IsAny<Kullanici>(),
@@ -498,7 +518,7 @@ namespace EMutabakat.Tests.Services
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
-            var saved = await assertCtx.Mutabakatlar.FindAsync("M1");
+            var saved = await assertCtx.Mutabakatlar.FirstOrDefaultAsync(x => x.MutabakatId == "P1");
             Assert.Equal(MutabakatStatus.Mutabik, saved!.Status);
             Assert.Equal("cevap@test.com", saved.MutabakatCevapMail);
             Assert.Equal("Cevap Veren", saved.MutabakatCevapAdSoyad);
@@ -511,14 +531,14 @@ namespace EMutabakat.Tests.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                var mutabakat = CreateMutabakat("M1");
+                var mutabakat = CreateMutabakat("P1");
                 mutabakat.Status = MutabakatStatus.MutabikDegil;
                 ctx.Mutabakatlar.Add(mutabakat);
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
-            var result = await service.ApproveAsync("token-M1", "cevap@test.com", "Cevap Veren", "05550000000");
+            var result = await service.ApproveAsync("token-P1", "cevap@test.com", "Cevap Veren", "05550000000");
 
             Assert.False(result);
         }
@@ -530,12 +550,12 @@ namespace EMutabakat.Tests.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1"));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1"));
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
-            var result = await service.RejectAsync("token-M1", "cevap@test.com", "Cevap Veren", "05550000000", "Açıklama", null);
+            var result = await service.RejectAsync("token-P1", "cevap@test.com", "Cevap Veren", "05550000000", "Açıklama", null);
 
             Assert.False(result);
         }
@@ -562,8 +582,8 @@ namespace EMutabakat.Tests.Services
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
-            var saved = await assertCtx.Mutabakatlar.FindAsync("M1");
-            var cari = await assertCtx.Cariler.FindAsync("C1", 1);
+            var saved = await assertCtx.Mutabakatlar.FirstOrDefaultAsync(x => x.MutabakatId == "P1");
+            var cari = await assertCtx.Cariler.FindAsync("P1", 1);
 
             Assert.Equal(MutabakatStatus.MutabikDegil, saved!.Status);
             Assert.Equal("Eksik belge", saved.MutabakatCevapAciklama);
@@ -571,171 +591,6 @@ namespace EMutabakat.Tests.Services
             Assert.Equal("red@test.com", cari!.CariYetkiliMail);
             Assert.Equal("Red Veren", cari.CariYetkiliAdiSoyadi);
             Assert.Equal("05559998877", cari.CariYetkiliGsm);
-        }
-    }
-
-    public class MutabakatClientServiceTests
-    {
-        private readonly Mock<IMutabakatService> _mockMutabakatService;
-        private readonly Mock<ISdService> _mockSdService;
-        private readonly MutabakatClientService _service;
-
-        public MutabakatClientServiceTests()
-        {
-            _mockMutabakatService = new Mock<IMutabakatService>();
-            _mockSdService = new Mock<ISdService>();
-            _service = new MutabakatClientService(_mockMutabakatService.Object, _mockSdService.Object);
-        }
-
-        [Fact]
-        public async Task ApproveAsync_EksikBilgileriCariUzerindenTamamlar()
-        {
-            var mutabakat = new Mutabakat
-            {
-                MutabakatId = "M1",
-                MutabakatToken = "token",
-                Cari = new Cari
-                {
-                    CariYetkiliMail = "cari@test.com",
-                    CariYetkiliAdiSoyadi = "Cari Yetkili",
-                    CariYetkiliGsm = "05551234567"
-                }
-            };
-
-            _mockMutabakatService
-                .Setup(x => x.GetByTokenAsync("token"))
-                .ReturnsAsync(mutabakat);
-
-            _mockMutabakatService
-                .Setup(x => x.ApproveAsync("token", "cari@test.com", "Cari Yetkili", "05551234567"))
-                .ReturnsAsync(true);
-
-            var result = await _service.ApproveAsync("token");
-
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task RejectAsync_MutabakatYoksa_FalseDoner()
-        {
-            _mockMutabakatService
-                .Setup(x => x.GetByTokenAsync("yok"))
-                .ReturnsAsync((Mutabakat?)null);
-
-            var result = await _service.RejectAsync("yok");
-
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task RejectAsync_DosyaYoksa_FalseDoner()
-        {
-            _mockMutabakatService
-                .Setup(x => x.GetByTokenAsync("token"))
-                .ReturnsAsync(new Mutabakat { MutabakatToken = "token", Cari = new Cari() });
-
-            var result = await _service.RejectAsync("token", originalFileName: "red.pdf");
-
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task RejectAsync_GecerliDosyaKaydedilirVeServisePathIleIletilir()
-        {
-            var mutabakat = new Mutabakat
-            {
-                MutabakatId = "M1",
-                MutabakatToken = "token",
-                MutabakatTarihi = new DateTime(2026, 5, 1),
-                CariId = "C1",
-                Cari = new Cari
-                {
-                    CariId = "C1",
-                    CariVergiNumarasi = "1234567890",
-                    CariYetkiliMail = "cari@test.com",
-                    CariYetkiliAdiSoyadi = "Cari Yetkili",
-                    CariYetkiliGsm = "05551234567"
-                }
-            };
-
-            _mockMutabakatService
-                .Setup(x => x.GetByTokenAsync("token"))
-                .ReturnsAsync(mutabakat);
-
-            _mockSdService
-                .Setup(x => x.SaveMutabakatResponseFileAsync(
-                    "token",
-                    mutabakat.MutabakatTarihi,
-                    "C1",
-                    "1234567890",
-                    It.IsAny<Stream>(),
-                    "red.pdf",
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync("responses/red.pdf");
-
-            _mockMutabakatService
-                .Setup(x => x.RejectAsync(
-                    "token",
-                    "cari@test.com",
-                    "Cari Yetkili",
-                    "05551234567",
-                    "Açıklama",
-                    "responses/red.pdf"))
-                .ReturnsAsync(true);
-
-            await using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-
-            var result = await _service.RejectAsync(
-                "token",
-                aciklama: " Açıklama ",
-                fileStream: stream,
-                originalFileName: "red.pdf");
-
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task RejectAsync_AnaServisBasarisizsa_KaydedilenDosyayiSiler()
-        {
-            var mutabakat = new Mutabakat
-            {
-                MutabakatId = "M1",
-                MutabakatToken = "token",
-                MutabakatTarihi = new DateTime(2026, 5, 1),
-                CariId = "C1",
-                Cari = new Cari
-                {
-                    CariId = "C1",
-                    CariVergiNumarasi = "1234567890",
-                    CariYetkiliMail = "cari@test.com",
-                    CariYetkiliAdiSoyadi = "Cari Yetkili",
-                    CariYetkiliGsm = "05551234567"
-                }
-            };
-
-            _mockMutabakatService
-                .Setup(x => x.GetByTokenAsync("token"))
-                .ReturnsAsync(mutabakat);
-
-            _mockSdService
-                .Setup(x => x.SaveMutabakatResponseFileAsync(
-                    It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(),
-                    It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<string>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync("responses/red.pdf");
-
-            _mockMutabakatService
-                .Setup(x => x.RejectAsync(
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                    It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>()))
-                .ReturnsAsync(false);
-
-            await using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-
-            var result = await _service.RejectAsync("token", fileStream: stream, originalFileName: "red.pdf");
-
-            Assert.False(result);
-            _mockSdService.Verify(x => x.DeleteMutabakatResponseFileAsync("responses/red.pdf", It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

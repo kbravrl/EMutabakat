@@ -2,10 +2,11 @@ using EMutabakat.Models;
 using EMutabakat.Services;
 using EMutabakat.Services.Interfaces;
 using EMutabakat.Tests.Testing;
+using FluentAssertions;
 using Moq;
 using Xunit;
 
-namespace EMutabakat.Tests.Services
+namespace EMutabakat.Tests.Integration.Services
 {
     public class DovizKoduServiceTests
     {
@@ -40,8 +41,8 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GetAllAsync();
 
-            Assert.NotNull(result);
-            Assert.Empty(result);
+            result.Should().NotBeNull();
+            result.Should().BeEmpty();
         }
 
         [Fact]
@@ -61,7 +62,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.GetAllAsync();
 
-            Assert.Equal(3, result.Count);
+            result.Should().HaveCount(3);
         }
 
         // ─── GetActiveAsync ──────────────────────────────────────────────────────
@@ -83,8 +84,8 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.GetActiveAsync();
 
-            Assert.Equal(2, result.Count);
-            Assert.All(result, d => Assert.Equal(1, d.DovizKoduAktifPasif));
+            result.Should().HaveCount(2);
+            result.Should().OnlyContain(d => d.DovizKoduAktifPasif == 1);
         }
 
         // ─── GetByTcmbAsync ──────────────────────────────────────────────────────
@@ -100,10 +101,10 @@ namespace EMutabakat.Tests.Services
             }
 
             var service = CreateService(dbName);
-            var result = await service.GetByTcmbAsync("usd"); // küçük harf — normalize edilmeli
+            var result = await service.GetByTcmbAsync("usd");
 
-            Assert.NotNull(result);
-            Assert.Equal("USD", result!.TCMB);
+            result.Should().NotBeNull();
+            result!.TCMB.Should().Be("USD");
         }
 
         [Fact]
@@ -113,7 +114,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.GetByTcmbAsync("XYZ");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         // ─── AddAsync ────────────────────────────────────────────────────────────
@@ -126,8 +127,8 @@ namespace EMutabakat.Tests.Services
             var doviz = new DovizKodu { TCMB = "usd", Name = "Amerikan Doları", DovizKoduAktifPasif = 1 };
             var result = await service.AddAsync(doviz);
 
-            Assert.NotNull(result);
-            Assert.Equal("USD", result.TCMB); // büyük harfe normalize edilmeli
+            result.Should().NotBeNull();
+            result.TCMB.Should().Be("USD");
         }
 
         [Fact]
@@ -137,7 +138,7 @@ namespace EMutabakat.Tests.Services
 
             var doviz = new DovizKodu { TCMB = "  ", Name = "Test", DovizKoduAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(doviz));
+            await FluentActions.Invoking(() => service.AddAsync(doviz)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -147,7 +148,7 @@ namespace EMutabakat.Tests.Services
 
             var doviz = new DovizKodu { TCMB = "TST", Name = "", DovizKoduAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(doviz));
+            await FluentActions.Invoking(() => service.AddAsync(doviz)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -163,7 +164,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var doviz = new DovizKodu { TCMB = "USD", Name = "Başka Dolar", DovizKoduAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(doviz));
+            await FluentActions.Invoking(() => service.AddAsync(doviz)).Should().ThrowAsync<Exception>();
         }
 
         [Fact]
@@ -173,7 +174,7 @@ namespace EMutabakat.Tests.Services
 
             var doviz = new DovizKodu { TCMB = "TST", Name = "Test", DovizKoduAktifPasif = 5 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(doviz));
+            await FluentActions.Invoking(() => service.AddAsync(doviz)).Should().ThrowAsync<Exception>();
         }
 
         // ─── UpdateAsync ─────────────────────────────────────────────────────────
@@ -193,9 +194,9 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated, "USD");
 
-            Assert.NotNull(result);
-            Assert.Equal("Yeni Ad", result!.Name);
-            Assert.Equal(0, result.DovizKoduAktifPasif);
+            result.Should().NotBeNull();
+            result!.Name.Should().Be("Yeni Ad");
+            result.DovizKoduAktifPasif.Should().Be(0);
         }
 
         [Fact]
@@ -207,7 +208,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.UpdateAsync(updated, "XYZ");
 
-            Assert.Null(result);
+            result.Should().BeNull();
         }
 
         [Fact]
@@ -223,7 +224,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var updated = new DovizKodu { TCMB = "", Name = "Yeni Ad", DovizKoduAktifPasif = 1 };
 
-            await Assert.ThrowsAsync<Exception>(() => service.UpdateAsync(updated, "USD"));
+            await FluentActions.Invoking(() => service.UpdateAsync(updated, "USD")).Should().ThrowAsync<Exception>();
         }
 
         // ─── DeleteAsync ─────────────────────────────────────────────────────────
@@ -241,7 +242,7 @@ namespace EMutabakat.Tests.Services
             var service = CreateService(dbName);
             var result = await service.DeleteAsync("USD");
 
-            Assert.True(result);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -251,7 +252,7 @@ namespace EMutabakat.Tests.Services
 
             var result = await service.DeleteAsync("XYZ");
 
-            Assert.False(result);
+            result.Should().BeFalse();
         }
 
         [Fact]
@@ -268,7 +269,7 @@ namespace EMutabakat.Tests.Services
             await service.DeleteAsync("USD");
 
             var result = await service.GetByTcmbAsync("USD");
-            Assert.Null(result);
+            result.Should().BeNull();
         }
     }
 }
