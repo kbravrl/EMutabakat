@@ -5,8 +5,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Test projesindeki dosyaları ana projeden hariç tut -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);EMutabakat.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
  
+  <!-- Test projesindeki dosyaları ana projeden hariç tut -->
+  <ItemGroup>
+    <Compile Remove="EMutabakat.Tests\**" />
+    <Content Remove="EMutabakat.Tests\**" />
+    <EmbeddedResource Remove="EMutabakat.Tests\**" />
+    <None Remove="EMutabakat.Tests\**" />
+    <RazorComponent Remove="EMutabakat.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">

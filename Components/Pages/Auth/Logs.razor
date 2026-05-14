@@ -109,8 +109,7 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="CreatedAt"
                                           Title="Tarih"
-                                          Width="155px"
-                                          Visible="@(!isMobile)">
+                                          Width="155px">
                         <Template Context="item">
                             @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")
                         </Template>
@@ -141,19 +140,16 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Source"
                                           Title="Kaynak"
-                                          Width="140px"
-                                          Visible="@(!isMobile)" />
+                                          Width="140px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="UserEmail"
                                           Title="Kullanıcı"
-                                          Width="220px"
-                                          Visible="@(!isMobile)" />
+                                          Width="220px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Message"
-                                          Title="Mesaj"
-                                          Visible="@(!isMobile)">
+                                          Title="Mesaj" >
                         <Template Context="item">
                             <span style="white-space:normal; word-break:break-word;">@item.Message</span>
                         </Template>
@@ -171,7 +167,6 @@ else
     private bool canClear;
     private AppLog? expandedLog;
     private RadzenDataGrid<AppLog> grid = default!;
-    private bool isMobile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,7 +194,6 @@ else
         if (firstRender)
         {
             var width = await JS.InvokeAsync<int>("eval", "window.innerWidth");
-            isMobile = width < 768;
             StateHasChanged();
         }
     }

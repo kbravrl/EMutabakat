@@ -1,0 +1,335 @@
+using EMutabakat.Models;
+using EMutabakat.Services;
+using EMutabakat.Services.Interfaces;
+using EMutabakat.Tests.Testing;
+using Moq;
+using Xunit;
+
+namespace EMutabakat.Tests.Services
+{
+    public class CariGrupServiceTests
+    {
+        private readonly Mock<ILogService> _mockLog;
+
+        public CariGrupServiceTests()
+        {
+            _mockLog = new Mock<ILogService>();
+            _mockLog.Setup(x => x.AddAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string?>(), It.IsAny<string?>()))
+                .Returns(Task.CompletedTask);
+            _mockLog.Setup(x => x.AddChangeAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(),
+                It.IsAny<object>(), It.IsAny<string?>()))
+                .Returns(Task.CompletedTask);
+        }
+
+        private CariGrupService CreateService(string dbName, string? userEmail = null)
+        {
+            var factory = TestDbContextFactory.CreateMockFactory(dbName);
+            // userEmail null ise anonim (GetAllowedFirmaIds null döner → tüm kayıtlar görünür)
+            var httpAccessor = userEmail != null
+                ? FakeHttpContextAccessor.CreateAuthenticated(userEmail)
+                : FakeHttpContextAccessor.CreateAnonymous();
+            return new CariGrupService(factory.Object, _mockLog.Object, httpAccessor.Object);
+        }
+
+        /// <summary>
+        /// Test veritabanına örnek firma ekler.
+        /// </summary>
+        private static async Task SeedFirmaAsync(string dbName, int firmaId = 1)
+        {
+            await using var ctx = TestDbContextFactory.Create(dbName);
+            if (!ctx.Firmalar.Any(f => f.FirmaId == firmaId))
+            {
+                ctx.Firmalar.Add(new Firma
+                {
+                    FirmaId = firmaId,
+                    FirmaAdi = "Test Firma",
+                    FirmaVergiDairesi = "Test VD",
+                    FirmaVergiNumarasi = "1234567890",
+                    FirmaYetkiliAdiSoyadi = "Test Yetkili",
+                    FirmaMail = "firma@test.com",
+                    FirmaTelefon = "02121234567",
+                    FirmaSmtpHost = "smtp.test.com",
+                    FirmaSmtpPort = 587,
+                    FirmaSmtpUser = "smtp@test.com",
+                    FirmaSmtpPassword = "pass",
+                    FirmaSmtpSecure = "true"
+                });
+                await ctx.SaveChangesAsync();
+            }
+        }
+
+        // ─── GenerateNextCariGrupIdAsync ─────────────────────────────────────────
+
+        [Fact]
+        public async Task GenerateNextCariGrupIdAsync_BosDatabasede_P1Doner()
+        {
+            var service = CreateService(nameof(GenerateNextCariGrupIdAsync_BosDatabasede_P1Doner));
+
+            var result = await service.GenerateNextCariGrupIdAsync();
+
+            Assert.Equal("P1", result);
+        }
+
+        [Fact]
+        public async Task GenerateNextCariGrupIdAsync_MevcutKayitlarla_SonrakiIdDoner()
+        {
+            var dbName = nameof(GenerateNextCariGrupIdAsync_MevcutKayitlarla_SonrakiIdDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.AddRange(
+                    new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Grup A", CariGrupAktifPasif = 1 },
+                    new CariGrup { CariGrupId = "P5", FirmaId = 1, CariGrupAdi = "Grup B", CariGrupAktifPasif = 1 }
+                );
+                await ctx.SaveChangesAsync();
+            }
+
+            var service = CreateService(dbName);
+            var result = await service.GenerateNextCariGrupIdAsync();
+
+            Assert.Equal("P6", result);
+        }
+
+        // ─── AddAsync ────────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task AddAsync_GecerliKayit_EklenirveDoner()
+        {
+            var dbName = nameof(AddAsync_GecerliKayit_EklenirveDoner);
+            await SeedFirmaAsync(dbName);
+
+            var service = CreateService(dbName);
+            var grup = new CariGrup
+            {
+                CariGrupId = "P1",
+                FirmaId = 1,
+                CariGrupAdi = "Yeni Grup",
+                CariGrupAktifPasif = 1
+            };
+
+            var result = await service.AddAsync(grup);
+
+            Assert.NotNull(result);
+            Assert.Equal("P1", result.CariGrupId);
+            Assert.Equal("Yeni Grup", result.CariGrupAdi);
+        }
+
+        [Fact]
+        public async Task AddAsync_FirmaIdSifir_ExceptionFirlatir()
+        {
+            var service = CreateService(nameof(AddAsync_FirmaIdSifir_ExceptionFirlatir));
+
+            var grup = new CariGrup { CariGrupId = "P1", FirmaId = 0, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
+
+            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+        }
+
+        [Fact]
+        public async Task AddAsync_BosGrupId_ExceptionFirlatir()
+        {
+            var dbName = nameof(AddAsync_BosGrupId_ExceptionFirlatir);
+            await SeedFirmaAsync(dbName);
+
+            var service = CreateService(dbName);
+            var grup = new CariGrup { CariGrupId = "  ", FirmaId = 1, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
+
+            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+        }
+
+        [Fact]
+        public async Task AddAsync_BosGrupAdi_ExceptionFirlatir()
+        {
+            var dbName = nameof(AddAsync_BosGrupAdi_ExceptionFirlatir);
+            await SeedFirmaAsync(dbName);
+
+            var service = CreateService(dbName);
+            var grup = new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "", CariGrupAktifPasif = 1 };
+
+            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+        }
+
+        [Fact]
+        public async Task AddAsync_MukerrerGrupId_ExceptionFirlatir()
+        {
+            var dbName = nameof(AddAsync_MukerrerGrupId_ExceptionFirlatir);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Mevcut", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            var service = CreateService(dbName);
+            var grup = new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Yeni", CariGrupAktifPasif = 1 };
+
+            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+        }
+
+        [Fact]
+        public async Task AddAsync_YokFirma_ExceptionFirlatir()
+        {
+            var service = CreateService(nameof(AddAsync_YokFirma_ExceptionFirlatir));
+
+            var grup = new CariGrup { CariGrupId = "P1", FirmaId = 999, CariGrupAdi = "Grup", CariGrupAktifPasif = 1 };
+
+            await Assert.ThrowsAsync<Exception>(() => service.AddAsync(grup));
+        }
+
+        // ─── GetByIdAsync ────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetByIdAsync_MevcutKayit_GrupDoner()
+        {
+            var dbName = nameof(GetByIdAsync_MevcutKayit_GrupDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Grup A", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            // Anonim kullanıcı → GetAllowedFirmaIds null → tüm kayıtlar erişilebilir
+            var service = CreateService(dbName, userEmail: null);
+            var result = await service.GetByIdAsync("P1", 1);
+
+            Assert.NotNull(result);
+            Assert.Equal("Grup A", result!.CariGrupAdi);
+        }
+
+        [Fact]
+        public async Task GetByIdAsync_YokKayit_NullDoner()
+        {
+            var service = CreateService(nameof(GetByIdAsync_YokKayit_NullDoner), userEmail: null);
+
+            var result = await service.GetByIdAsync("YOK", 1);
+
+            Assert.Null(result);
+        }
+
+        // ─── UpdateAsync ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task UpdateAsync_MevcutKayit_GuncellenirVeDoner()
+        {
+            var dbName = nameof(UpdateAsync_MevcutKayit_GuncellenirVeDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Eski Ad", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            var service = CreateService(dbName);
+            var updated = new CariGrup
+            {
+                CariGrupId = "P1",
+                OriginalCariGrupId = "P1",
+                FirmaId = 1,
+                OriginalFirmaId = 1,
+                CariGrupAdi = "Yeni Ad",
+                CariGrupAktifPasif = 0
+            };
+
+            var result = await service.UpdateAsync(updated);
+
+            Assert.NotNull(result);
+            Assert.Equal("Yeni Ad", result!.CariGrupAdi);
+            Assert.Equal(0, result.CariGrupAktifPasif);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_YokKayit_NullDoner()
+        {
+            var dbName = nameof(UpdateAsync_YokKayit_NullDoner);
+            await SeedFirmaAsync(dbName);
+
+            var service = CreateService(dbName);
+            var updated = new CariGrup
+            {
+                CariGrupId = "YOK",
+                OriginalCariGrupId = "YOK",
+                FirmaId = 1,
+                OriginalFirmaId = 1,
+                CariGrupAdi = "Ad",
+                CariGrupAktifPasif = 1
+            };
+
+            var result = await service.UpdateAsync(updated);
+
+            Assert.Null(result);
+        }
+
+        // ─── DeleteAsync ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task DeleteAsync_MevcutKayit_TrueDoner()
+        {
+            var dbName = nameof(DeleteAsync_MevcutKayit_TrueDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Silinecek", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            var service = CreateService(dbName);
+            var result = await service.DeleteAsync("P1", 1);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_YokKayit_FalseDoner()
+        {
+            var service = CreateService(nameof(DeleteAsync_YokKayit_FalseDoner));
+
+            var result = await service.DeleteAsync("YOK", 1);
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_SilindiktenSonra_GetByIdNullDoner()
+        {
+            var dbName = nameof(DeleteAsync_SilindiktenSonra_GetByIdNullDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Silinecek", CariGrupAktifPasif = 1 });
+                await ctx.SaveChangesAsync();
+            }
+
+            var service = CreateService(dbName, userEmail: null);
+            await service.DeleteAsync("P1", 1);
+
+            var result = await service.GetByIdAsync("P1", 1);
+            Assert.Null(result);
+        }
+
+        // ─── GetAllAsync ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetAllAsync_AnonimKullanici_TumKayitlariDoner()
+        {
+            var dbName = nameof(GetAllAsync_AnonimKullanici_TumKayitlariDoner);
+            await SeedFirmaAsync(dbName);
+            await using (var ctx = TestDbContextFactory.Create(dbName))
+            {
+                ctx.CariGruplar.AddRange(
+                    new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Grup A", CariGrupAktifPasif = 1 },
+                    new CariGrup { CariGrupId = "P2", FirmaId = 1, CariGrupAdi = "Grup B", CariGrupAktifPasif = 0 }
+                );
+                await ctx.SaveChangesAsync();
+            }
+
+            // Anonim kullanıcı → GetAllowedFirmaIds null → tüm kayıtlar
+            var service = CreateService(dbName, userEmail: null);
+            var result = await service.GetAllAsync();
+
+            Assert.Equal(2, result.Count);
+        }
+    }
+}
