@@ -24,7 +24,7 @@ namespace EMutabakat.Tests.Unit.Services
         {
             var mutabakat = new Mutabakat
             {
-                MutabakatId = "M1",
+                MutabakatId = "P1",
                 MutabakatToken = "token",
                 Cari = new Cari
                 {
@@ -76,13 +76,13 @@ namespace EMutabakat.Tests.Unit.Services
         {
             var mutabakat = new Mutabakat
             {
-                MutabakatId = "M1",
+                MutabakatId = "P1",
                 MutabakatToken = "token",
                 MutabakatTarihi = new DateTime(2026, 5, 1),
-                CariId = "C1",
+                CariId = "P1",
                 Cari = new Cari
                 {
-                    CariId = "C1",
+                    CariId = "P1",
                     CariVergiNumarasi = "1234567890",
                     CariYetkiliMail = "cari@test.com",
                     CariYetkiliAdiSoyadi = "Cari Yetkili",
@@ -98,7 +98,7 @@ namespace EMutabakat.Tests.Unit.Services
                 .Setup(x => x.SaveMutabakatResponseFileAsync(
                     "token",
                     mutabakat.MutabakatTarihi,
-                    "C1",
+                    "P1",
                     "1234567890",
                     It.IsAny<Stream>(),
                     "red.pdf",
@@ -131,13 +131,13 @@ namespace EMutabakat.Tests.Unit.Services
         {
             var mutabakat = new Mutabakat
             {
-                MutabakatId = "M1",
+                MutabakatId = "P1",
                 MutabakatToken = "token",
                 MutabakatTarihi = new DateTime(2026, 5, 1),
-                CariId = "C1",
+                CariId = "P1",
                 Cari = new Cari
                 {
-                    CariId = "C1",
+                    CariId = "P1",
                     CariVergiNumarasi = "1234567890",
                     CariYetkiliMail = "cari@test.com",
                     CariYetkiliAdiSoyadi = "Cari Yetkili",

@@ -152,20 +152,28 @@ namespace EMutabakat.Tests.Integration.Services
         {
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Firmalar.Add(CreateFirma(1));
-                ctx.DovizKodlari.Add(CreateDoviz("TL"));
+                if (!ctx.Firmalar.Any(f => f.FirmaId == 1))
+                    ctx.Firmalar.Add(CreateFirma(1));
+
+                if (!ctx.DovizKodlari.Any(d => d.TCMB == "TL"))
+                    ctx.DovizKodlari.Add(CreateDoviz("TL"));
+
                 await ctx.SaveChangesAsync();
             }
 
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Test Grup", CariGrupAktifPasif = 1 });
+                if (!ctx.CariGruplar.Any(g => g.CariGrupId == "P1" && g.FirmaId == 1))
+                    ctx.CariGruplar.Add(new CariGrup { CariGrupId = "P1", FirmaId = 1, CariGrupAdi = "Test Grup", CariGrupAktifPasif = 1 });
+
                 await ctx.SaveChangesAsync();
             }
 
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Cariler.Add(CreateCari("P1", 1, "TL", "P1"));
+                if (!ctx.Cariler.Any(c => c.CariId == "P1" && c.FirmaId == 1))
+                    ctx.Cariler.Add(CreateCari("P1", 1, "TL", "P1"));
+
                 await ctx.SaveChangesAsync();
             }
         }
@@ -289,18 +297,18 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1", bakiye: 100));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1", bakiye: 100));
                 await ctx.SaveChangesAsync();
             }
 
             var service = CreateService(dbName);
-            var result = await service.AddAsync(CreateMutabakat("M2", bakiye: 200));
+            var result = await service.AddAsync(CreateMutabakat("P2", bakiye: 200));
 
-            Assert.Equal("M2", result.MutabakatId);
+            Assert.Equal("P2", result.MutabakatId);
 
             await using var assertCtx = TestDbContextFactory.Create(dbName);
-            Assert.False(assertCtx.Mutabakatlar.Any(x => x.MutabakatId == "M1"));
-            Assert.True(assertCtx.Mutabakatlar.Any(x => x.MutabakatId == "M2"));
+            Assert.False(assertCtx.Mutabakatlar.Any(x => x.MutabakatId == "P1"));
+            Assert.True(assertCtx.Mutabakatlar.Any(x => x.MutabakatId == "P2"));
             Assert.Single(assertCtx.SilinenMutabakatlar);
         }
 
@@ -348,13 +356,13 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1", "C1", 1));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1", "P1", 1));
                 await ctx.SaveChangesAsync();
             }
             await SeedUserAsync(dbName, "user@test.com", isSeed: false, firmaIds: new List<int>());
 
             var service = CreateService(dbName, "user@test.com");
-            var result = await service.GetByIdAsync("M1");
+            var result = await service.GetByIdAsync("P1");
 
             Assert.Null(result);
         }
@@ -368,13 +376,13 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1", bakiye: 100));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1", bakiye: 100));
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
-            var updated = CreateMutabakat("M1", bakiye: -500);
-            updated.OriginalMutabakatId = "M1";
+            var updated = CreateMutabakat("P1", bakiye: -500);
+            updated.OriginalMutabakatId = "P1";
             updated.MutabakatAciklama = " Güncellendi ";
 
             var result = await service.UpdateAsync(updated);
@@ -405,14 +413,14 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                var mutabakat = CreateMutabakat("M1");
+                var mutabakat = CreateMutabakat("P1");
                 mutabakat.MutabakatReceiveStoragePath = "responses/test.pdf";
                 ctx.Mutabakatlar.Add(mutabakat);
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
-            var result = await service.DeleteAsync("M1");
+            var result = await service.DeleteAsync("P1");
 
             Assert.True(result);
             _mockSd.Verify(x => x.DeleteMutabakatResponseFileAsync("responses/test.pdf", It.IsAny<CancellationToken>()), Times.Once);
@@ -437,13 +445,13 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1"));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1"));
                 await ctx.SaveChangesAsync();
             }
             await SeedUserAsync(dbName, "admin@test.com", isSeed: false, firmaIds: new List<int> { 1 });
             var service = CreateService(dbName, "admin@test.com");
 
-            var result = await service.SendMailAsync("M1");
+            var result = await service.SendMailAsync("P1");
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
@@ -460,7 +468,7 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                var mutabakat = CreateMutabakat("M1");
+                var mutabakat = CreateMutabakat("P1");
                 mutabakat.Status = MutabakatStatus.Mutabik;
                 ctx.Mutabakatlar.Add(mutabakat);
                 await ctx.SaveChangesAsync();
@@ -468,7 +476,7 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedUserAsync(dbName, "admin@test.com", isSeed: false, firmaIds: new List<int> { 1 });
             var service = CreateService(dbName, "admin@test.com");
 
-            var result = await service.SendMailAsync("M1");
+            var result = await service.SendMailAsync("P1");
 
             Assert.False(result);
             _mockEmail.Verify(x => x.SendMutabakatMailAsync(
@@ -483,13 +491,13 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1"));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1"));
                 await ctx.SaveChangesAsync();
             }
             await SeedUserAsync(dbName, "admin@test.com", isSeed: false, firmaIds: new List<int> { 1 });
             var service = CreateService(dbName, "admin@test.com");
 
-            var result = await service.SendReminderAsync("M1");
+            var result = await service.SendReminderAsync("P1");
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
@@ -509,12 +517,12 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1"));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1"));
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
-            var result = await service.ApproveAsync("token-M1", "cevap@test.com", "Cevap Veren", "05550000000");
+            var result = await service.ApproveAsync("token-P1", "cevap@test.com", "Cevap Veren", "05550000000");
 
             Assert.True(result);
             await using var assertCtx = TestDbContextFactory.Create(dbName);
@@ -567,13 +575,13 @@ namespace EMutabakat.Tests.Integration.Services
             await SeedBaseDataAsync(dbName);
             await using (var ctx = TestDbContextFactory.Create(dbName))
             {
-                ctx.Mutabakatlar.Add(CreateMutabakat("M1"));
+                ctx.Mutabakatlar.Add(CreateMutabakat("P1"));
                 await ctx.SaveChangesAsync();
             }
             var service = CreateService(dbName);
 
             var result = await service.RejectAsync(
-                "token-M1",
+                "token-P1",
                 "red@test.com",
                 "Red Veren",
                 "05559998877",

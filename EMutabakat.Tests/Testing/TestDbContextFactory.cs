@@ -2,6 +2,7 @@ using EMutabakat.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using System.Runtime.CompilerServices;
 
 namespace EMutabakat.Tests.Testing
 {
@@ -17,13 +18,18 @@ namespace EMutabakat.Tests.Testing
         /// <summary>
         /// Benzersiz bir SQLite InMemory bağlantısı ile AppDbContext oluşturur.
         /// Her çağrıda aynı dbName → aynı bağlantı nesnesi → aynı veri.
+        /// callerFilePath otomatik olarak çağıran dosya yolunu alır; böylece
+        /// farklı test sınıflarındaki aynı isimli testler izole kalır.
         /// </summary>
-        public static AppDbContext Create(string? dbName = null)
+        public static AppDbContext Create(string? dbName = null, [CallerFilePath] string callerFilePath = "")
         {
-            var connection = SqliteConnectionCache.GetOrCreate(dbName ?? Guid.NewGuid().ToString());
+            var key = BuildKey(dbName, callerFilePath);
+            bool isNew = !SqliteConnectionCache.Exists(key);
+            var connection = SqliteConnectionCache.GetOrCreate(key);
             var options = BuildOptions(connection);
             var ctx = new AppDbContext(options);
-            ctx.Database.EnsureCreated();
+            if (isNew)
+                ctx.Database.EnsureCreated();
             return ctx;
         }
 
@@ -31,26 +37,39 @@ namespace EMutabakat.Tests.Testing
         /// IDbContextFactory&lt;AppDbContext&gt; mock'u oluşturur.
         /// Her CreateDbContextAsync çağrısında aynı SQLite bağlantısını kullanan
         /// yeni bir context döner; böylece testler arası veri izolasyonu korunur.
+        /// callerFilePath otomatik olarak çağıran dosya yolunu alır.
         /// </summary>
-        public static Mock<IDbContextFactory<AppDbContext>> CreateMockFactory(string? dbName = null)
+        public static Mock<IDbContextFactory<AppDbContext>> CreateMockFactory(string? dbName = null, [CallerFilePath] string callerFilePath = "")
         {
-            var resolvedDbName = dbName ?? Guid.NewGuid().ToString();
-            var connection = SqliteConnectionCache.GetOrCreate(resolvedDbName);
+            var key = BuildKey(dbName, callerFilePath);
+            bool isNew = !SqliteConnectionCache.Exists(key);
+            var connection = SqliteConnectionCache.GetOrCreate(key);
+
+            // Tabloları yalnızca bir kez oluştur
+            if (isNew)
+            {
+                using var initCtx = new AppDbContext(BuildOptions(connection));
+                initCtx.Database.EnsureCreated();
+            }
 
             var mockFactory = new Mock<IDbContextFactory<AppDbContext>>();
             mockFactory
                 .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() =>
-                {
-                    var ctx = new AppDbContext(BuildOptions(connection));
-                    ctx.Database.EnsureCreated();
-                    return ctx;
-                });
+                .ReturnsAsync(() => new AppDbContext(BuildOptions(connection)));
 
             return mockFactory;
         }
 
         // ── Yardımcılar ──────────────────────────────────────────────────────────
+
+        private static string BuildKey(string? dbName, string callerFilePath)
+        {
+            // Dosya adından sınıf adını çıkar (uzantısız)
+            var fileName = Path.GetFileNameWithoutExtension(callerFilePath);
+            var name = dbName ?? Guid.NewGuid().ToString();
+            // Farklı test sınıflarındaki aynı isimli testleri izole et
+            return string.IsNullOrEmpty(fileName) ? name : $"{fileName}::{name}";
+        }
 
         private static DbContextOptions<AppDbContext> BuildOptions(SqliteConnection connection)
         {
@@ -69,6 +88,8 @@ namespace EMutabakat.Tests.Testing
     internal static class SqliteConnectionCache
     {
         private static readonly Dictionary<string, SqliteConnection> _connections = new();
+
+        public static bool Exists(string name) => _connections.ContainsKey(name);
 
         public static SqliteConnection GetOrCreate(string name)
         {
