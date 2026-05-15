@@ -10,6 +10,12 @@
 
 <PageTitle>Döviz Kodları</PageTitle>
 
+@if (!canView && !isLoading)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya giriş izniniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
     <RadzenStack Gap="1rem" class="p-4">
         <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
             <RadzenColumn Size="12" SizeMD="6">
@@ -72,6 +78,7 @@
                             PageSize="10"
                             EmptyText="Kayıt bulunamadı">
                 <Columns>
+                    <RadzenDataGridColumn TItem="DovizKodu" Property="Id" Title="ID" Width="100px" Filterable="false" />
                     <RadzenDataGridColumn TItem="DovizKodu" Property="TCMB" Title="TCMB" />
                     <RadzenDataGridColumn TItem="DovizKodu" Property="Name" Title="Ad" />
                     <RadzenDataGridColumn TItem="DovizKodu" Title="Durum">
@@ -118,6 +125,7 @@
             </RadzenDataGrid>
         </RadzenCard>
     </RadzenStack>
+}
 
 @code {
     private List<DovizKodu> dovizKodlari = new();
@@ -127,6 +135,8 @@
     private bool canAdd;
     private bool canEdit;
     private bool canDelete;
+
+    private bool isLoading = true;
 
     private string? selectedTcmb;
     private string? selectedName;
@@ -159,15 +169,19 @@
         else if (yetki != null)
         {
             canView   = yetki.DovizKodlari >= YetkiSeviyesi.Giris;
-            canAdd    = yetki.DovizKodlari == YetkiSeviyesi.TamYetki;
+            canAdd    = yetki.DovizKodlari >= YetkiSeviyesi.Giris;
             canEdit   = yetki.DovizKodlari >= YetkiSeviyesi.GirisDuzeltme;
             canDelete = yetki.DovizKodlari == YetkiSeviyesi.TamYetki;
         }
 
         if (!canView)
+        {
+            isLoading = false;
             return;
+        }
 
         await LoadAsync();
+        isLoading = false;
     }
 
     private async Task LoadAsync()
@@ -253,7 +267,7 @@
             query = query.Where(x => x.DovizKoduAktifPasif == selectedDurum.Value);
         }
 
-        filteredDovizKodlari = query.OrderBy(x => x.TCMB).ToList();
+        filteredDovizKodlari = query.OrderBy(x => x.Id).ToList();
     }
 
     private void ClearFilters()

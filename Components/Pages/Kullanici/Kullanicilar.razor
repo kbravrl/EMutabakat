@@ -11,6 +11,12 @@
 
 <PageTitle>Kullanıcılar</PageTitle>
 
+@if (!canView && !isLoading)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya giriş izniniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
     <RadzenStack Gap="1rem" class="p-4">
         <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
             <RadzenColumn Size="12" SizeMD="6">
@@ -148,6 +154,7 @@
             </RadzenDataGrid>
         </RadzenCard>
     </RadzenStack>
+}
 
 @code {
     private List<Kullanici> kullanicilar = new();
@@ -159,6 +166,8 @@
     private bool canDelete;
     private bool canImport;
     private bool canExport;
+
+    private bool isLoading = true;
 
     private string? searchText;
     private string? selectedDurum = "1";
@@ -182,7 +191,7 @@
         else if (yetki != null)
         {
             canView   = yetki.Kullanicilar >= YetkiSeviyesi.Giris;
-            canAdd    = yetki.Kullanicilar == YetkiSeviyesi.TamYetki;
+            canAdd    = yetki.Kullanicilar >= YetkiSeviyesi.Giris;
             canEdit   = yetki.Kullanicilar >= YetkiSeviyesi.GirisDuzeltme;
             canDelete = yetki.Kullanicilar == YetkiSeviyesi.TamYetki;
             canImport = yetki.ImportYetki;
@@ -190,9 +199,13 @@
         }
 
         if (!canView)
+        {
+            isLoading = false;
             return;
+        }
 
         await LoadKullanicilarAsync();
+        isLoading = false;
     }
 
     private async Task LoadKullanicilarAsync()

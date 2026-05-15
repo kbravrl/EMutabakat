@@ -42,13 +42,6 @@ else
                 <RadzenRow Gap="16px">
 
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Kullanıcı ID" />
-                        <RadzenTextBox Value="@kullanici.KullaniciId.ToString()"
-                                       Disabled="true"
-                                       Style="width:100%;background:#f5f5f5;" />
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Firmalar *" />
                         <RadzenDropDown Data="@firmalar"
                                         TextProperty="FirmaAdi"
@@ -108,11 +101,13 @@ else
 
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Yeni Şifre" />
-                        <RadzenPassword TValue="string"
-                                        Value="@kullanici.Sifre"
-                                        ValueChanged="@OnPasswordChanged"
-                                        Placeholder="Boş bırakırsanız değişmez"
-                                        Style="width:100%;" />
+                        <input type="password"
+                               value="@yeniSifre"
+                               @oninput="@(e => OnPasswordChanged(e.Value?.ToString()))"
+                               placeholder="Boş bırakırsanız değişmez"
+                               autocomplete="new-password"
+                               class="rz-textbox"
+                               style="width:100%;" />
                         <ValidationMessage For="@(() => kullanici.Sifre)" />
                     </RadzenColumn>
 
@@ -129,6 +124,12 @@ else
                             <RadzenColumn Size="12">
                                 <div style="display:flex;align-items:center;gap:24px;">
                                     <span style="width:120px;flex-shrink:0;">@modul.Ad</span>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
+                                        <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.Yetkisiz)"
+                                                        ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.Yetkisiz); })"
+                                                        TValue="bool" />
+                                        <span>Yetkisiz</span>
+                                    </label>
                                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
                                         <RadzenCheckBox Value="@(modul.GetYetki() == YetkiSeviyesi.Giris)"
                                                         ValueChanged="@((bool v) => { if (v) modul.SetYetki(YetkiSeviyesi.Giris); })"
@@ -232,6 +233,7 @@ else
     [Parameter] public int id { get; set; }
 
     private Kullanici? kullanici;
+    private string? yeniSifre;
     private bool isLoading = true;
     private bool isCurrentUser = false;
     private List<Firma> firmalar = new();
@@ -262,6 +264,7 @@ else
                     .Distinct()
                     .ToList() ?? new List<int>();
                 kullanici.Sifre = null;
+                yeniSifre = null;
                 kullanici.Yetkileri ??= new KullaniciYetki();
 
                 modulYetkileri = new List<ModulYetki>
@@ -286,6 +289,7 @@ else
         if (kullanici == null)
             return;
 
+        yeniSifre = value;
         kullanici.Sifre = string.IsNullOrWhiteSpace(value) ? null : value;
     }
 

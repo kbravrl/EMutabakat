@@ -82,7 +82,7 @@ else
         var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
         var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
 
-        canAdd = isSeed || (yetki != null && yetki.DovizKodlari == YetkiSeviyesi.TamYetki);
+        canAdd = isSeed || (yetki != null && yetki.DovizKodlari >= YetkiSeviyesi.Giris);
     }
 
     private async Task HandleValidSubmit()

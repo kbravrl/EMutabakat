@@ -12,6 +12,12 @@
 
 <PageTitle>Mutabakatlar</PageTitle>
 
+@if (!canView && !isLoading)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya giriş izniniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
     <RadzenStack Gap="1rem" class="p-4">
         <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="mb-3">
             <RadzenColumn Size="12" SizeMD="4">
@@ -291,6 +297,7 @@
             </RadzenDataGrid>
         </RadzenCard>
     </RadzenStack>
+}
 @code {
     private List<Mutabakat> mutabakatlar = new();
     private IList<Mutabakat> selectedMutabakatlar = new List<Mutabakat>();
@@ -308,7 +315,7 @@
     private string? selectedPeriod;
     private string? selectedCariGrupId;
     private string? selectedDovizKodu;
-    private bool isLoading = false;
+    private bool isLoading = true;
 
     private List<FilterOption<string>> cariGrupOptions = new();
     private List<FilterOption<string>> dovizOptions = new();
@@ -416,7 +423,7 @@
         else if (yetki != null)
         {
             canView = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
-            canAdd = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
+            canAdd = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
             canEdit = yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme;
             canDelete = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
             canImport = yetki.ImportYetki;
@@ -424,9 +431,13 @@
         }
 
         if (!canView)
+        {
+            isLoading = false;
             return;
+        }
 
         await LoadMutabakatlarAsync();
+        isLoading = false;
     }
 
     private async Task OpenImportDialog()

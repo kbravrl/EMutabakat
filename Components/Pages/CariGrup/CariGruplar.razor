@@ -13,6 +13,12 @@
 
 <PageTitle>Cari Gruplar</PageTitle>
 
+@if (!canView && !isLoading)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya giriş izniniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
     <RadzenStack Gap="1rem" class="p-4">
         <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
             <RadzenColumn Size="12" SizeMD="6">
@@ -157,6 +163,7 @@
             </RadzenDataGrid>
         </RadzenCard>
     </RadzenStack>
+}
 
 @code {
     private List<CariGrup> cariGruplar = new();
@@ -170,6 +177,8 @@
     private bool canDelete;
     private bool canImport;
     private bool canExport;
+
+    private bool isLoading = true;
 
     private string? searchText;
     private int? selectedFirmaId;
@@ -210,7 +219,7 @@
         else if (yetki != null)
         {
             canView   = yetki.CariGruplar >= YetkiSeviyesi.Giris;
-            canAdd    = yetki.CariGruplar == YetkiSeviyesi.TamYetki;
+            canAdd    = yetki.CariGruplar >= YetkiSeviyesi.Giris;
             canEdit   = yetki.CariGruplar >= YetkiSeviyesi.GirisDuzeltme;
             canDelete = yetki.CariGruplar == YetkiSeviyesi.TamYetki;
             canImport = yetki.ImportYetki;
@@ -218,9 +227,13 @@
         }
 
         if (!canView)
+        {
+            isLoading = false;
             return;
+        }
 
         await LoadCariGruplarAsync();
+        isLoading = false;
     }
 
     private async Task LoadCariGruplarAsync()

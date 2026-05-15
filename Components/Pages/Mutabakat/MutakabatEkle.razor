@@ -205,7 +205,7 @@ else
         var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
         var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
 
-        canAdd = isSeed || (yetki != null && yetki.Mutabakatlar == YetkiSeviyesi.TamYetki);
+        canAdd = isSeed || (yetki != null && yetki.Mutabakatlar >= YetkiSeviyesi.Giris);
 
         if (!canAdd)
             return;

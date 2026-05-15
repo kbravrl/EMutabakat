@@ -202,7 +202,7 @@ else
         var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
         var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
 
-        canAdd = isSeed || (yetki?.Firmalar == YetkiSeviyesi.TamYetki);
+        canAdd = isSeed || (yetki?.Firmalar >= YetkiSeviyesi.Giris);
     }
 
     private async Task HandleValidSubmit()

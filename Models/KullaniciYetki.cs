@@ -10,12 +10,12 @@ namespace EMutabakat.Models
         [Required]
         public int KullaniciId { get; set; }
 
-        public YetkiSeviyesi Cariler { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi CariGruplar { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi DovizKodlari { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi Mutabakatlar { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi Firmalar { get; set; } = YetkiSeviyesi.Giris;
-        public YetkiSeviyesi Kullanicilar { get; set; } = YetkiSeviyesi.Giris;
+        public YetkiSeviyesi Cariler { get; set; } = YetkiSeviyesi.Yetkisiz;
+        public YetkiSeviyesi CariGruplar { get; set; } = YetkiSeviyesi.Yetkisiz;
+        public YetkiSeviyesi DovizKodlari { get; set; } = YetkiSeviyesi.Yetkisiz;
+        public YetkiSeviyesi Mutabakatlar { get; set; } = YetkiSeviyesi.Yetkisiz;
+        public YetkiSeviyesi Firmalar { get; set; } = YetkiSeviyesi.Yetkisiz;
+        public YetkiSeviyesi Kullanicilar { get; set; } = YetkiSeviyesi.Yetkisiz;
         public bool LogYetki { get; set; }
         public bool ImportYetki { get; set; }
         public bool ExportYetki { get; set; }
