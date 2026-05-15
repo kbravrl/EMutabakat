@@ -79,7 +79,6 @@ namespace EMutabakat.Data
             {
                 admin = new Kullanici
                 {
-                    KullaniciId = "1",
                     KullaniciAdi = "Sistem",
                     KullaniciSoyadi = "Yöneticisi",
                     KullaniciMail = adminMail,
@@ -109,11 +108,6 @@ namespace EMutabakat.Data
             }
             else
             {
-                if (string.IsNullOrWhiteSpace(admin.KullaniciId))
-                {
-                    admin.KullaniciId = "1";
-                }
-
                 admin.KullaniciAktifPasif = "1";
                 admin.IsSeedUser = true;
 

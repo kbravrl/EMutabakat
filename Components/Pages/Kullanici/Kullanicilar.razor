@@ -206,12 +206,12 @@
         NavigationManager.NavigateTo("/users/add");
     }
 
-    private void GoToEditPage(string id)
+    private void GoToEditPage(int id)
     {
         NavigationManager.NavigateTo($"/users/edit/{id}");
     }
 
-    private async Task DeleteKullanici(string id, string ad, string soyad)
+    private async Task DeleteKullanici(int id, string ad, string soyad)
     {
         var kullanici = kullanicilar.FirstOrDefault(k => k.KullaniciId == id);
         if (kullanici?.IsSeedUser == true)
@@ -321,7 +321,7 @@
             var text = searchText.Trim().ToLower();
 
             query = query.Where(x =>
-                (x.KullaniciId != null && x.KullaniciId.ToLower().Contains(text)) ||
+                x.KullaniciId.ToString().Contains(text) ||
                 (!string.IsNullOrWhiteSpace(x.KullaniciAdi) && x.KullaniciAdi.ToLower().Contains(text)) ||
                 (!string.IsNullOrWhiteSpace(x.KullaniciSoyadi) && x.KullaniciSoyadi.ToLower().Contains(text)) ||
                 (!string.IsNullOrWhiteSpace(x.KullaniciMail) && x.KullaniciMail.ToLower().Contains(text)) ||
@@ -337,24 +337,8 @@
         aktifDurumFiltre = selectedDurum ?? string.Empty;
 
         filteredKullanicilar = query
-            .OrderBy(x => GetKullaniciSortValue(x.KullaniciId))
-            .ThenBy(x => x.KullaniciId)
+            .OrderBy(x => x.KullaniciId)
             .ToList();
-    }
-
-    private int GetKullaniciSortValue(string? kullaniciId)
-    {
-        var id = kullaniciId ?? string.Empty;
-
-        if (int.TryParse(id, out var n))
-            return n;
-
-        var match = System.Text.RegularExpressions.Regex.Match(id, @"\d+");
-
-        if (int.TryParse(match.Value, out var m))
-            return m;
-
-        return int.MaxValue;
     }
 
     private void ClearFilters()

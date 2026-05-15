@@ -39,12 +39,11 @@ namespace EMutabakat.Tests.Integration.Services
         {
             var kullanici = new Kullanici
             {
-                KullaniciId = "P1",
                 KullaniciAdi = "Test",
                 KullaniciSoyadi = "Kullanıcı",
                 KullaniciMail = mail.Trim().ToLower(),
                 KullaniciAktifPasif = aktif ? "1" : "0",
-                Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
+                Yetkileri = new KullaniciYetki()
             };
             var hasher = new PasswordHasher<Kullanici>();
             kullanici.Sifre = hasher.HashPassword(kullanici, plainPassword);
@@ -145,7 +144,6 @@ namespace EMutabakat.Tests.Integration.Services
 
             var kullanici = new Kullanici
             {
-                KullaniciId = "P1",
                 KullaniciAdi = "Ali",
                 KullaniciSoyadi = "Veli",
                 KullaniciMail = "ali@test.com",
@@ -175,7 +173,6 @@ namespace EMutabakat.Tests.Integration.Services
             var service = CreateService(dbName);
             var yeni = new Kullanici
             {
-                KullaniciId = "P2",
                 KullaniciAdi = "Yeni",
                 KullaniciSoyadi = "Kullanıcı",
                 KullaniciMail = "mevcut@test.com",
@@ -220,37 +217,6 @@ namespace EMutabakat.Tests.Integration.Services
             result.Should().BeNull();
         }
 
-        // ─── GenerateNextKullaniciIdAsync ────────────────────────────────────────
-
-        [Fact]
-        public async Task GenerateNextKullaniciIdAsync_BosDatabasede_P1Doner()
-        {
-            var service = CreateService(nameof(GenerateNextKullaniciIdAsync_BosDatabasede_P1Doner));
-
-            var result = await service.GenerateNextKullaniciIdAsync();
-
-            result.Should().Be("P1");
-        }
-
-        [Fact]
-        public async Task GenerateNextKullaniciIdAsync_MevcutKayitlarla_SonrakiIdDoner()
-        {
-            var dbName = nameof(GenerateNextKullaniciIdAsync_MevcutKayitlarla_SonrakiIdDoner);
-            await using (var ctx = TestDbContextFactory.Create(dbName))
-            {
-                ctx.Kullanicilar.AddRange(
-                    new Kullanici { KullaniciId = "P1", KullaniciAdi = "A", KullaniciSoyadi = "B", KullaniciMail = "a@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki { KullaniciId = "P1" } },
-                    new Kullanici { KullaniciId = "P3", KullaniciAdi = "C", KullaniciSoyadi = "D", KullaniciMail = "c@t.com", KullaniciAktifPasif = "1", Yetkileri = new KullaniciYetki { KullaniciId = "P3" } }
-                );
-                await ctx.SaveChangesAsync();
-            }
-
-            var service = CreateService(dbName);
-            var result = await service.GenerateNextKullaniciIdAsync();
-
-            result.Should().Be("P4");
-        }
-
         // ─── IsCurrentUserSeedAsync ──────────────────────────────────────────────
 
         [Fact]
@@ -261,13 +227,12 @@ namespace EMutabakat.Tests.Integration.Services
             {
                 ctx.Kullanicilar.Add(new Kullanici
                 {
-                    KullaniciId = "P1",
                     KullaniciAdi = "Seed",
                     KullaniciSoyadi = "User",
                     KullaniciMail = "seed@test.com",
                     KullaniciAktifPasif = "1",
                     IsSeedUser = true,
-                    Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
+                    Yetkileri = new KullaniciYetki()
                 });
                 await ctx.SaveChangesAsync();
             }
@@ -286,13 +251,12 @@ namespace EMutabakat.Tests.Integration.Services
             {
                 ctx.Kullanicilar.Add(new Kullanici
                 {
-                    KullaniciId = "P1",
                     KullaniciAdi = "Normal",
                     KullaniciSoyadi = "User",
                     KullaniciMail = "normal@test.com",
                     KullaniciAktifPasif = "1",
                     IsSeedUser = false,
-                    Yetkileri = new KullaniciYetki { KullaniciId = "P1" }
+                    Yetkileri = new KullaniciYetki()
                 });
                 await ctx.SaveChangesAsync();
             }

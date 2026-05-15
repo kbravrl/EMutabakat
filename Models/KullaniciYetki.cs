@@ -8,7 +8,7 @@ namespace EMutabakat.Models
         public int Id { get; set; }
 
         [Required]
-        public string KullaniciId { get; set; } = string.Empty;
+        public int KullaniciId { get; set; }
 
         public YetkiSeviyesi Cariler { get; set; } = YetkiSeviyesi.Giris;
         public YetkiSeviyesi CariGruplar { get; set; } = YetkiSeviyesi.Giris;

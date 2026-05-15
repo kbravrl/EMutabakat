@@ -31,13 +31,6 @@ else
                 <RadzenRow Gap="16px">
 
                     <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenLabel Text="Kullanıcı ID *" />
-                        <RadzenTextBox @bind-Value="kullanici.KullaniciId"
-                                       Style="width:100%;" />
-                        <ValidationMessage For="@(() => kullanici.KullaniciId)" />
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="6">
                         <RadzenLabel Text="Firmalar *" />
                         <RadzenDropDown Data="@firmalar"
                                         TextProperty="FirmaAdi"
@@ -246,7 +239,6 @@ else
             return;
 
         firmalar = await FirmaService.GetAllAsync();
-        kullanici.KullaniciId = await KullaniciService.GenerateNextKullaniciIdAsync();
         kullanici.Sifre = null;
 
         modulYetkileri = new List<ModulYetki>

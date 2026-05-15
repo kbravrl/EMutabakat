@@ -5,14 +5,13 @@ namespace EMutabakat.Services.Interfaces
     public interface IKullaniciService
     {
         Task<List<Kullanici>> GetAllAsync();
-        Task<Kullanici?> GetByIdAsync(string id);
+        Task<Kullanici?> GetByIdAsync(int id);
         Task<Kullanici> AddAsync(Kullanici kullanici);
         Task<Kullanici?> UpdateAsync(Kullanici kullanici);
-        Task<bool> DeleteAsync(string id);
+        Task<bool> DeleteAsync(int id);
         Task<Kullanici?> GetByMailAsync(string mail);
         Task<Kullanici?> RegisterAsync(Kullanici kullanici);
         Task<Kullanici?> LoginAsync(string mail, string sifre);
-        Task<string> GenerateNextKullaniciIdAsync();
         Task<bool> IsCurrentUserSeedAsync();
         Task<KullaniciYetki?> GetCurrentUserYetkiAsync();
         string? GetCurrentUserEmail();

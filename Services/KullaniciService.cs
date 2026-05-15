@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-using System.Text.RegularExpressions;
 
 namespace EMutabakat.Services
 {
@@ -85,7 +84,7 @@ namespace EMutabakat.Services
                 .ToList();
         }
 
-        public async Task<Kullanici?> GetByIdAsync(string id)
+        public async Task<Kullanici?> GetByIdAsync(int id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -107,29 +106,6 @@ namespace EMutabakat.Services
             }
 
             return await query.FirstOrDefaultAsync();
-        }
-
-        public async Task<string> GenerateNextKullaniciIdAsync()
-        {
-            await using var context = await _contextFactory.CreateDbContextAsync();
-
-            var ids = await context.Kullanicilar
-                .AsNoTracking()
-                .Select(x => x.KullaniciId)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToListAsync();
-
-            var maxNumeric = 0;
-            foreach (var id in ids)
-            {
-                var match = Regex.Match(id!, @"\d+");
-                if (match.Success && int.TryParse(match.Value, out var number) && number > maxNumeric)
-                {
-                    maxNumeric = number;
-                }
-            }
-
-            return $"P{maxNumeric + 1}";
         }
 
         public async Task<Kullanici?> GetByMailAsync(string mail)
@@ -272,7 +248,6 @@ namespace EMutabakat.Services
             if (firmalar.Count != firmaIds.Count)
                 throw new Exception("Seçilen firmalardan biri veya birkaçı bulunamadı.");
 
-            kullanici.KullaniciId = await GenerateNextKullaniciIdAsync();
             kullanici.Sifre = _passwordHasher.HashPassword(kullanici, kullanici.Sifre.Trim());
 
             kullanici.Yetkileri ??= new KullaniciYetki();
@@ -299,15 +274,10 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            kullanici.KullaniciId = kullanici.KullaniciId?.Trim() ?? string.Empty;
-            kullanici.OriginalKullaniciId = string.IsNullOrWhiteSpace(kullanici.OriginalKullaniciId)
-                ? kullanici.KullaniciId
-                : kullanici.OriginalKullaniciId.Trim();
-
             var existingKullanici = await context.Kullanicilar
                 .Include(x => x.Firmalar)
                 .Include(x => x.Yetkileri)
-                .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.OriginalKullaniciId);
+                .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.KullaniciId);
 
             if (existingKullanici == null)
                 return null;
@@ -351,88 +321,11 @@ namespace EMutabakat.Services
             var normalizedMail = kullanici.KullaniciMail?.Trim().ToLower();
 
             var mailExists = await context.Kullanicilar.AnyAsync(x =>
-                x.KullaniciId != kullanici.OriginalKullaniciId &&
+                x.KullaniciId != kullanici.KullaniciId &&
                 x.KullaniciMail == normalizedMail);
 
             if (mailExists)
                 throw new Exception("Bu mail adresi ile kayıtlı başka bir kullanıcı zaten var.");
-
-            var keyChanged = !string.Equals(kullanici.OriginalKullaniciId, kullanici.KullaniciId, StringComparison.Ordinal);
-
-            if (keyChanged)
-            {
-                var idExists = await context.Kullanicilar.AnyAsync(x => x.KullaniciId == kullanici.KullaniciId);
-                if (idExists)
-                    throw new Exception("Bu Kullanıcı ID zaten kullanılıyor.");
-
-                var newKullanici = new Kullanici
-                {
-                    KullaniciId = kullanici.KullaniciId,
-                    KullaniciAdi = kullanici.KullaniciAdi.Trim(),
-                    KullaniciSoyadi = kullanici.KullaniciSoyadi.Trim(),
-                    KullaniciMail = normalizedMail ?? string.Empty,
-                    KullaniciGsm = NormalizeGsm(kullanici.KullaniciGsm),
-                    KullaniciAktifPasif = kullanici.KullaniciAktifPasif.Trim(),
-                    IsSeedUser = existingKullanici.IsSeedUser,
-                    Sifre = !string.IsNullOrWhiteSpace(kullanici.Sifre)
-                        ? _passwordHasher.HashPassword(existingKullanici, kullanici.Sifre.Trim())
-                        : existingKullanici.Sifre
-                };
-
-                newKullanici.Yetkileri = new KullaniciYetki
-                {
-                    KullaniciId = newKullanici.KullaniciId,
-                    Cariler = kullanici.Yetkileri?.Cariler ?? existingKullanici.Yetkileri?.Cariler ?? YetkiSeviyesi.Giris,
-                    CariGruplar = kullanici.Yetkileri?.CariGruplar ?? existingKullanici.Yetkileri?.CariGruplar ?? YetkiSeviyesi.Giris,
-                    DovizKodlari = kullanici.Yetkileri?.DovizKodlari ?? existingKullanici.Yetkileri?.DovizKodlari ?? YetkiSeviyesi.Giris,
-                    Mutabakatlar = kullanici.Yetkileri?.Mutabakatlar ?? existingKullanici.Yetkileri?.Mutabakatlar ?? YetkiSeviyesi.Giris,
-                    Firmalar = kullanici.Yetkileri?.Firmalar ?? existingKullanici.Yetkileri?.Firmalar ?? YetkiSeviyesi.Giris,
-                    Kullanicilar = kullanici.Yetkileri?.Kullanicilar ?? existingKullanici.Yetkileri?.Kullanicilar ?? YetkiSeviyesi.Giris,
-                    ImportYetki = kullanici.Yetkileri?.ImportYetki ?? existingKullanici.Yetkileri?.ImportYetki ?? false,
-                    ExportYetki = kullanici.Yetkileri?.ExportYetki ?? existingKullanici.Yetkileri?.ExportYetki ?? false,
-                    LogYetki = kullanici.Yetkileri?.LogYetki ?? existingKullanici.Yetkileri?.LogYetki ?? false
-                };
-
-                context.Kullanicilar.Add(newKullanici);
-
-                foreach (var firma in desiredFirmalar)
-                {
-                    newKullanici.Firmalar.Add(firma);
-                }
-
-                await context.SaveChangesAsync();
-
-                var oldSnapshot = CreateSnapshot(existingKullanici, false);
-                var keyChangeSnapshot = CreateSnapshot(newKullanici, !string.IsNullOrWhiteSpace(kullanici.Sifre));
-
-                context.ChangeTracker.Clear();
-
-                var oldKullanici = await context.Kullanicilar
-                    .Include(x => x.Yetkileri)
-                    .FirstOrDefaultAsync(x => x.KullaniciId == kullanici.OriginalKullaniciId);
-
-                if (oldKullanici != null)
-                {
-                    if (oldKullanici.Yetkileri != null)
-                    {
-                        context.KullaniciYetkileri.Remove(oldKullanici.Yetkileri);
-                    }
-
-                    oldKullanici.Firmalar.Clear();
-                    context.Kullanicilar.Remove(oldKullanici);
-                    await context.SaveChangesAsync();
-                }
-
-                await _logService.AddChangeAsync(
-                    "Kullanıcı",
-                    $"Id: {newKullanici.KullaniciId}, Mail: {newKullanici.KullaniciMail}",
-                    oldSnapshot,
-                    keyChangeSnapshot,
-                    GetUserEmail()
-                );
-
-                return newKullanici;
-            }
 
             var snapshot = CreateSnapshot(existingKullanici, false);
 
@@ -492,7 +385,7 @@ namespace EMutabakat.Services
             return existingKullanici;
         }
 
-        public async Task<bool> DeleteAsync(string id)
+        public async Task<bool> DeleteAsync(int id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -626,7 +519,6 @@ namespace EMutabakat.Services
 
             var headers = new[]
             {
-               "KullaniciId",
                "KullaniciAdi",
                "KullaniciSoyadi",
                "KullaniciMail",
@@ -647,13 +539,12 @@ namespace EMutabakat.Services
                 var kullanici = kullanicilar[i];
                 var row = sheet.CreateRow(i + 1);
 
-                row.CreateCell(0).SetCellValue(kullanici.KullaniciId ?? "");
-                row.CreateCell(1).SetCellValue(kullanici.KullaniciAdi ?? "");
-                row.CreateCell(2).SetCellValue(kullanici.KullaniciSoyadi ?? "");
-                row.CreateCell(3).SetCellValue(kullanici.KullaniciMail ?? "");
-                row.CreateCell(4).SetCellValue(kullanici.KullaniciGsm ?? "");
-                row.CreateCell(5).SetCellValue(kullanici.KullaniciAktifPasif);
-                row.CreateCell(6).SetCellValue("");
+                row.CreateCell(0).SetCellValue(kullanici.KullaniciAdi ?? "");
+                row.CreateCell(1).SetCellValue(kullanici.KullaniciSoyadi ?? "");
+                row.CreateCell(2).SetCellValue(kullanici.KullaniciMail ?? "");
+                row.CreateCell(3).SetCellValue(kullanici.KullaniciGsm ?? "");
+                row.CreateCell(4).SetCellValue(kullanici.KullaniciAktifPasif);
+                row.CreateCell(5).SetCellValue("");
             }
 
             for (int i = 0; i < headers.Length; i++)
@@ -750,7 +641,6 @@ namespace EMutabakat.Services
 
                 string[] required = new[]
                 {
-                   "KullaniciId",
                    "KullaniciAdi",
                    "KullaniciSoyadi",
                    "KullaniciMail"
@@ -785,7 +675,6 @@ namespace EMutabakat.Services
 
                     try
                     {
-                        var kullaniciId = GetStringCell(row, headerMap["KullaniciId"])?.Trim() ?? string.Empty;
                         var kullaniciMail = GetStringCell(row, headerMap["KullaniciMail"])?.Trim() ?? string.Empty;
 
                         var aktifPasif = headerMap.ContainsKey("KullaniciAktifPasif")
@@ -801,13 +690,6 @@ namespace EMutabakat.Services
                         var sifre = headerMap.ContainsKey("Sifre")
                             ? GetStringCell(row, headerMap["Sifre"])?.Trim() ?? string.Empty
                             : string.Empty;
-
-                        if (string.IsNullOrWhiteSpace(kullaniciId))
-                        {
-                            var message = $"Satır {r + 1}: KullaniciId boş olamaz.";
-                            errors.Add(message);
-                            continue;
-                        }
 
                         if (string.IsNullOrWhiteSpace(kullaniciAdi) ||
                             string.IsNullOrWhiteSpace(kullaniciSoyadi) ||
@@ -825,44 +707,11 @@ namespace EMutabakat.Services
                             continue;
                         }
 
-                        var duplicateIdInExcel = false;
-                        for (int i = 1; i < r; i++)
-                        {
-                            var previousRow = sheet.GetRow(i);
-                            if (previousRow == null) continue;
-
-                            var previousId = GetStringCell(previousRow, headerMap["KullaniciId"])?.Trim() ?? string.Empty;
-                            if (!string.IsNullOrWhiteSpace(previousId) &&
-                                previousId.Equals(kullaniciId, StringComparison.OrdinalIgnoreCase))
-                            {
-                                duplicateIdInExcel = true;
-                                break;
-                            }
-                        }
-
-                        if (duplicateIdInExcel)
-                        {
-                            var message = $"Satır {r + 1}: '{kullaniciId}' değeri Excel içinde tekrar ediyor.";
-                            errors.Add(message);
-                            continue;
-                        }
-
                         var normalizedMail = kullaniciMail.Trim().ToLower();
-
-                        var mailOwner = await context.Kullanicilar
-                            .AsNoTracking()
-                            .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
-
-                        if (mailOwner != null && !mailOwner.KullaniciId.Equals(kullaniciId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var message = $"Satır {r + 1}: '{kullaniciMail}' mail adresi başka bir kullanıcıda kayıtlı.";
-                            errors.Add(message);
-                            continue;
-                        }
 
                         var existingUser = await context.Kullanicilar
                             .Include(x => x.Firmalar)
-                            .FirstOrDefaultAsync(x => x.KullaniciId == kullaniciId);
+                            .FirstOrDefaultAsync(x => x.KullaniciMail == normalizedMail);
 
                         if (existingUser == null)
                         {
@@ -875,7 +724,6 @@ namespace EMutabakat.Services
 
                             var yeniKullanici = new Kullanici
                             {
-                                KullaniciId = kullaniciId,
                                 FirmaIds = firmaIds.ToList(),
                                 KullaniciAdi = kullaniciAdi.Trim(),
                                 KullaniciSoyadi = kullaniciSoyadi.Trim(),
