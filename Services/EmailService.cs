@@ -86,19 +86,17 @@ namespace EMutabakat.Services
         {
             string donem = mutabakat.MutabakatTarihi.ToString("MM.yyyy");
             var bakiyeVal = mutabakat.MutabakatBakiye;
-            string bakiye = bakiyeVal == Math.Truncate(bakiyeVal)
-                ? ((long)bakiyeVal).ToString()
-                : bakiyeVal.ToString("N2");
+            string bakiye = bakiyeVal.ToString("N2");
             string doviz = GetDovizName(mutabakat.MutabakatDovizKodu);
             string bakiyeTipi = GetBakiyeTipiText(mutabakat.MutabakatBakiyeTipi);
             string yetkiliAdi = mutabakat.Cari.CariYetkiliAdiSoyadi;
 
             return $@"
-    <div style='font-family:Arial; line-height:1.6'>
+    <div style='font-family:Verdana; line-height:1.6'>
 
         <h2 style='text-align:center;'>MUTABAKAT</h2>
 
-        <p>Sayın {yetkiliAdi},</p>
+        <p>Sayın <b>{yetkiliAdi}</b>,</p>
 
         <br/>
 
@@ -121,27 +119,50 @@ namespace EMutabakat.Services
         bildirmediğiniz takdirde bakiyede mutabık sayılacağımızı bilgilerinize sunarız.
         </p>
 
-        <p>
-        Mutabık olmadığınız takdirde hesap ekstrenizin ivedilikle gönderilmesini rica ederiz.
-        </p>
-
         <p><b>HATA VE UNUTMA MÜSTESNADIR.</b></p>
 
         <p>
-        Firma ve iletişim bilgilerinizdeki değişiklikleri bildirmenizi rica ederiz.
+        Firma ve iletişim bilgilerinizdeki değişiklikler için lütfen bizimle iletişime geçiniz.
         </p>
 
         <br/><br/>
 
-        <a href='{approveUrl}'
-           style='background-color:green;color:white;padding:12px 20px;text-decoration:none;margin-right:10px;'>
-           ✔ Mutabıkız
-        </a>
-
-        <a href='{rejectUrl}'
-           style='background-color:red;color:white;padding:12px 20px;text-decoration:none;'>
-           ✖ Mutabık Değiliz
-        </a>
+        <table cellpadding='0' cellspacing='0' style='margin-top:24px;'>
+            <tr>
+                <td style='padding-right:16px;'>
+                    <a href='{approveUrl}'
+                       style='display:inline-block;
+                              background-color:#16a34a;
+                              color:white;
+                              font-family:Verdana;
+                              font-size:14px;
+                              font-weight:bold;
+                              padding:8px 16px;
+                              border-radius:6px;
+                              text-decoration:none;
+                              letter-spacing:0.5px;
+                              box-shadow:0 2px 6px rgba(0,0,0,0.2);'>
+                              Mutabıkız ✔
+                    </a>
+                </td>
+                <td>
+                    <a href='{rejectUrl}'
+                       style='display:inline-block;
+                              background-color:#dc2626;
+                              color:white;
+                              font-family:Verdana;
+                              font-size:14px;
+                              font-weight:bold;
+                              padding:8px 16px;
+                              border-radius:6px;
+                              text-decoration:none;
+                              letter-spacing:0.5px;
+                              box-shadow:0 2px 6px rgba(0,0,0,0.2);'>
+                              Mutabık Değiliz ✖
+                    </a>
+                </td>
+            </tr>
+        </table>
 
         <br/><br/>
     </div>
