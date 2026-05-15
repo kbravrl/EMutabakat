@@ -11,5 +11,6 @@ namespace EMutabakat.Services.Interfaces
         Task AddImportResultAsync(string source, string message, List<string> errors, string? userEmail = null);
         Task DeleteAllAsync();
         Task DeleteLastDaysAsync(int dayCount);
+        Task<byte[]> ExportToExcelAsync(List<AppLog> logs);
     }
 }

@@ -2,6 +2,8 @@
 using EMutabakat.Models;
 using EMutabakat.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
@@ -321,6 +323,89 @@ namespace EMutabakat.Services
 
             context.AppLogs.RemoveRange(logs);
             await context.SaveChangesAsync();
+        }
+
+        public Task<byte[]> ExportToExcelAsync(List<AppLog> logs)
+        {
+            IWorkbook workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("Loglar");
+            var wrapStyle = workbook.CreateCellStyle();
+            wrapStyle.WrapText = true;
+            wrapStyle.VerticalAlignment = VerticalAlignment.Top;
+
+            var idStyle = workbook.CreateCellStyle();
+            idStyle.WrapText = true;
+            idStyle.VerticalAlignment = VerticalAlignment.Top;
+            idStyle.Alignment = HorizontalAlignment.Right;
+
+            var headers = new[]
+            {
+                "ID",
+                "Tarih",
+                "Seviye",
+                "Kaynak",
+                "Kullanıcı",
+                "Mesaj",
+                "Detaylar"
+            };
+
+            var headerRow = sheet.CreateRow(0);
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = headerRow.CreateCell(i);
+                cell.SetCellValue(headers[i]);
+            }
+
+            var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            for (int i = 0; i < logs.Count; i++)
+            {
+                var log = logs[i];
+                var row = sheet.CreateRow(i + 1);
+
+                var c0 = row.CreateCell(0); c0.SetCellValue(log.Id);                                                              c0.CellStyle = idStyle;
+                var c1 = row.CreateCell(1); c1.SetCellValue(log.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss"));         c1.CellStyle = wrapStyle;
+                var c2 = row.CreateCell(2); c2.SetCellValue(log.Level ?? "");                                                     c2.CellStyle = wrapStyle;
+                var c3 = row.CreateCell(3); c3.SetCellValue(log.Source ?? "");                                                    c3.CellStyle = wrapStyle;
+                var c4 = row.CreateCell(4); c4.SetCellValue(log.UserEmail ?? "");                                                 c4.CellStyle = wrapStyle;
+                var c5 = row.CreateCell(5); c5.SetCellValue(log.Message ?? "");                                                   c5.CellStyle = wrapStyle;
+                var c6 = row.CreateCell(6); c6.SetCellValue(FormatDetailsForExport(log.Details, jsonOptions));                    c6.CellStyle = wrapStyle;
+            }
+
+            sheet.SetColumnWidth(0, 2000);
+            sheet.SetColumnWidth(1, 5500);
+            sheet.SetColumnWidth(2, 3500);  
+            sheet.SetColumnWidth(3, 4500);  
+            sheet.SetColumnWidth(4, 9000);
+            sheet.SetColumnWidth(5, 18000);
+            sheet.SetColumnWidth(6, 22000);
+
+            using var ms = new MemoryStream();
+            workbook.Write(ms, true);
+            return Task.FromResult(ms.ToArray());
+        }
+
+        private static string FormatDetailsForExport(string? json, JsonSerializerOptions options)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return string.Empty;
+
+            var payload = JsonSerializer.Deserialize<LogDetailPayload>(json, options);
+
+            if (payload?.Changes != null && payload.Changes.Count > 0)
+            {
+                var lines = payload.Changes.Select(c =>
+                $"{c.Field}: {c.OldValue ?? "(boş)"} → {c.NewValue ?? "(boş)"}");
+                return string.Join("\n", lines);
+            }
+
+            if (payload?.Errors != null && payload.Errors.Count > 0)
+            {
+                var lines = payload.Errors.Select((e, idx) => $"Hata {idx + 1}: {e}");
+                return string.Join("\n", lines);
+            }
+          
+            return json;
         }
     }
 

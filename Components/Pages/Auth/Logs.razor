@@ -23,14 +23,24 @@ else
             </RadzenColumn>
 
             <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
-                @if (canClear)
-                {
-                    <RadzenButton Text="Logları temizle"
-                                  Icon="delete"
-                                  Style="font-size:15px;"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Click="@ClearLogs" />
-                }
+                <div style="display:flex; align-items:center; gap:15px; justify-content:flex-end; width:100%;">
+                    @if (canExport)
+                    {
+                        <img src="/images/excel-export.png"
+                             title="Excel Dışa Aktar"
+                             @onclick="ExportToExcel"
+                             style="width:48px; height:48px; cursor:pointer;" />
+                    }
+
+                    @if (canClear)
+                    {
+                        <RadzenButton Text="Logları temizle"
+                                      Icon="delete"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@ClearLogs" />
+                    }
+                </div>
             </RadzenColumn>
         </RadzenRow>
 
@@ -165,6 +175,7 @@ else
     private List<AppLog> logs = new();
     private bool canView;
     private bool canClear;
+    private bool canExport;
     private AppLog? expandedLog;
     private RadzenDataGrid<AppLog> grid = default!;
 
@@ -175,12 +186,13 @@ else
 
         if (isSeed)
         {
-            canView = canClear = true;
+            canView = canClear = canExport = true;
         }
         else if (yetki != null)
         {
             canView = yetki.LogYetki;
             canClear = yetki.LogYetki;
+            canExport = yetki.ExportYetki;
         }
 
         if (!canView)
@@ -246,6 +258,29 @@ else
         public string Field { get; set; } = string.Empty;
         public string? OldValue { get; set; }
         public string? NewValue { get; set; }
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var bytes = await LogService.ExportToExcelAsync(logs);
+            var base64 = Convert.ToBase64String(bytes);
+            var fileName = $"Loglar.xlsx";
+
+            await JS.InvokeVoidAsync(
+                "downloadFileFromBase64",
+                fileName,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                base64
+            );
+
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Loglar Excel olarak indirildi.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
     }
 
     private async Task ClearLogs()
