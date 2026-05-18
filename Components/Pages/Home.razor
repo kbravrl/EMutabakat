@@ -133,167 +133,176 @@
         else
         {
             <div style="margin-top:15px;border-top:1px dashed #ddd;padding-top:15px">
-                <RadzenRow Gap="16px">
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">İlk Gönderim</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(firstSendDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
+                <RadzenRow Gap="24px">
 
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Tahmini Bitiş</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(estimatedEndDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
+                    @* SOL KOLON: metrikler + tablolar *@
+                    <RadzenColumn Size="12" SizeLG="8">
 
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Günlük Ortalama</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@gunlukOrtalama</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
+                        <RadzenRow Gap="16px">
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">İlk Gönderim</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(firstSendDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Tahmini Bitiş</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@(estimatedEndDate?.ToString("dd.MM.yyyy") ?? "---")</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Günlük Ortalama</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@gunlukOrtalama</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Kalan Gün</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@kalanGun</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                        </RadzenRow>
 
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color:#666">Kalan Gün</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600">@kalanGun</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
+                        <RadzenRow Gap="16px" style="margin-top:16px">
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.H5" Style="color:#27ae60;font-weight:700">@mutabikCount</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Mutabık</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.H5" Style="color:#f39c12;font-weight:700">@onayBekleyenCount</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Onay Bekleyen</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.H5" Style="color:#e74c3c;font-weight:700">@gonderilmeyenCount</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Gönderilmeyen</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenCard Style="text-align:center">
+                                    <RadzenText TextStyle="TextStyle.H5" Style="color:#4c6ef5;font-weight:700">@mutabakatCount</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Toplam</RadzenText>
+                                </RadzenCard>
+                            </RadzenColumn>
+                        </RadzenRow>
 
-                <RadzenRow Gap="16px" style="margin-top:15px">
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.H5" Style="color:#27ae60;font-weight:700">@mutabikCount</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Mutabık</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.H5" Style="color:#f39c12;font-weight:700">@onayBekleyenCount</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Onay Bekleyen</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.H5" Style="color:#e74c3c;font-weight:700">@gonderilmeyenCount</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Gönderilmeyen</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="3">
-                        <RadzenCard Style="text-align:center">
-                            <RadzenText TextStyle="TextStyle.H5" Style="color:#4c6ef5;font-weight:700">@mutabakatCount</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body2" Style="color:#666">Toplam</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
-
-                <RadzenRow Gap="16px" JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" style="margin-top:15px">
-                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
-                        <RadzenCard>
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #27ae60;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                                    @mutabikYuzde%
-                                </div>
-                                <div style="color:#27ae60;font-weight:700">Mutabık</div>
-                                <div style="color:#888">@mutabikCount</div>
-                            </div>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
-                        <RadzenCard>
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #f39c12;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                                    @onayBekleyenYuzde%
-                                </div>
-                                <div style="color:#f39c12;font-weight:700">Onay Bekleyen</div>
-                                <div style="color:#888">@onayBekleyenCount</div>
-                            </div>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="4" Style="text-align:center">
-                        <RadzenCard>
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-                                <div style="width:90px;height:90px;border-radius:50%;border:8px solid #e74c3c;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;line-height:1;box-sizing:border-box;">
-                                    @gonderilmeyenYuzde%
-                                </div>
-                                <div style="color:#e74c3c;font-weight:700">Gönderilmeyen</div>
-                                <div style="color:#888">@gonderilmeyenCount</div>
-                            </div>
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
-
-                <RadzenRow Gap="16px" style="margin-top:20px">
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenCard>
-                            <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin-bottom:4px">Durum Dağılımı</RadzenText>
-                            <table style="width:100%;border-collapse:collapse">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Durum</th>
-                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam Adet</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in tableRows)
-                                    {
-                                        <tr>
-                                            <td style="padding:6px;border-bottom:1px solid #f1f1f1">
-                                                <div>
-                                                    @row.Label
-                                                </div>
-                                            </td>
-                                            <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Count</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn Size="12" SizeMD="6">
-                        <RadzenCard>
-                            <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin-bottom:4px">Döviz Bazlı Bakiye Dağılımı</RadzenText>
-                            <table style="width:100%;border-collapse:collapse">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Döviz</th>
-                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Borç</th>
-                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Alacak</th>
-                                        <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (currencyBalanceRows.Count == 0)
-                                    {
-                                        <tr>
-                                            <td colspan="4" style="padding:8px;border-bottom:1px solid #f1f1f1;color:#888">Kayıt bulunamadı.</td>
-                                        </tr>
-                                    }
-                                    else
-                                    {
-                                        @foreach (var row in currencyBalanceRows)
-                                        {
+                        <RadzenRow Gap="16px" style="margin-top:16px">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenCard>
+                                    <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin-bottom:4px">Durum Dağılımı</RadzenText>
+                                    <table style="width:100%;border-collapse:collapse">
+                                        <thead>
                                             <tr>
-                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1">@row.Currency</td>
-                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Borc.ToString("N2")</td>
-                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Alacak.ToString("N2")</td>
-                                                <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Total.ToString("N2")</td>
+                                                <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Durum</th>
+                                                <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam Adet</th>
                                             </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in tableRows)
+                                            {
+                                                <tr>
+                                                    <td style="padding:6px;border-bottom:1px solid #f1f1f1">@row.Label</td>
+                                                    <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Count</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </RadzenCard>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenCard>
+                                    <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin:0 0 8 0;">Döviz Bazlı Bakiye Dağılımı</RadzenText>
+                                    <table style="width:100%;border-collapse:collapse">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align:left;padding:8px;border-bottom:1px solid #ddd">Döviz</th>
+                                                <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Borç</th>
+                                                <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Alacak</th>
+                                                <th style="text-align:right;padding:8px;border-bottom:1px solid #ddd">Toplam</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (currencyBalanceRows.Count == 0)
+                                            {
+                                                <tr>
+                                                    <td colspan="4" style="padding:8px;color:#888">Kayıt bulunamadı.</td>
+                                                </tr>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var row in currencyBalanceRows)
+                                                {
+                                                    <tr>
+                                                        <td style="padding:6px;border-bottom:1px solid #f1f1f1">@row.Currency</td>
+                                                        <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Borc.ToString("N2")</td>
+                                                        <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Alacak.ToString("N2")</td>
+                                                        <td style="padding:6px;border-bottom:1px solid #f1f1f1;text-align:right;font-weight:700">@row.Total.ToString("N2")</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </RadzenCard>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                    </RadzenColumn>
+
+                    @* SAĞ KOLON: pasta grafik *@
+                    <RadzenColumn Size="12" SizeLG="4">
+                        <RadzenCard Style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5rem;">
+                            <RadzenText TextStyle="TextStyle.Subtitle1" Style="font-weight:600;margin:0 0 32px 0;align-self:flex-start">Durum Dağılım Grafiği</RadzenText>
+
+                            @if (mutabakatCount == 0)
+                            {
+                                <div style="display:flex;align-items:center;justify-content:center;height:260px;color:#aaa">
+                                    <RadzenText TextStyle="TextStyle.Body2">Gösterilecek veri yok</RadzenText>
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%">
+                                    <svg viewBox="0 0 200 200" width="260" height="260" style="flex-shrink:0">
+                                        @foreach (var s in GetPieSlices())
+                                        {
+                                            @((MarkupString)s.PathSvg)
+                                            @if (s.ShowLabel)
+                                            {
+                                                @((MarkupString)s.LabelSvg)
+                                            }
                                         }
-                                    }
-                                </tbody>
-                            </table>
+                                    </svg>
+
+                                    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+                                        <div style="display:flex;align-items:center;gap:6px">
+                                            <div style="width:12px;height:12px;background:#27ae60;border-radius:2px;flex-shrink:0"></div>
+                                            <span style="font-size:13px;color:#555">Mutabık</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:6px">
+                                            <div style="width:12px;height:12px;background:#f39c12;border-radius:2px;flex-shrink:0"></div>
+                                            <span style="font-size:13px;color:#555">Onay Bekleyen</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:6px">
+                                            <div style="width:12px;height:12px;background:#e74c3c;border-radius:2px;flex-shrink:0"></div>
+                                            <span style="font-size:13px;color:#555">Gönderilmeyen</span>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:6px">
+                                            <div style="width:12px;height:12px;background:#8e44ad;border-radius:2px;flex-shrink:0"></div>
+                                            <span style="font-size:13px;color:#555">Mutabık Değil</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </RadzenCard>
                     </RadzenColumn>
+
                 </RadzenRow>
             </div>
         }
@@ -319,6 +328,7 @@
     private int mutabikYuzde;
     private int onayBekleyenYuzde;
     private int gonderilmeyenYuzde;
+    private int mutabikDegilYuzde;
 
     private int gunlukOrtalama;
     private int kalanGun;
@@ -335,6 +345,73 @@
 
     private List<DashboardRow> tableRows = new();
     private List<CurrencyBalanceRow> currencyBalanceRows = new();
+    private List<PieDataItem> pieData = new();
+    private string[] pieColors = new[] { "#27ae60", "#f39c12", "#e74c3c", "#8e44ad" };
+
+    private record PieSliceData(string PathSvg, string LabelSvg, bool ShowLabel);
+
+    private List<PieSliceData> GetPieSlices()
+    {
+        var result = new List<PieSliceData>();
+        var ic = System.Globalization.CultureInfo.InvariantCulture;
+        const double cx = 100, cy = 100, r = 90;
+
+        var inputs = new[]
+        {
+            (Count: mutabikCount,       Color: "#27ae60", Yuzde: mutabikYuzde),
+            (Count: onayBekleyenCount,  Color: "#f39c12", Yuzde: onayBekleyenYuzde),
+            (Count: gonderilmeyenCount, Color: "#e74c3c", Yuzde: gonderilmeyenYuzde),
+            (Count: mutabikDegilCount,  Color: "#8e44ad", Yuzde: mutabikDegilYuzde),
+        };
+
+        var total = inputs.Sum(x => x.Count);
+        if (total == 0) return result;
+
+        var nonZero = inputs.Where(x => x.Count > 0).ToArray();
+
+        // Tek dilim: tam daire
+        if (nonZero.Length == 1)
+        {
+            var inp = nonZero[0];
+            var path = $"<path d=\"M {cx.ToString("F2",ic)} {(cy-r).ToString("F2",ic)} A {r.ToString("F2",ic)} {r.ToString("F2",ic)} 0 1 1 {(cx-0.01).ToString("F2",ic)} {(cy-r).ToString("F2",ic)} Z\" fill=\"{inp.Color}\" stroke=\"white\" stroke-width=\"2\" />";
+            var label = $"<text x=\"{cx.ToString("F2",ic)}\" y=\"{cy.ToString("F2",ic)}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"16\" font-weight=\"bold\" fill=\"white\">{inp.Yuzde}%</text>";
+            result.Add(new PieSliceData(path, label, true));
+            return result;
+        }
+
+        var startAngle = -90.0;
+        foreach (var inp in inputs)
+        {
+            if (inp.Count == 0) continue;
+            var sweep    = inp.Count / (double)total * 360.0;
+            var endAngle = startAngle + sweep;
+            var largeArc = sweep > 180 ? 1 : 0;
+            var x1 = cx + r * Math.Cos(startAngle * Math.PI / 180);
+            var y1 = cy + r * Math.Sin(startAngle * Math.PI / 180);
+            var x2 = cx + r * Math.Cos(endAngle   * Math.PI / 180);
+            var y2 = cy + r * Math.Sin(endAngle   * Math.PI / 180);
+            var mid = (startAngle + endAngle) / 2.0;
+            var lx  = cx + r * 0.62 * Math.Cos(mid * Math.PI / 180);
+            var ly  = cy + r * 0.62 * Math.Sin(mid * Math.PI / 180);
+
+            var pathSvg  = $"<path d=\"M {cx.ToString("F2",ic)} {cy.ToString("F2",ic)} L {x1.ToString("F2",ic)} {y1.ToString("F2",ic)} A {r.ToString("F2",ic)} {r.ToString("F2",ic)} 0 {largeArc} 1 {x2.ToString("F2",ic)} {y2.ToString("F2",ic)} Z\" fill=\"{inp.Color}\" stroke=\"white\" stroke-width=\"2\" />";
+            var showLabel = sweep >= 15;
+            var labelSvg  = showLabel
+                ? $"<text x=\"{lx.ToString("F2",ic)}\" y=\"{ly.ToString("F2",ic)}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"13\" font-weight=\"bold\" fill=\"white\">{inp.Yuzde}%</text>"
+                : string.Empty;
+
+            result.Add(new PieSliceData(pathSvg, labelSvg, showLabel));
+            startAngle = endAngle;
+        }
+        return result;
+    }
+
+    private class PieDataItem
+    {
+        public string Label { get; set; } = string.Empty;
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
 
     private List<FilterOption<int?>> statusOptions = new()
     {
@@ -408,9 +485,17 @@
         mutabikYuzde = 0;
         onayBekleyenYuzde = 0;
         gonderilmeyenYuzde = 0;
+        mutabikDegilYuzde = 0;
 
         tableRows = new List<DashboardRow>();
         currencyBalanceRows = new List<CurrencyBalanceRow>();
+        pieData = new List<PieDataItem>
+        {
+            new PieDataItem { Label = "Mutabık", Value = 0 },
+            new PieDataItem { Label = "Onay Bekleyen", Value = 0 },
+            new PieDataItem { Label = "Gönderilmeyen", Value = 0 },
+            new PieDataItem { Label = "Mutabık Değil", Value = 0 }
+        };
     }
 
     private void UpdateAnalysis()
@@ -487,13 +572,23 @@
                 mutabikYuzde = (int)Math.Round((double)mutabikCount * 100 / filtered.Count);
                 onayBekleyenYuzde = (int)Math.Round((double)onayBekleyenCount * 100 / filtered.Count);
                 gonderilmeyenYuzde = (int)Math.Round((double)gonderilmeyenCount * 100 / filtered.Count);
+                mutabikDegilYuzde = (int)Math.Round((double)mutabikDegilCount * 100 / filtered.Count);
             }
             else
             {
                 mutabikYuzde = 0;
                 onayBekleyenYuzde = 0;
                 gonderilmeyenYuzde = 0;
+                mutabikDegilYuzde = 0;
             }
+
+            pieData = new List<PieDataItem>
+            {
+                new PieDataItem { Label = "Mutabık", Value = mutabikCount, Text = $"{mutabikYuzde}%" },
+                new PieDataItem { Label = "Onay Bekleyen", Value = onayBekleyenCount, Text = $"{onayBekleyenYuzde}%" },
+                new PieDataItem { Label = "Gönderilmeyen", Value = gonderilmeyenCount, Text = $"{gonderilmeyenYuzde}%" },
+                new PieDataItem { Label = "Mutabık Değil", Value = mutabikDegilCount, Text = $"{mutabikDegilYuzde}%" }
+            };
 
             firstSendDate = filtered
                 .Where(x => x.MutabakatGonderimTarihSaat.HasValue)
