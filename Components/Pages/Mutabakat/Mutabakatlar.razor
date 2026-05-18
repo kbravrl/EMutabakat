@@ -246,7 +246,7 @@ else
                                                   Variant="Variant.Flat"
                                                   ButtonStyle="ButtonStyle.Primary"
                                                   Title="Gönder"
-                                                  Click="@(() => SendMail(item.MutabakatId))"
+                                                  Click="@(() => SendMail(item.MutabakatId, item.FirmaId))"
                                                   Disabled="@isSubmitting" />
                                 }
 
@@ -258,7 +258,7 @@ else
                                                   Variant="Variant.Flat"
                                                   ButtonStyle="ButtonStyle.Warning"
                                                   Title="Hatırlatma Gönder"
-                                                  Click="@(() => SendReminder(item.MutabakatId))"
+                                                  Click="@(() => SendReminder(item.MutabakatId, item.FirmaId))"
                                                   Disabled="@isSubmitting" />
                                 }
 
@@ -591,14 +591,14 @@ else
         }
     }
 
-    private async Task SendMail(string id)
+    private async Task SendMail(string id, int firmaId)
     {
         if (isSubmitting) return;
         isSubmitting = true;
 
         try
         {
-            var result = await MutabakatService.SendMailAsync(id);
+            var result = await MutabakatService.SendMailAsync(id, firmaId);
 
             if (result)
             {
@@ -630,14 +630,14 @@ else
         }
     }
 
-    private async Task SendReminder(string id)
+    private async Task SendReminder(string id, int firmaId)
     {
         if (isSubmitting) return;
         isSubmitting = true;
 
         try
         {
-            var result = await MutabakatService.SendReminderAsync(id);
+            var result = await MutabakatService.SendReminderAsync(id, firmaId);
 
             if (result)
             {
@@ -769,7 +769,7 @@ else
 
         var ids = selectedMutabakatlar
             .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
-            .Select(x => x.MutabakatId)
+            .Select(x => (x.MutabakatId, x.FirmaId))
             .Distinct()
             .ToList();
 

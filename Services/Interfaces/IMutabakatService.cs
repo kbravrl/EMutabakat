@@ -9,10 +9,10 @@ namespace EMutabakat.Services.Interfaces
         Task<Mutabakat> AddAsync(Mutabakat mutabakat, string? cariMail = null);
         Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat, string? cariMail = null);
         Task<bool> DeleteAsync(string id);
-        Task<bool> SendMailAsync(string mutabakatId);
-        Task<bool> SendReminderAsync(string mutabakatId);
+        Task<bool> SendMailAsync(string mutabakatId, int firmaId);
+        Task<bool> SendReminderAsync(string mutabakatId, int firmaId);
         Task<(int successCount, int failCount, List<string> errors)> SendPendingMailsAsync();
-        Task<(int successCount, int failCount, List<string> errors)> SendSelectedMailsAsync(List<string> mutabakatIds);
+        Task<(int successCount, int failCount, List<string> errors)> SendSelectedMailsAsync(List<(string MutabakatId, int FirmaId)> mutabakatKeys);
         Task<Mutabakat?> GetByTokenAsync(string token);
         Task<bool> ApproveAsync(string token, string mail, string adSoyad, string gsm);
         Task<bool> RejectAsync(string token, string mail, string adSoyad, string gsm, string? aciklama, string? filePath);

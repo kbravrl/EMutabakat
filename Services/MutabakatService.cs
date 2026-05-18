@@ -171,7 +171,7 @@ namespace EMutabakat.Services
             }
 
             var duplicateMutabakatId = await context.Mutabakatlar
-                .AnyAsync(x => x.MutabakatId == mutabakat.MutabakatId);
+                .AnyAsync(x => x.MutabakatId == mutabakat.MutabakatId && x.FirmaId == mutabakat.FirmaId);
 
             if (duplicateMutabakatId)
                 throw new Exception("Bu Mutabakat ID zaten mevcut.");
@@ -252,7 +252,7 @@ namespace EMutabakat.Services
             if (!string.Equals(mutabakat.MutabakatId, lookupMutabakatId, StringComparison.OrdinalIgnoreCase))
             {
                 var duplicateMutabakatId = await context.Mutabakatlar
-                    .AnyAsync(x => x.MutabakatId == mutabakat.MutabakatId);
+                    .AnyAsync(x => x.MutabakatId == mutabakat.MutabakatId && x.FirmaId == newFirmaId);
 
                 if (duplicateMutabakatId)
                     throw new Exception("Bu Mutabakat ID zaten mevcut.");
@@ -503,14 +503,14 @@ namespace EMutabakat.Services
             return true;
         }
 
-        public async Task<bool> SendMailAsync(string mutabakatId)
+        public async Task<bool> SendMailAsync(string mutabakatId, int firmaId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var mutabakat = await context.Mutabakatlar
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
-                .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
+                .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId && x.FirmaId == firmaId);
 
             if (mutabakat == null || mutabakat.Cari == null)
                 return false;
@@ -585,14 +585,14 @@ namespace EMutabakat.Services
             return true;
         }
 
-        public async Task<bool> SendReminderAsync(string mutabakatId)
+        public async Task<bool> SendReminderAsync(string mutabakatId, int firmaId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var mutabakat = await context.Mutabakatlar
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
-                .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId);
+                .FirstOrDefaultAsync(x => x.MutabakatId == mutabakatId && x.FirmaId == firmaId);
 
             if (mutabakat == null || mutabakat.Cari == null)
                 return false;
@@ -686,7 +686,7 @@ namespace EMutabakat.Services
             {
                 try
                 {
-                    var result = await SendMailAsync(item.MutabakatId);
+                    var result = await SendMailAsync(item.MutabakatId, item.FirmaId);
 
                     if (result)
                     {
@@ -715,7 +715,7 @@ namespace EMutabakat.Services
             return (successCount, failCount, errors);
         }
 
-        public async Task<(int successCount, int failCount, List<string> errors)> SendSelectedMailsAsync(List<string> mutabakatIds)
+        public async Task<(int successCount, int failCount, List<string> errors)> SendSelectedMailsAsync(List<(string MutabakatId, int FirmaId)> mutabakatKeys)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -723,22 +723,21 @@ namespace EMutabakat.Services
             var successCount = 0;
             var failCount = 0;
 
-            if (mutabakatIds == null || !mutabakatIds.Any())
+            if (mutabakatKeys == null || !mutabakatKeys.Any())
                 return (0, 0, errors);
 
             var selectedMutabakatlar = await context.Mutabakatlar
-    .Include(x => x.Firma)
-    .Include(x => x.Cari)
-    .Where(x =>
-        mutabakatIds.Contains(x.MutabakatId) &&
-        x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
-    .ToListAsync();
+                .Include(x => x.Firma)
+                .Include(x => x.Cari)
+                .Where(x => mutabakatKeys.Any(k => k.MutabakatId == x.MutabakatId && k.FirmaId == x.FirmaId))
+                .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+                .ToListAsync();
 
             foreach (var item in selectedMutabakatlar)
             {
                 try
                 {
-                    var result = await SendMailAsync(item.MutabakatId);
+                    var result = await SendMailAsync(item.MutabakatId, item.FirmaId);
 
                     if (result)
                     {
@@ -1077,6 +1076,8 @@ namespace EMutabakat.Services
                     }
                 }
 
+                var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+
                 await using var tx = await context.Database.BeginTransactionAsync();
 
                 try
@@ -1101,6 +1102,12 @@ namespace EMutabakat.Services
                             if (string.IsNullOrWhiteSpace(firmaIdText) || !int.TryParse(firmaIdText, out var firmaId) || firmaId <= 0)
                             {
                                 errors.Add($"Satır {r + 1}: FirmaId geçerli bir sayı olmalıdır.");
+                                continue;
+                            }
+
+                            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(firmaId))
+                            {
+                                errors.Add($"Satır {r + 1}: FirmaId {firmaId} için yetkiniz yok.");
                                 continue;
                             }
 
@@ -1171,7 +1178,7 @@ namespace EMutabakat.Services
                             }
 
                             var duplicateIdInDb = await context.Mutabakatlar
-                                .AnyAsync(m => m.MutabakatId == mutabakatId);
+                                .AnyAsync(m => m.MutabakatId == mutabakatId && m.FirmaId == firmaId);
 
                             if (duplicateIdInDb)
                             {
@@ -1179,7 +1186,8 @@ namespace EMutabakat.Services
                                 continue;
                             }
 
-                            var duplicateIdInBatch = importedRecords.Any(m => m.MutabakatId == mutabakatId);
+                            var duplicateIdInBatch = importedRecords.Any(m =>
+                                m.MutabakatId == mutabakatId && m.FirmaId == firmaId);
                             if (duplicateIdInBatch)
                             {
                                 errors.Add($"Satır {r + 1}: Excel içinde aynı MutabakatId birden fazla kez kullanılmış ({mutabakatId}).");

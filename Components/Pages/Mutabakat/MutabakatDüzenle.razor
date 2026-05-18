@@ -383,7 +383,7 @@ else
                 return;
             }
 
-            var sent = await MutabakatService.SendMailAsync(updated.MutabakatId);
+            var sent = await MutabakatService.SendMailAsync(updated.MutabakatId, selectedFirmaId.Value);
 
             if (!sent)
             {

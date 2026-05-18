@@ -101,7 +101,7 @@ namespace EMutabakat.Data
                 .HasKey(m => new { m.FirmaId, m.CariId, m.MutabakatTarihi });
 
             modelBuilder.Entity<Mutabakat>()
-                .HasIndex(m => m.MutabakatId)
+                .HasIndex(m => new { m.FirmaId, m.MutabakatId })
                 .IsUnique();
 
             modelBuilder.Entity<Mutabakat>()
