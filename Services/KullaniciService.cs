@@ -358,6 +358,7 @@ namespace EMutabakat.Services
                 existingKullanici.Yetkileri.Mutabakatlar = kullanici.Yetkileri.Mutabakatlar;
                 existingKullanici.Yetkileri.Firmalar = kullanici.Yetkileri.Firmalar;
                 existingKullanici.Yetkileri.Kullanicilar = kullanici.Yetkileri.Kullanicilar;
+                existingKullanici.Yetkileri.MutabakatMailYetki = kullanici.Yetkileri.MutabakatMailYetki;
                 existingKullanici.Yetkileri.ImportYetki = kullanici.Yetkileri.ImportYetki;
                 existingKullanici.Yetkileri.ExportYetki = kullanici.Yetkileri.ExportYetki;
                 existingKullanici.Yetkileri.LogYetki = kullanici.Yetkileri.LogYetki;
@@ -498,6 +499,7 @@ namespace EMutabakat.Services
                     Mutabakatlar = kullanici.Yetkileri?.Mutabakatlar ?? YetkiSeviyesi.Giris,
                     Firmalar = kullanici.Yetkileri?.Firmalar ?? YetkiSeviyesi.Giris,
                     Kullanicilar = kullanici.Yetkileri?.Kullanicilar ?? YetkiSeviyesi.Giris,
+                    MutabakatMailYetki = kullanici.Yetkileri?.MutabakatMailYetki ?? false,
                     ImportYetki = kullanici.Yetkileri?.ImportYetki ?? false,
                     ExportYetki = kullanici.Yetkileri?.ExportYetki ?? false,
                     LogYetki = kullanici.Yetkileri?.LogYetki ?? false

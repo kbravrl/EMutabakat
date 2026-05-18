@@ -43,7 +43,7 @@ else
                              style="width:48px; height:48px; cursor:pointer;" />
                     }
 
-                    @if (canEdit)
+                @if (canEdit && canSendMail)
                     {
                         <RadzenButton Text="Toplu gönder"
                                       Icon="send"
@@ -221,7 +221,7 @@ else
                         </Template>
                     </RadzenDataGridColumn>
 
-                    @if (canEdit)
+                    @if (canEdit && canSendMail)
                     {
                         <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false" OrderIndex="10">
                             <Template Context="item">
@@ -239,7 +239,7 @@ else
                             <Template Context="item">
                                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
 
-                                @if (canEdit && item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+                @if (canEdit && canSendMail && item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
                                 {
                                     <RadzenButton Icon="mail"
                                                   Size="ButtonSize.Small"
@@ -250,7 +250,7 @@ else
                                                   Disabled="@isSubmitting" />
                                 }
 
-                                @if (canEdit && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
+                @if (canEdit && canSendMail && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
                                                 item.Status == Mutabakat.MutabakatStatus.Hatirlatma))
                                 {
                                     <RadzenButton Icon="refresh"
@@ -262,8 +262,10 @@ else
                                                   Disabled="@isSubmitting" />
                                 }
 
-                                @if (canEdit && item.Status != Mutabakat.MutabakatStatus.Mutabik &&
-                                                item.Status != Mutabakat.MutabakatStatus.MutabikDegil)
+                                @if (canEdit &&
+                                    item.Status != Mutabakat.MutabakatStatus.Mutabik &&
+                                    item.Status != Mutabakat.MutabakatStatus.MutabikDegil &&
+                                    item.Status != Mutabakat.MutabakatStatus.Gonderildi)
                                 {
                                     <RadzenButton Icon="edit"
                                                   Size="ButtonSize.Small"
@@ -308,6 +310,7 @@ else
     private bool canDelete;
     private bool canImport;
     private bool canExport;
+    private bool canSendMail;
 
     private string? searchText;
     private int? selectedStatus;
@@ -418,7 +421,7 @@ else
 
         if (isSeed)
         {
-            canView = canAdd = canEdit = canDelete = canImport = canExport = true;
+            canView = canAdd = canEdit = canDelete = canImport = canExport = canSendMail = true;
         }
         else if (yetki != null)
         {
@@ -428,6 +431,7 @@ else
             canDelete = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
             canImport = yetki.ImportYetki;
             canExport = yetki.ExportYetki;
+            canSendMail = yetki.MutabakatMailYetki;
         }
 
         if (!canView)

@@ -137,7 +137,26 @@ else
                                         </label>
                                     </div>
                                 </RadzenColumn>
+
                             }
+
+                            <RadzenColumn Size="12">
+                                <div style="display:flex;align-items:center;gap:24px;">
+                                    <span style="width:120px;flex-shrink:0;">Mutabakat Mail</span>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:80px;">
+                                        <RadzenCheckBox Value="@kullanici.Yetkileri.MutabakatMailYetki"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.MutabakatMailYetki = v)"
+                                                        TValue="bool" />
+                                        <span>Yetkili</span>
+                                    </label>
+                                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;min-width:100px;">
+                                        <RadzenCheckBox Value="@(!kullanici.Yetkileri.MutabakatMailYetki)"
+                                                        ValueChanged="@((bool v) => kullanici.Yetkileri.MutabakatMailYetki = !v)"
+                                                        TValue="bool" />
+                                        <span>Yetkisiz</span>
+                                    </label>
+                                </div>
+                            </RadzenColumn>
 
                             <RadzenColumn Size="12">
                                 <div style="display:flex;align-items:center;gap:24px;">

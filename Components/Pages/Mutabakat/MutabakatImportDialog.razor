@@ -1,4 +1,5 @@
 @inject IMutabakatService MutabakatService
+@inject IKullaniciService KullaniciService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 @inject IJSRuntime JS
@@ -20,27 +21,30 @@
     <div class="rz-text-align-right">
         <RadzenButton Text="Örnek excel dosyası"
                       Icon="download"
-                      Style="font-size:15px;"
+                      Style="font-size:15px;margin-right:4px;"
                       ButtonStyle="ButtonStyle.Success"
                       Click="DownloadTemplate" />
 
         <RadzenButton Text="Kaydet"
                       Icon="save"
-                      Style="font-size:15px;"
+                      Style="font-size:15px;margin-right:4px;"
                       ButtonStyle="ButtonStyle.Primary"
                       Click="@(() => Upload(false))"
                       Disabled="@isUploading" />
 
+    @if (canSendMail)
+    {
         <RadzenButton Text="Kaydet ve mail gönder"
                       Icon="mail"
-                      Style="font-size:15px;"
+                      Style="font-size:15px;margin-right:4px;"
                       ButtonStyle="ButtonStyle.Info"
                       Click="@(() => Upload(true))"
                       Disabled="@isUploading" />
+    }
 
         <RadzenButton Text="İptal"
                       Icon="close"
-                      Style="font-size:15px;"
+                      Style="font-size:15px; margin-left:4px;"
                       Click="Cancel"
                       ButtonStyle="ButtonStyle.Secondary" />
     </div>
@@ -49,6 +53,7 @@
 @code {
     private IBrowserFile? selectedFile;
     private bool isUploading = false;
+    private bool canSendMail;
 
     private void HandleSelected(InputFileChangeEventArgs e)
     {
@@ -58,6 +63,13 @@
     private void DownloadTemplate()
     {
         NavigationManager.NavigateTo("/templates/MutabakatTemplate.xlsx", forceLoad: true);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+        canSendMail = isSeed || (yetki?.MutabakatMailYetki ?? false);
     }
 
     private async Task Upload(bool sendMail)

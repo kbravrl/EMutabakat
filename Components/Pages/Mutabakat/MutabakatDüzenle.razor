@@ -30,9 +30,10 @@ else
     <EditForm EditContext="@editContext">
         <DataAnnotationsValidator />
 
-        <RadzenCard Class="p-4" Style="max-width:900px;margin:auto;">
-            <RadzenText TextStyle="TextStyle.H5">Mutabakat Düzenle</RadzenText>
-            <RadzenDivider />
+            <RadzenCard Style="max-width:900px; margin: 24px auto; padding:24px;">
+                <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+                    <RadzenText TextStyle="TextStyle.H4">Mutabakat Düzenle</RadzenText>
+                </RadzenStack>
 
             <RadzenRow Gap="16px">
                 <RadzenColumn Size="12" SizeMD="6">
@@ -143,12 +144,15 @@ else
                               Click="@UpdateOnly"
                               Disabled="@isSubmitting" />
 
-                <RadzenButton Text="Kaydet ve mail gönder"
-                              Icon="mail"
-                              Style="font-size:15px;"
-                              ButtonStyle="ButtonStyle.Primary"
-                              Click="@UpdateAndSendMail"
-                              Disabled="@isSubmitting" />
+                @if (canSendMail)
+                {
+                    <RadzenButton Text="Kaydet ve mail gönder"
+                                  Icon="mail"
+                                  Style="font-size:15px;"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Click="@UpdateAndSendMail"
+                                  Disabled="@isSubmitting" />
+                }
 
                 <RadzenButton Text="İptal"
                               Icon="close"
@@ -169,6 +173,7 @@ else
     private bool isLoading = true;
     private bool isSubmitting = false;
     private bool canEdit;
+    private bool canSendMail;
     private DateTime mutabakatTarihiTemp;
     private string? cariMail;
     private int? selectedFirmaId;
@@ -192,6 +197,7 @@ else
             var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
 
             canEdit = isSeed || (yetki != null && yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme);
+            canSendMail = isSeed || (yetki?.MutabakatMailYetki ?? false);
 
             if (!canEdit)
                 return;

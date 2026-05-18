@@ -19,7 +19,10 @@
 else
 {
     <RadzenCard Style="max-width:900px; margin: 24px auto; padding:24px;">
-        <RadzenText TextStyle="TextStyle.H4" class="mb-3">Yeni Mutabakat Ekle</RadzenText>
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="8px">
+            <RadzenText TextStyle="TextStyle.H4">Yeni Mutabakat Ekle</RadzenText>
+        </RadzenStack>
+        <RadzenText TextStyle="TextStyle.H4" class="mb-3"></RadzenText>
 
         <EditForm Model="@mutabakat" OnValidSubmit="@HandleValidSubmit">
             <DataAnnotationsValidator />

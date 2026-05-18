@@ -533,9 +533,13 @@ namespace EMutabakat.Services
 
             var kullanici = await context.Kullanicilar
                 .Include(x => x.Firmalar)
+                .Include(x => x.Yetkileri)
                 .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
+                return false;
+
+            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.MutabakatMailYetki ?? false))
                 return false;
 
             var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
@@ -615,9 +619,13 @@ namespace EMutabakat.Services
 
             var kullanici = await context.Kullanicilar
                .Include(x => x.Firmalar)
+               .Include(x => x.Yetkileri)
                .FirstOrDefaultAsync(x => x.KullaniciMail == email);
 
             if (kullanici == null)
+                return false;
+
+            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.MutabakatMailYetki ?? false))
                 return false;
 
             var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
