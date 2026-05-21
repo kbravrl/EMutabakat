@@ -6,6 +6,7 @@ namespace EMutabakat.Services.Interfaces
     {
         Task<List<Mutabakat>> GetAllAsync();
         Task<Mutabakat?> GetByIdAsync(string id);
+        Task<bool> IsPeriodOpenAsync(DateTime date);
         Task<Mutabakat> AddAsync(Mutabakat mutabakat, string? cariMail = null);
         Task<Mutabakat?> UpdateAsync(Mutabakat mutabakat, string? cariMail = null);
         Task<bool> DeleteAsync(string id);

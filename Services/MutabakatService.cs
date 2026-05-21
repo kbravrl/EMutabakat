@@ -89,6 +89,12 @@ namespace EMutabakat.Services
             return mutabakat;
         }
 
+        public async Task<bool> IsPeriodOpenAsync(DateTime date)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return IsPeriodOpen(context, date);
+        }
+
         public async Task<Mutabakat> AddAsync(Mutabakat mutabakat, string? cariMail = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -136,6 +142,9 @@ namespace EMutabakat.Services
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
 
             mutabakat.MutabakatBakiye = Math.Abs(mutabakat.MutabakatBakiye);
+
+            if (!IsPeriodOpen(context, mutabakat.MutabakatTarihi))
+                throw new Exception("Seçilen dönem kapalı olduğu için mutabakat kaydı oluşturulamaz.");
 
             mutabakat.MutabakatAciklama = string.IsNullOrWhiteSpace(mutabakat.MutabakatAciklama)
                 ? null
@@ -238,6 +247,9 @@ namespace EMutabakat.Services
                 throw new Exception("Geçerli bir döviz kodu seçiniz.");
 
             mutabakat.MutabakatBakiye = Math.Abs(mutabakat.MutabakatBakiye);
+
+            if (!IsPeriodOpen(context, mutabakat.MutabakatTarihi))
+                throw new Exception("Seçilen dönem kapalı olduğu için mutabakat güncellenemez.");
 
             var lookupMutabakatId = string.IsNullOrWhiteSpace(mutabakat.OriginalMutabakatId)
                 ? mutabakat.MutabakatId
@@ -390,10 +402,19 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+            var currentUserYetki = await GetCurrentUserYetkiAsync(context);
+
+            if (currentUserYetki == null || !currentUserYetki.MutabakatSilYetki)
+                throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
+
             var mutabakat = await context.Mutabakatlar
                 .FirstOrDefaultAsync(x => x.MutabakatId == id);
 
             if (mutabakat == null)
+                return false;
+
+            if (allowedFirmaIds != null && !allowedFirmaIds.Contains(mutabakat.FirmaId))
                 return false;
 
             var filePath = mutabakat.MutabakatReceiveStoragePath;
@@ -420,10 +441,25 @@ namespace EMutabakat.Services
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            var items = await context.Mutabakatlar
+            var currentUserYetki = await GetCurrentUserYetkiAsync(context);
+            if (currentUserYetki != null && !currentUserYetki.MutabakatSilYetki && currentUserYetki.Mutabakatlar != YetkiSeviyesi.TamYetki)
+                throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
+
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+            var itemsQuery = context.Mutabakatlar
                 .Include(x => x.Cari)
                 .Include(x => x.Firma)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return 0;
+
+                itemsQuery = itemsQuery.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            var items = await itemsQuery.ToListAsync();
 
             if (items.Count == 0)
                 return 0;
@@ -506,6 +542,10 @@ namespace EMutabakat.Services
         public async Task<bool> DeleteDeletedAsync(int id)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var currentUserYetki = await GetCurrentUserYetkiAsync(context);
+            if (currentUserYetki == null || !currentUserYetki.MutabakatSilYetki)
+                throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
 
             var silinenMutabakat = await context.SilinenMutabakatlar
                 .FirstOrDefaultAsync(x => x.Id == id);
@@ -961,6 +1001,28 @@ namespace EMutabakat.Services
             return true;
         }
 
+        private async Task<KullaniciYetki?> GetCurrentUserYetkiAsync(AppDbContext context)
+        {
+            var mail = GetUserEmail();
+            if (string.IsNullOrWhiteSpace(mail))
+                return null;
+
+            var user = await context.Kullanicilar
+                .Include(k => k.Yetkileri)
+                .FirstOrDefaultAsync(k => k.KullaniciMail == mail);
+
+            return user?.Yetkileri;
+        }
+
+        private static bool IsPeriodOpen(AppDbContext context, DateTime date)
+        {
+            var record = context.AylikBilgiler
+                .AsNoTracking()
+                .FirstOrDefault(x => x.Yil == date.Year && x.Ay == date.Month);
+
+            return record?.AcikMi ?? false;
+        }
+
         private static decimal ParseDecimalCell(IRow row, int idx)
         {
             var cell = row.GetCell(idx);
@@ -1193,6 +1255,13 @@ namespace EMutabakat.Services
                             if (!dovizExists)
                             {
                                 errors.Add($"Satır {r + 1}: Seçilen Döviz kodu geçerli ve aktif değil.");
+                                continue;
+                            }
+
+                            var periodOpen = IsPeriodOpen(context, donem);
+                            if (!periodOpen)
+                            {
+                                errors.Add($"Satır {r + 1}: {donem:MM.yyyy} dönemi kapalı olduğu için mutabakat içe aktarılamadı.");
                                 continue;
                             }
 

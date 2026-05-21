@@ -3,117 +3,139 @@
 @attribute [Authorize]
 
 @inject IMutabakatService MutabakatService
+@inject IKullaniciService KullaniciYetkiService
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 @inject DialogService DialogService
 
 <PageTitle>Silinen Mutabakatlar</PageTitle>
 
-<RadzenCard Style="padding:20px;">
-    <RadzenStack Orientation="Orientation.Horizontal"
-                 AlignItems="AlignItems.Center"
-                 JustifyContent="JustifyContent.SpaceBetween"
-                 Style="margin-bottom:20px;">
-        <RadzenText TextStyle="TextStyle.H4">Silinen Mutabakatlar</RadzenText>
+@if (!canView)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
+    <RadzenCard Style="padding:20px;">
+        <RadzenStack Orientation="Orientation.Horizontal"
+                     AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.SpaceBetween"
+                     Style="margin-bottom:20px;">
+            <RadzenText TextStyle="TextStyle.H4">Silinen Mutabakatlar</RadzenText>
 
-        <RadzenButton Text="Aktif listeye dön"
-                      Icon="arrow_back"
-                      Style="font-size:15px;"
-                      ButtonStyle="ButtonStyle.Secondary"
-                      Click="@(() => NavigationManager.NavigateTo("/reconciliations"))" />
-    </RadzenStack>
+            <RadzenButton Text="Aktif listeye dön"
+                          Icon="arrow_back"
+                          Style="font-size:15px;"
+                          ButtonStyle="ButtonStyle.Secondary"
+                          Click="@(() => NavigationManager.NavigateTo("/reconciliations"))" />
+        </RadzenStack>
 
-    <RadzenDataGrid Data="@items"
-                    TItem="SilinenMutabakat"
-                    AllowPaging="true"
-                    AllowSorting="true"
-                    AllowFiltering="true"
-                    PageSize="10"
-                    EmptyText="Kayıt bulunamadı">
+        <RadzenDataGrid Data="@items"
+                        TItem="SilinenMutabakat"
+                        AllowPaging="true"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        PageSize="10"
+                        EmptyText="Kayıt bulunamadı">
 
-        <Columns>
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Property="MutabakatId" Title="ID" />
+            <Columns>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Property="MutabakatId" Title="ID" />
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Tarih">
-                <Template Context="item">
-                    @item.MutabakatTarihi.ToString("dd.MM.yyyy")
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Tarih">
+                    <Template Context="item">
+                        @item.MutabakatTarihi.ToString("dd.MM.yyyy")
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Firma">
-                <Template Context="item">
-                    @item.Firma?.FirmaAdi
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Firma">
+                    <Template Context="item">
+                        @item.Firma?.FirmaAdi
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Cari">
-                <Template Context="item">
-                    @item.Cari?.CariAdi
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Cari">
+                    <Template Context="item">
+                        @item.Cari?.CariAdi
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Döviz">
-                <Template Context="item">
-                    @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Döviz">
+                    <Template Context="item">
+                        @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye">
-                <Template Context="item">
-                    @item.MutabakatBakiye.ToString("N2")
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye">
+                    <Template Context="item">
+                        @item.MutabakatBakiye.ToString("N2")
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye Tipi">
-                <Template Context="item">
-                    @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Bakiye Tipi">
+                    <Template Context="item">
+                        @GetBakiyeTipiText(item.MutabakatBakiyeTipi)
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Durum">
-                <Template Context="item">
-                    <RadzenBadge Text="@GetStatusText(item.Status)"
-                                 BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Durum">
+                    <Template Context="item">
+                        <RadzenBadge Text="@GetStatusText(item.Status)"
+                                     BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Silinme Tarihi">
-                <Template Context="item">
-                    @item.SilinmeTarihi.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                </Template>
-            </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SilinenMutabakat" Title="Silinme Tarihi">
+                    <Template Context="item">
+                        @item.SilinmeTarihi.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </Template>
+                </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn TItem="SilinenMutabakat" Title="İşlem" Sortable="false" Filterable="false" Width="120px">
-                <Template Context="item">
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
-                        <RadzenButton Text=""
-                                      Icon="visibility"
-                                      Style="font-size:15px"
-                                      Size="ButtonSize.Small"
-                                      Title="Detay"
-                                      Click="@(() => GoDetail(item.Id))" />
+                @if (canDelete)
+                {
+                    <RadzenDataGridColumn TItem="SilinenMutabakat" Title="İşlem" Sortable="false" Filterable="false" Width="120px">
+                        <Template Context="item">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="8px">
+                                <RadzenButton Text=""
+                                              Icon="visibility"
+                                              Style="font-size:15px"
+                                              Size="ButtonSize.Small"
+                                              Title="Detay"
+                                              Click="@(() => GoDetail(item.Id))" />
 
-                        <RadzenButton Text=""
-                                      Icon="delete"
-                                      Size="ButtonSize.Small"
-                                      Style="font-size:15px"
-                                      ButtonStyle="ButtonStyle.Danger"
-                                      Title="Sil"
-                                      Click="@(() => DeleteRecord(item))" />
-                    </RadzenStack>
-                </Template>
-            </RadzenDataGridColumn>
-        </Columns>
-    </RadzenDataGrid>
-</RadzenCard>
+                                <RadzenButton Text=""
+                                              Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              Style="font-size:15px"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Title="Sil"
+                                              Click="@(() => DeleteRecord(item))" />
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                }
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+}
 
 @code {
     private List<SilinenMutabakat> items = new();
+    private bool canView;
+    private bool canDelete;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var yetki = await KullaniciYetkiService.GetCurrentUserYetkiAsync();
+            var isSeed = await KullaniciYetkiService.IsCurrentUserSeedAsync();
+
+            canView = isSeed || (yetki != null && (yetki.MutabakatSilYetki));
+            canDelete = canView;
+
+            if (!canView)
+                return;
+
             items = await MutabakatService.GetAllDeletedAsync();
         }
         catch (Exception ex)

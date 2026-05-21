@@ -209,13 +209,13 @@ else
                     </RadzenDataGridColumn>
 
                     
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Mutabakat">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Mutabakat" OrderIndex="7">
                         <Template Context="item">
                             @item.MutabakatTarihi.ToString("dd.MM.yyyy")
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Width="120px" Title="Gönderim" OrderIndex="8">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Gönderim" OrderIndex="8">
                         <Template Context="item">
                             @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
                         </Template>
@@ -233,7 +233,7 @@ else
 
                     @if (canEdit && canSendMail && IsSelectableStatusFilter())
                     {
-                        <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false" OrderIndex="10">
+                        <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="80px" Sortable="false" Filterable="false" OrderIndex="11">
                             <Template Context="item">
                                 <RadzenCheckBox TValue="bool"
                                                 Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
@@ -245,11 +245,11 @@ else
 
                     @if (canEdit || canDelete)
                     {
-                        <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px" OrderIndex="11">
+                        <RadzenDataGridColumn TItem="Mutabakat" Title="İşlemler" Sortable="false" Filterable="false" Width="170px" OrderIndex="12">
                             <Template Context="item">
                                 <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-
-                @if (canEdit && canSendMail && item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+ 
+                    @if (canEdit && canSendMail && item.Status == Mutabakat.MutabakatStatus.Kaydedildi)
                                 {
                                     <RadzenButton Icon="mail"
                                                   Size="ButtonSize.Small"
@@ -260,7 +260,7 @@ else
                                                   Disabled="@isSubmitting" />
                                 }
 
-                @if (canEdit && canSendMail && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
+                                @if (canEdit && canSendMail && (item.Status == Mutabakat.MutabakatStatus.Gonderildi ||
                                                 item.Status == Mutabakat.MutabakatStatus.Hatirlatma))
                                 {
                                     <RadzenButton Icon="refresh"
@@ -306,7 +306,7 @@ else
                         </RadzenDataGridColumn>
                     }
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum" OrderIndex="7">
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum" OrderIndex="10">
                         <Template Context="item">
                             <RadzenBadge Text="@GetStatusText(item.Status)"
                                          BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
@@ -426,7 +426,7 @@ else
     private async Task ConfirmSendPendingMails()
     {
         var confirmed = await DialogService.Confirm(
-            "Seçili filtreye göre kayıtların toplu gönderimi yapılacak. Onaylıyor musunuz?",
+            "Seçili filtreye göre kayıtların toplu gönderimi yapılacaktır. Onaylıyor musunuz?",
             "Toplu Gönderim Onayı",
             new ConfirmOptions
             {
@@ -476,7 +476,7 @@ else
             canView = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
             canAdd = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
             canEdit = yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme;
-            canDelete = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki;
+            canDelete = yetki.MutabakatSilYetki;
             canImport = yetki.ImportYetki;
             canExport = yetki.ExportYetki;
             canSendMail = yetki.MutabakatMailYetki;
@@ -715,7 +715,7 @@ else
     private async Task ConfirmSendSelectedMails()
     {
         var confirmed = await DialogService.Confirm(
-            "Seçili filtreye göre seçili kayıtların gönderimi yapılacak. Onaylıyor musunuz?",
+            "Seçili filtreye göre seçili kayıtların gönderimi yapılacaktır. Onaylıyor musunuz?",
             "Seçilenleri Gönder Onayı",
             new ConfirmOptions
             {

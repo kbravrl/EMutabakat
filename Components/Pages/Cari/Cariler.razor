@@ -302,23 +302,9 @@ else
         }
 
         filteredCariler = query
-            .OrderBy(x => GetCariSortValue(x.CariId))
+            .OrderBy(x => x.CariAdi ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(x => x.CariId)
             .ToList();
-    }
-
-    private int GetCariSortValue(string? cariId)
-    {
-        var id = cariId ?? "";
-
-        if (int.TryParse(id, out var n))
-            return n;
-
-        var match = System.Text.RegularExpressions.Regex.Match(id, @"\\d+");
-        if (int.TryParse(match.Value, out var m))
-            return m;
-
-        return int.MaxValue;
     }
 
     private void ClearFilters()

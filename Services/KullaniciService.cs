@@ -359,6 +359,8 @@ namespace EMutabakat.Services
                 existingKullanici.Yetkileri.Firmalar = kullanici.Yetkileri.Firmalar;
                 existingKullanici.Yetkileri.Kullanicilar = kullanici.Yetkileri.Kullanicilar;
                 existingKullanici.Yetkileri.MutabakatMailYetki = kullanici.Yetkileri.MutabakatMailYetki;
+                existingKullanici.Yetkileri.MutabakatSilYetki = kullanici.Yetkileri.MutabakatSilYetki;
+                existingKullanici.Yetkileri.AylikBilgilerYetki = kullanici.Yetkileri.AylikBilgilerYetki;
                 existingKullanici.Yetkileri.ImportYetki = kullanici.Yetkileri.ImportYetki;
                 existingKullanici.Yetkileri.ExportYetki = kullanici.Yetkileri.ExportYetki;
                 existingKullanici.Yetkileri.LogYetki = kullanici.Yetkileri.LogYetki;

@@ -97,6 +97,8 @@ namespace EMutabakat.Data
                         Firmalar = YetkiSeviyesi.TamYetki,
                         Kullanicilar = YetkiSeviyesi.TamYetki,
                         LogYetki = true,
+                        MutabakatSilYetki = true,
+                        AylikBilgilerYetki = true,
                         ImportYetki = true,
                         ExportYetki = true
                     }
@@ -124,6 +126,8 @@ namespace EMutabakat.Data
                         Firmalar = YetkiSeviyesi.TamYetki,
                         Kullanicilar = YetkiSeviyesi.TamYetki,
                         LogYetki = true,
+                        MutabakatSilYetki = true,
+                        AylikBilgilerYetki = true,
                         ImportYetki = true,
                         ExportYetki = true
                     };

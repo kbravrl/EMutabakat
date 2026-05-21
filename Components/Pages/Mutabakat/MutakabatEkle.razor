@@ -73,14 +73,13 @@ else
                                             Style="width:100%;"
                                             AllowFiltering="true"
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                            Disabled="@(selectedFirmaId == null)"
                                             Change="@OnCariChanged" />
                         </ChildContent>
                     </RadzenFormField>
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
-                    <ValidationMessage For="@(() => mutabakat.Cari.CariYetkiliMail)" />
+                    <ValidationMessage For="@(() => cariMail)" />
                     <RadzenFormField Text="Cari Mail" Style="width:100%;">
                         <ChildContent>
                             <RadzenTextBox @bind-Value="cariMail"

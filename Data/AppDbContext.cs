@@ -18,6 +18,7 @@ namespace EMutabakat.Data
         public DbSet<Cari> Cariler { get; set; }
         public DbSet<Mutabakat> Mutabakatlar { get; set; }
         public DbSet<SilinenMutabakat> SilinenMutabakatlar { get; set; }
+        public DbSet<AylikBilgi> AylikBilgiler { get; set; }
         public DbSet<DovizKodu> DovizKodlari { get; set; }
         public DbSet<AppLog> AppLogs { get; set; }
 
@@ -147,6 +148,13 @@ namespace EMutabakat.Data
 
             modelBuilder.Entity<SilinenMutabakat>()
                 .HasIndex(sm => new { sm.FirmaId, sm.CariId, sm.MutabakatTarihi });
+
+            modelBuilder.Entity<AylikBilgi>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<AylikBilgi>()
+                .HasIndex(x => new { x.Yil, x.Ay })
+                .IsUnique();
 
             modelBuilder.Entity<AppLog>()
                 .HasIndex(x => x.CreatedAt);

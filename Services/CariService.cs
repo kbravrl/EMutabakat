@@ -430,10 +430,15 @@ namespace EMutabakat.Services
 
         public async Task<byte[]> ExportToExcelAsync(List<Cari> cariler)
         {
+            var orderedCariler = cariler
+                .OrderBy(x => x.CariAdi ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(x => x.CariId)
+                .ToList();
+
             await _logService.AddAsync(
                 "Bilgi",
                 "Cari",
-                $"Cari Excel export başladı. Kayıt sayısı: {cariler.Count}",
+                $"Cari Excel export başladı. Kayıt sayısı: {orderedCariler.Count}",
                 GetUserEmail()
             );
 
@@ -467,9 +472,9 @@ namespace EMutabakat.Services
                 headerRow.CreateCell(i).SetCellValue(headers[i]);
             }
 
-            for (int i = 0; i < cariler.Count; i++)
+            for (int i = 0; i < orderedCariler.Count; i++)
             {
-                var cari = cariler[i];
+                var cari = orderedCariler[i];
                 var row = sheet.CreateRow(i + 1);
 
                 row.CreateCell(0).SetCellValue(cari.CariId ?? "");
@@ -501,7 +506,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Cari",
-                $"Cari Excel export tamamlandı. Kayıt sayısı: {cariler.Count}",
+                $"Cari Excel export tamamlandı. Kayıt sayısı: {orderedCariler.Count}",
                 GetUserEmail()
             );
 

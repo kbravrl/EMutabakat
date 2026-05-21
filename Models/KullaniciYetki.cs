@@ -18,6 +18,8 @@ namespace EMutabakat.Models
         public YetkiSeviyesi Kullanicilar { get; set; } = YetkiSeviyesi.Yetkisiz;
         public bool LogYetki { get; set; }
         public bool MutabakatMailYetki { get; set; }
+        public bool MutabakatSilYetki { get; set; }
+        public bool AylikBilgilerYetki { get; set; }
         public bool ImportYetki { get; set; }
         public bool ExportYetki { get; set; }
         public Kullanici? Kullanici { get; set; }

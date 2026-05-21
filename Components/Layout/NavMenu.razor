@@ -1,5 +1,3 @@
-@inject IKullaniciService KullaniciService
-
 <div class="radzen-nav">
     <RadzenPanelMenu Style="background:transparent; border:0;">
         <AuthorizeView>
@@ -9,15 +7,11 @@
                 <RadzenPanelMenuItem Text="Cari Gruplar" Path="/current-groups" Icon="group_work" />
                 <RadzenPanelMenuItem Text="Döviz Kodları" Path="/currency-codes" Icon="currency_exchange" />
                 <RadzenPanelMenuItem Text="Mutabakatlar" Path="/reconciliations" Icon="description" />
+                <RadzenPanelMenuItem Text="Aylık Bilgiler" Path="/monthly-info" Icon="calendar_month" />
                 <RadzenPanelMenuItem Text="Firmalar" Path="/companies" Icon="business" />
-
                 <RadzenPanelMenuItem Text="Kullanıcılar" Path="/users" Icon="people" />
-                
-                @if (canViewLogs)
-                {
-                    <RadzenPanelMenuItem Text="Loglar" Path="/auth/logs" Icon="receipt_long" />
-                }
-                
+                <RadzenPanelMenuItem Text="Loglar" Path="/auth/logs" Icon="receipt_long" />
+
                 <RadzenPanelMenuItem Text="Çıkış Yap" Path="/logout" Icon="logout" />
             </Authorized>
 
@@ -27,15 +21,3 @@
         </AuthorizeView>
     </RadzenPanelMenu>
 </div>
-
-@code {
-    private bool canViewLogs;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
-        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
-
-        canViewLogs = isSeed || (yetki?.LogYetki ?? false);
-    }
-}

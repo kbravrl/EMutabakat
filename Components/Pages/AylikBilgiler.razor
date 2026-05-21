@@ -1,0 +1,190 @@
+@page "/monthly-info"
+
+@attribute [Authorize]
+
+@using EMutabakat.Data
+@using EMutabakat.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IKullaniciService KullaniciService
+@inject NotificationService NotificationService
+
+<PageTitle>Aylık Bilgiler</PageTitle>
+
+@if (!canView)
+{
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="true" class="m-4">Bu sayfaya erişim yetkiniz bulunmamaktadır.</RadzenAlert>
+}
+else
+{
+    <div class="d-flex justify-content-center p-4">
+        <RadzenCard Style="max-width: 900px; width: 100%;">
+            <RadzenStack Gap="1rem" class="p-4">
+                <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText TextStyle="TextStyle.H4">Aylık Bilgiler</RadzenText>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMD="6" class="rz-text-align-end">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" JustifyContent="JustifyContent.End">
+                            <RadzenNumeric TValue="int"
+                                           Style="width:120px;"
+                                           @bind-Value="selectedYear"
+                                           Min="2020"
+                                           Max="2100" />
+                            <RadzenButton Text="Seç"
+                                          Icon="check"
+                                          ButtonStyle="ButtonStyle.Light"
+                                          Click="LoadYearAsync"
+                                          Disabled="@isLoading" />
+                            <RadzenButton Text="Kaydet"
+                                          Icon="save"
+                                          ButtonStyle="ButtonStyle.Primary"
+                                          Click="SaveAsync"
+                                          Disabled="@isSaving" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true">
+                    Açık dönemler mutabakat girişine izin verir. Kapalı dönemlerde ekleme ve import engellenir.
+                </RadzenAlert>
+
+                <RadzenDataGrid Data="@monthRows"
+                                TItem="MonthRow"
+                                AllowPaging="false"
+                                AllowSorting="false"
+                                AllowFiltering="false"
+                                EmptyText="Kayıt bulunamadı">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="MonthRow" Title="Ay">
+                            <Template Context="item">
+                                @item.MonthName
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="MonthRow" Title="Durum" Width="180px">
+                            <Template Context="item">
+                                <RadzenSwitch @bind-Value="item.IsOpen" />
+                                <span class="ms-2">@(item.IsOpen ? "Açık" : "Kapalı")</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenStack>
+        </RadzenCard>
+    </div>
+}
+
+@code {
+    private static readonly string[] monthNames = [
+        "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+        "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ];
+
+    private List<MonthRow> monthRows = new();
+    private int selectedYear = DateTime.Today.Year;
+    private bool canView;
+    private bool isLoading = true;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var yetki = await KullaniciService.GetCurrentUserYetkiAsync();
+        var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
+
+        canView = isSeed || (yetki?.AylikBilgilerYetki ?? false);
+
+        if (!canView)
+            return;
+
+        await LoadYearAsync();
+    }
+
+    private async Task LoadYearAsync()
+    {
+        isLoading = true;
+
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+
+        var existing = await context.AylikBilgiler
+            .Where(x => x.Yil == selectedYear)
+            .ToListAsync();
+
+        for (var month = 1; month <= 12; month++)
+        {
+            if (!existing.Any(x => x.Ay == month))
+            {
+                var item = new AylikBilgi
+                {
+                    Yil = selectedYear,
+                    Ay = month,
+                    AcikMi = true
+                };
+
+                context.AylikBilgiler.Add(item);
+                existing.Add(item);
+            }
+        }
+
+        await context.SaveChangesAsync();
+
+        monthRows = existing
+            .OrderBy(x => x.Ay)
+            .Select(x => new MonthRow
+            {
+                Id = x.Id,
+                Year = x.Yil,
+                Month = x.Ay,
+                IsOpen = x.AcikMi
+            })
+            .ToList();
+
+        isLoading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (isSaving)
+            return;
+
+        isSaving = true;
+
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            var records = await context.AylikBilgiler
+                .Where(x => x.Yil == selectedYear)
+                .ToListAsync();
+
+            foreach (var row in monthRows)
+            {
+                var entity = records.FirstOrDefault(x => x.Ay == row.Month);
+                if (entity == null)
+                    continue;
+
+                entity.AcikMi = row.IsOpen;
+            }
+
+            await context.SaveChangesAsync();
+            NotificationService.Notify(NotificationSeverity.Success, "Başarılı", "Aylık bilgiler kaydedildi.");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Hata", ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private sealed class MonthRow
+    {
+        public int Id { get; set; }
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string MonthName => monthNames[Month - 1];
+        public bool IsOpen { get; set; }
+    }
+}
