@@ -19,6 +19,8 @@ namespace EMutabakat.Data
                 new() { TCMB = "TL", Name = "Türk Lirası", DovizKoduAktifPasif = 1 },
                 new() { TCMB = "USD", Name = "Amerikan Doları", DovizKoduAktifPasif = 1 },
                 new() { TCMB = "EUR", Name = "Euro", DovizKoduAktifPasif = 1 },
+                new() { TCMB = "GBP", Name = "İngiliz Sterlini", DovizKoduAktifPasif = 1 },
+                new() { TCMB = "CHF", Name = "İsviçre Frangı", DovizKoduAktifPasif = 1 },
             };
 
             foreach (var doviz in dovizKodlari)
@@ -152,6 +154,109 @@ namespace EMutabakat.Data
             }
 
             await context.SaveChangesAsync();
+
+            // Seed 20 cevaplanmış mutabakat (dönem: Nisan ve Mayıs karışık)
+            try
+            {
+                var year = DateTime.Now.Year;
+
+                var firmaId = defaultFirma.FirmaId;
+
+                // Ensure a cari grup exists
+                var cariGrupId = "GRP1";
+                var cariGrup = await context.CariGruplar.FirstOrDefaultAsync(cg => cg.CariGrupId == cariGrupId && cg.FirmaId == firmaId);
+                if (cariGrup == null)
+                {
+                    cariGrup = new CariGrup
+                    {
+                        CariGrupId = cariGrupId,
+                        FirmaId = firmaId,
+                        CariGrupAdi = "Örnek Cari Grubu",
+                        CariGrupAktifPasif = 1
+                    };
+                    context.CariGruplar.Add(cariGrup);
+                    await context.SaveChangesAsync();
+                }
+
+                // Create 5 cariler to attach mutabakatlara
+                var cariler = new List<Cari>();
+                for (int i = 1; i <= 5; i++)
+                {
+                    var cariId = $"C{i:000}";
+                    var existingCari = await context.Cariler.FirstOrDefaultAsync(c => c.CariId == cariId && c.FirmaId == firmaId);
+                    if (existingCari == null)
+                    {
+                        existingCari = new Cari
+                        {
+                            CariId = cariId,
+                            FirmaId = firmaId,
+                            CariAdi = $"Cari {i}",
+                            CariVergiDairesi = "Vergi",
+                            CariVergiNumarasi = (1111111110 + i).ToString(),
+                            CariYetkiliMail = $"cari{i}@example.com",
+                            CariGrupId = cariGrupId,
+                            CariDovizKodu = "TL",
+                            CariAktifPasif = 1
+                        };
+
+                        context.Cariler.Add(existingCari);
+                        await context.SaveChangesAsync();
+                    }
+
+                    cariler.Add(existingCari);
+                }
+
+                // Prepare 20 distinct mutabakat records
+                var mutabakatList = new List<Mutabakat>();
+                for (int i = 1; i <= 20; i++)
+                {
+                    var month = (i % 2 == 0) ? 4 : 5; // even -> Nisan(4), odd -> Mayıs(5)
+                    var day = (i % 28) + 1;
+                    var date = new DateTime(year, month, day);
+                    var cari = cariler[(i - 1) % cariler.Count];
+
+                    var mutabakatId = $"M{year}{i:000}";
+
+                    var status = (i % 2 == 0) ? Mutabakat.MutabakatStatus.Mutabik : Mutabakat.MutabakatStatus.MutabikDegil;
+
+                    var m = new Mutabakat
+                    {
+                        MutabakatId = mutabakatId,
+                        FirmaId = firmaId,
+                        CariId = cari.CariId,
+                        MutabakatTarihi = date,
+                        MutabakatDovizKodu = "TL",
+                        MutabakatBakiye = 100m * i,
+                        MutabakatBakiyeTipi = (i % 2 == 0) ? "B" : "A",
+                        MutabakatAciklama = $"Otomatik seed mutabakat #{i}",
+                        MutabakatGonderimTarihSaat = date.AddDays(-1),
+                        MutabakatCevapTarihSaat = date.AddDays(2),
+                        MutabakatCevapMail = $"cevap{i}@example.com",
+                        MutabakatCevapAdSoyad = $"Cevap Sahibi {i}",
+                        MutabakatCevapGsm = $"05{(700000000 + i).ToString()[1..]}",
+                        MutabakatCevapAciklama = (status == Mutabakat.MutabakatStatus.Mutabik) ? "Mutabık olarak cevaplandı." : "Mutabık değil olarak cevaplandı.",
+                        MutabakatToken = Guid.NewGuid().ToString("N"),
+                        Status = status
+                    };
+
+                    // only add if not exists (by unique index MutabakatId+FirmaId)
+                    var exists = await context.Mutabakatlar.AnyAsync(x => x.MutabakatId == m.MutabakatId && x.FirmaId == m.FirmaId);
+                    if (!exists)
+                    {
+                        mutabakatList.Add(m);
+                    }
+                }
+
+                if (mutabakatList.Any())
+                {
+                    context.Mutabakatlar.AddRange(mutabakatList);
+                    await context.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Ignore seeding errors to avoid blocking startup
+            }
         }
     }
 }

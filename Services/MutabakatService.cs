@@ -416,6 +416,36 @@ namespace EMutabakat.Services
             return true;
         }
 
+        public async Task<int> DeleteAllAsync()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var items = await context.Mutabakatlar
+                .Include(x => x.Cari)
+                .Include(x => x.Firma)
+                .ToListAsync();
+
+            if (items.Count == 0)
+                return 0;
+
+            foreach (var item in items)
+            {
+                await ArchiveDeletedReconciliationAsync(context, item);
+            }
+
+            context.Mutabakatlar.RemoveRange(items);
+            await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Mutabakat",
+                $"Tüm mutabakatlar silindi. Kayıt sayısı: {items.Count}",
+                GetUserEmail()
+            );
+
+            return items.Count;
+        }
+
         public async Task<List<SilinenMutabakat>> GetAllDeletedAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -734,18 +764,32 @@ namespace EMutabakat.Services
             if (mutabakatKeys == null || !mutabakatKeys.Any())
                 return (0, 0, errors);
 
+            var keyTokens = mutabakatKeys
+                .Select(k => $"{k.FirmaId}:{k.MutabakatId}")
+                .ToList();
+
             var selectedMutabakatlar = await context.Mutabakatlar
                 .Include(x => x.Firma)
                 .Include(x => x.Cari)
-                .Where(x => mutabakatKeys.Any(k => k.MutabakatId == x.MutabakatId && k.FirmaId == x.FirmaId))
-                .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+                .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi || x.Status == Mutabakat.MutabakatStatus.Hatirlatma)
+                .Where(x => keyTokens.Contains(x.FirmaId + ":" + x.MutabakatId))
                 .ToListAsync();
 
             foreach (var item in selectedMutabakatlar)
             {
                 try
                 {
-                    var result = await SendMailAsync(item.MutabakatId, item.FirmaId);
+                    bool result;
+
+                    if (item.Status == MutabakatStatus.Hatirlatma)
+                    {
+                        // send as reminder (subject will include prefix)
+                        result = await SendReminderAsync(item.MutabakatId, item.FirmaId);
+                    }
+                    else
+                    {
+                        result = await SendMailAsync(item.MutabakatId, item.FirmaId);
+                    }
 
                     if (result)
                     {

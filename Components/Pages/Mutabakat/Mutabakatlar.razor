@@ -43,21 +43,21 @@ else
                              style="width:48px; height:48px; cursor:pointer;" />
                     }
 
-                @if (canEdit && canSendMail)
+                    @if (canEdit && canSendMail)
                     {
                         <RadzenButton Text="Toplu gönder"
                                       Icon="send"
                                       Style="font-size:15px;"
                                       ButtonStyle="ButtonStyle.Success"
-                                      Click="@SendPendingMails"
-                                      Disabled="@isSubmitting" />
+                                      Click="@ConfirmSendPendingMails"
+                                      Disabled="@(isSubmitting || !(selectedStatus == (int)Mutabakat.MutabakatStatus.Kaydedildi || selectedStatus == (int)Mutabakat.MutabakatStatus.Hatirlatma))" />
 
                         <RadzenButton Text="Seçilenleri gönder"
                                       Icon="mark_email_read"
                                       Style="font-size:15px;"
                                       ButtonStyle="ButtonStyle.Secondary"
-                                      Click="@SendSelectedMails"
-                                      Disabled="@(isSubmitting || !selectedMutabakatlar.Any())" />
+                                      Click="@ConfirmSendSelectedMails"
+                                      Disabled="@(isSubmitting || !(selectedStatus == (int)Mutabakat.MutabakatStatus.Kaydedildi || selectedStatus == (int)Mutabakat.MutabakatStatus.Hatirlatma))" />
                     }
 
                     @if (canDelete)
@@ -67,6 +67,13 @@ else
                                       Style="font-size:15px;"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Click="@GoToDeletedPage" />
+
+                    <RadzenButton Text="Hepsini sil"
+                                  Icon="delete_sweep"
+                                  Style="font-size:15px;"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Click="@DeleteAllMutabakatlar"
+                                  Disabled="@isSubmitting" />
                     }
 
                     @if (canAdd)
@@ -151,6 +158,7 @@ else
 
             <RadzenDataGrid Data="@filteredMutabakatlar"
                             TItem="Mutabakat"
+                            @ref="mutabakatGrid"
                             SelectionMode="DataGridSelectionMode.Multiple"
                             @bind-Value="@selectedMutabakatlar"
                             AllowRowSelectOnRowClick="false"
@@ -158,6 +166,7 @@ else
                             AllowSorting="true"
                             AllowFiltering="false"
                             PageSize="10"
+                            PageChanged="@OnPageChanged"
                             EmptyText="Kayıt bulunamadı.">
 
                 <Columns>
@@ -183,7 +192,7 @@ else
 
                     <RadzenDataGridColumn TItem="Mutabakat" Title="Döviz" OrderIndex="4">
                         <Template Context="item">
-                            @(item.DovizKodu?.Name ?? item.MutabakatDovizKodu)
+                            @(item.DovizKodu?.TCMB ?? item.MutabakatDovizKodu)
                         </Template>
                     </RadzenDataGridColumn>
 
@@ -199,36 +208,37 @@ else
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum" OrderIndex="7">
+                    
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Mutabakat">
                         <Template Context="item">
-                            <RadzenBadge Text="@GetStatusText(item.Status)"
-                                         BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
+                            @item.MutabakatTarihi.ToString("dd.MM.yyyy")
                         </Template>
                     </RadzenDataGridColumn>
 
-                    <RadzenDataGridColumn TItem="Mutabakat" Width="140px" Title="Gönderim Tarihi" OrderIndex="8">
+                    <RadzenDataGridColumn TItem="Mutabakat" Width="120px" Title="Gönderim" OrderIndex="8">
                         <Template Context="item">
                             @(item.MutabakatGonderimTarihSaat?.ToString("dd.MM.yyyy"))
                         </Template>
                     </RadzenDataGridColumn>
 
                     <RadzenDataGridColumn TItem="Mutabakat"
+                                          Width="120px"
                                           Property="MutabakatCevapTarihSaat"
-                                          Title="Cevap Tarihi"
+                                          Title="Cevap"
                                           OrderIndex="9">
                         <Template Context="item">
                             @(item.MutabakatCevapTarihSaat?.ToString("dd.MM.yyyy"))
                         </Template>
                     </RadzenDataGridColumn>
 
-                    @if (canEdit && canSendMail)
+                    @if (canEdit && canSendMail && IsSelectableStatusFilter())
                     {
                         <RadzenDataGridColumn TItem="Mutabakat" Title="Seçim" Width="70px" Sortable="false" Filterable="false" OrderIndex="10">
                             <Template Context="item">
                                 <RadzenCheckBox TValue="bool"
                                                 Value="@(selectedMutabakatlar.Any(x => x.MutabakatId == item.MutabakatId))"
                                                 Change="@(checkedValue => OnRowSelectionChanged(item, checkedValue))"
-                                                Disabled="@(item.Status != Mutabakat.MutabakatStatus.Kaydedildi)" />
+                                                Disabled="@(!CanSelectMutabakat(item))" />
                             </Template>
                         </RadzenDataGridColumn>
                     }
@@ -295,12 +305,22 @@ else
                             </Template>
                         </RadzenDataGridColumn>
                     }
+
+                    <RadzenDataGridColumn TItem="Mutabakat" Title="Durum" OrderIndex="7">
+                        <Template Context="item">
+                            <RadzenBadge Text="@GetStatusText(item.Status)"
+                                         BadgeStyle="@GetStatusBadgeStyle(item.Status)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+
                 </Columns>
             </RadzenDataGrid>
         </RadzenCard>
     </RadzenStack>
 }
 @code {
+    private RadzenDataGrid<Mutabakat>? mutabakatGrid;
+    private int currentPageIndex;
     private List<Mutabakat> mutabakatlar = new();
     private IList<Mutabakat> selectedMutabakatlar = new List<Mutabakat>();
     private bool isSubmitting = false;
@@ -327,11 +347,11 @@ else
 
     private List<FilterOption<int?>> statusOptions = new()
     {
-        new() { Text = "Kaydedildi", Value = (int)Mutabakat.MutabakatStatus.Kaydedildi },
-        new() { Text = "Gönderildi", Value = (int)Mutabakat.MutabakatStatus.Gonderildi },
-        new() { Text = "Hatırlatma", Value = (int)Mutabakat.MutabakatStatus.Hatirlatma },
-        new() { Text = "Mutabık", Value = (int)Mutabakat.MutabakatStatus.Mutabik },
-        new() { Text = "Mutabık Değil", Value = (int)Mutabakat.MutabakatStatus.MutabikDegil }
+        new() { Text = ("Kaydedildi"), Value = (int)Mutabakat.MutabakatStatus.Kaydedildi },
+        new() { Text = ("Gönderildi"), Value = (int)Mutabakat.MutabakatStatus.Gonderildi },
+        new() { Text = ("Hatırlatma"), Value = (int)Mutabakat.MutabakatStatus.Hatirlatma },
+        new() { Text = ("Mutabık"), Value = (int)Mutabakat.MutabakatStatus.Mutabik },
+        new() { Text = ("Mutabık Değil"), Value = (int)Mutabakat.MutabakatStatus.MutabikDegil }
     };
 
     private List<FilterOption<string>> bakiyeTipiOptions = new()
@@ -392,10 +412,38 @@ else
                 }
             }
 
+   
             return query
                 .OrderBy(x => GetMutabakatSortValue(x.MutabakatId))
+                .ThenBy(x => x.MutabakatGonderimTarihSaat ?? DateTime.MinValue)
+                .ThenBy(x => x.MutabakatCevapTarihSaat ?? DateTime.MinValue)
+                .ThenBy(x => (int)x.Status)
                 .ThenBy(x => x.MutabakatId)
                 .ToList();
+        }
+    }
+
+    private async Task ConfirmSendPendingMails()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Seçili filtreye göre kayıtların toplu gönderimi yapılacak. Onaylıyor musunuz?",
+            "Toplu Gönderim Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            if (selectedMutabakatlar != null && selectedMutabakatlar.Any())
+            {
+                await SendSelectedMails();
+            }
+            else
+            {
+                await SendPendingMails();
+            }
         }
     }
 
@@ -441,6 +489,19 @@ else
         }
 
         await LoadMutabakatlarAsync();
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("period", out var p))
+            selectedPeriod = p;
+
+        if (query.TryGetValue("bakiyeTipi", out var b))
+            selectedBakiyeTipi = b;
+
+        if (query.TryGetValue("cariGrup", out var c))
+            selectedCariGrupId = c;
+
         isLoading = false;
     }
 
@@ -537,8 +598,24 @@ else
         NavigationManager.NavigateTo("/reconciliations/deleted");
     }
 
+    private bool IsSelectableStatusFilter()
+    {
+        return selectedStatus == (int)Mutabakat.MutabakatStatus.Kaydedildi ||
+               selectedStatus == (int)Mutabakat.MutabakatStatus.Hatirlatma;
+    }
+
+    private bool CanSelectMutabakat(Mutabakat item)
+    {
+        return IsSelectableStatusFilter() &&
+               (item.Status == Mutabakat.MutabakatStatus.Kaydedildi ||
+                item.Status == Mutabakat.MutabakatStatus.Hatirlatma);
+    }
+
     private void OnRowSelectionChanged(Mutabakat item, object checkedValue)
     {
+        if (!CanSelectMutabakat(item))
+            return;
+
         var isChecked = checkedValue is bool b && b;
 
         if (isChecked)
@@ -631,6 +708,24 @@ else
         finally
         {
             isSubmitting = false;
+        }
+    }
+
+    
+    private async Task ConfirmSendSelectedMails()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Seçili filtreye göre seçili kayıtların gönderimi yapılacak. Onaylıyor musunuz?",
+            "Seçilenleri Gönder Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed == true)
+        {
+            await SendSelectedMails();
         }
     }
 
@@ -734,7 +829,31 @@ else
 
         try
         {
-            var result = await MutabakatService.SendPendingMailsAsync();
+            (int successCount, int failCount, List<string> errors) result;
+
+            if (selectedStatus == (int)Mutabakat.MutabakatStatus.Kaydedildi || selectedStatus == (int)Mutabakat.MutabakatStatus.Hatirlatma)
+            {
+                var ids = filteredMutabakatlar
+                    .Where(x => (int)x.Status == selectedStatus.Value)
+                    .Select(x => (x.MutabakatId, x.FirmaId))
+                    .Distinct()
+                    .ToList();
+
+                if (!ids.Any())
+                {
+                    NotificationService.Notify(
+                        NotificationSeverity.Warning,
+                        "Uyarı",
+                        "Gönderilecek uygun mutabakat kaydı bulunamadı.");
+                    return;
+                }
+
+                result = await MutabakatService.SendSelectedMailsAsync(ids);
+            }
+            else
+            {
+                result = await MutabakatService.SendPendingMailsAsync();
+            }
 
             if (result.failCount == 0)
             {
@@ -753,6 +872,7 @@ else
 
             await LoadMutabakatlarAsync();
             selectedMutabakatlar.Clear();
+            await RestoreCurrentPageAsync();
         }
         catch (Exception ex)
         {
@@ -772,7 +892,7 @@ else
         if (isSubmitting) return;
 
         var ids = selectedMutabakatlar
-            .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi)
+            .Where(x => x.Status == Mutabakat.MutabakatStatus.Kaydedildi || x.Status == Mutabakat.MutabakatStatus.Hatirlatma)
             .Select(x => (x.MutabakatId, x.FirmaId))
             .Distinct()
             .ToList();
@@ -782,7 +902,7 @@ else
             NotificationService.Notify(
                 NotificationSeverity.Warning,
                 "Uyarı",
-                "Gönderilecek uygun kayıt seçilmedi.");
+                "Gönderilecek herhangi bir kayıt seçilmedi.");
             return;
         }
 
@@ -809,6 +929,7 @@ else
 
             await LoadMutabakatlarAsync();
             selectedMutabakatlar.Clear();
+            await RestoreCurrentPageAsync();
         }
         catch (Exception ex)
         {
@@ -832,6 +953,7 @@ else
         {
             ClearFilters();
             await LoadMutabakatlarAsync();
+            await RestoreCurrentPageAsync();
         }
         finally
         {
@@ -852,7 +974,7 @@ else
 
     private string GetStatusText(Mutabakat.MutabakatStatus status)
     {
-        return status switch
+        string text = status switch
         {
             Mutabakat.MutabakatStatus.Kaydedildi => "Kaydedildi",
             Mutabakat.MutabakatStatus.Gonderildi => "Gönderildi",
@@ -861,6 +983,17 @@ else
             Mutabakat.MutabakatStatus.MutabikDegil => "Mutabık Değil",
             _ => "Tanımsız"
         };
+
+        return Capitalize(text);
+    }
+
+    private static string Capitalize(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var s = value.Trim().ToLowerInvariant();
+        return char.ToUpperInvariant(s[0]) + (s.Length > 1 ? s.Substring(1) : string.Empty);
     }
 
     private BadgeStyle GetStatusBadgeStyle(Mutabakat.MutabakatStatus status)
@@ -874,6 +1007,64 @@ else
             Mutabakat.MutabakatStatus.MutabikDegil => BadgeStyle.Danger,
             _ => BadgeStyle.Light
         };
+    }
+
+    private async Task DeleteAllMutabakatlar()
+    {
+        var confirmed = await DialogService.Confirm(
+            "Tüm mutabakat kayıtları silinecek. Onaylıyor musunuz?",
+            "Toplu Silme Onayı",
+            new ConfirmOptions
+            {
+                OkButtonText = "Evet",
+                CancelButtonText = "Vazgeç"
+            });
+
+        if (confirmed != true)
+            return;
+
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        try
+        {
+            var deletedCount = await MutabakatService.DeleteAllAsync();
+
+            NotificationService.Notify(
+                NotificationSeverity.Success,
+                "Başarılı",
+                $"{deletedCount} adet mutabakat silindi.");
+
+            await LoadMutabakatlarAsync();
+            selectedMutabakatlar.Clear();
+            await RestoreCurrentPageAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(
+                NotificationSeverity.Error,
+                "Hata",
+                ex.Message);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void OnPageChanged(PagerEventArgs args)
+    {
+        currentPageIndex = args.PageIndex;
+    }
+
+    private async Task RestoreCurrentPageAsync()
+    {
+        if (mutabakatGrid == null)
+        {
+            return;
+        }
+
+        await mutabakatGrid.GoToPage(currentPageIndex);
     }
 
     public class FilterOption<T>

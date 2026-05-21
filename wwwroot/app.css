@@ -63,3 +63,9 @@ h1:focus {
 .rz-button .rz-button-text {
     text-transform: none;
 }
+
+.rz-badge {
+    text-transform: none !important;
+    font-size: 14px !important;
+    font-weight: 600;
+}

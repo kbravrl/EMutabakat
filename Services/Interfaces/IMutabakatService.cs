@@ -22,5 +22,6 @@ namespace EMutabakat.Services.Interfaces
         Task<List<SilinenMutabakat>> GetAllDeletedAsync();
         Task<SilinenMutabakat?> GetDeletedByIdAsync(int id);
         Task<bool> DeleteDeletedAsync(int id);
+        Task<int> DeleteAllAsync();
     }
 }

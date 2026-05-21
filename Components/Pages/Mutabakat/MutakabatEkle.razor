@@ -30,6 +30,7 @@ else
             <RadzenRow Gap="16px">
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.MutabakatId)" />
                     <RadzenFormField Text="Mutabakat ID" Style="width:100%;">
                         <ChildContent>
                             <RadzenTextBox @bind-Value="mutabakat.MutabakatId"
@@ -37,10 +38,10 @@ else
                                            Style="width:100%;" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.MutabakatId)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.FirmaId)" />
                     <RadzenFormField Text="Firma" Style="width:100%;">
                         <ChildContent>
                             <RadzenDropDown TValue="int?"
@@ -56,10 +57,10 @@ else
                                             Change="@OnFirmaChanged" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.FirmaId)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.CariId)" />
                     <RadzenFormField Text="Cari" Style="width:100%;">
                         <ChildContent>
                             <RadzenDropDown TValue="string"
@@ -76,10 +77,10 @@ else
                                             Change="@OnCariChanged" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.CariId)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.Cari.CariYetkiliMail)" />
                     <RadzenFormField Text="Cari Mail" Style="width:100%;">
                         <ChildContent>
                             <RadzenTextBox @bind-Value="cariMail"
@@ -91,6 +92,7 @@ else
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.MutabakatTarihi)" />
                     <RadzenFormField Text="Mutabakat Tarihi" Style="width:100%;">
                         <ChildContent>
                             <RadzenDatePicker @bind-Value="mutabakat.MutabakatTarihi"
@@ -99,10 +101,10 @@ else
                                               Style="width:100%;" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.MutabakatTarihi)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.MutabakatDovizKodu)" />
                     <RadzenFormField Text="Döviz Kodu" Style="width:100%;">
                         <ChildContent>
                             <RadzenDropDown TValue="string"
@@ -114,13 +116,14 @@ else
                                             Placeholder="Döviz seçiniz"
                                             Style="width:100%;"
                                             AllowFiltering="true"
-                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                                            Disabled/>
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.MutabakatDovizKodu)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.MutabakatBakiye)" />
                     <RadzenFormField Text="Bakiye" Style="width:100%;">
                         <ChildContent>
                             <RadzenNumeric @bind-Value="mutabakat.MutabakatBakiye"
@@ -129,10 +132,10 @@ else
                                            Style="width:100%;" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.MutabakatBakiye)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12" SizeMD="6">
+                    <ValidationMessage For="@(() => mutabakat.MutabakatBakiyeTipi)" />
                     <RadzenFormField Text="Bakiye Tipi" Style="width:100%;">
                         <ChildContent>
                             <RadzenDropDown TValue="string"
@@ -145,7 +148,6 @@ else
                                             Style="width:100%;" />
                         </ChildContent>
                     </RadzenFormField>
-                    <ValidationMessage For="@(() => mutabakat.MutabakatBakiyeTipi)" />
                 </RadzenColumn>
 
                 <RadzenColumn Size="12">
@@ -291,10 +293,11 @@ else
         mutabakat.FirmaId = selectedCari.FirmaId;
         cariMail = selectedCari.CariYetkiliMail;
 
-        if (!string.IsNullOrWhiteSpace(selectedCari.CariDovizKodu))
-        {
-            mutabakat.MutabakatDovizKodu = selectedCari.CariDovizKodu!;
-        }
+        mutabakat.MutabakatDovizKodu = !string.IsNullOrWhiteSpace(selectedCari.CariDovizKodu)
+            ? selectedCari.CariDovizKodu!
+            : mutabakat.MutabakatDovizKodu;
+
+        StateHasChanged();
     }
 
     private async Task HandleValidSubmit()
