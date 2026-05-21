@@ -67,13 +67,16 @@ else
                                       Style="font-size:15px;"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Click="@GoToDeletedPage" />
+                    }
 
-                    <RadzenButton Text="Hepsini sil"
-                                  Icon="delete_sweep"
-                                  Style="font-size:15px;"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Click="@DeleteAllMutabakatlar"
-                                  Disabled="@isSubmitting" />
+                    @if (canDelete)
+                    {
+                        <RadzenButton Text="Hepsini sil"
+                                      Icon="delete_sweep"
+                                      Style="font-size:15px;"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Click="@DeleteAllMutabakatlar"
+                                      Disabled="@(isSubmitting || !CanBulkDeleteFiltered())" />
                     }
 
                     @if (canAdd)
@@ -398,18 +401,15 @@ else
                 query = query.Where(x => x.MutabakatDovizKodu == selectedDovizKodu);
             }
 
-            if (!string.IsNullOrWhiteSpace(selectedPeriod))
+            if (!string.IsNullOrWhiteSpace(selectedPeriod) &&
+                System.DateTime.TryParseExact(
+                    selectedPeriod,
+                    "dd.MM.yyyy",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var selectedDate))
             {
-                var parts = selectedPeriod.Split('.');
-
-                if (parts.Length == 2 &&
-                    int.TryParse(parts[0], out var mm) &&
-                    int.TryParse(parts[1], out var yyyy))
-                {
-                    query = query.Where(x =>
-                        x.MutabakatTarihi.Month == mm &&
-                        x.MutabakatTarihi.Year == yyyy);
-                }
+                query = query.Where(x => x.MutabakatTarihi.Date == selectedDate.Date);
             }
 
    
@@ -476,10 +476,10 @@ else
             canView = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
             canAdd = yetki.Mutabakatlar >= YetkiSeviyesi.Giris;
             canEdit = yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme;
-            canDelete = yetki.MutabakatSilYetki;
+            canDelete = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki || yetki.MutabakatSilYetki;
             canImport = yetki.ImportYetki;
             canExport = yetki.ExportYetki;
-            canSendMail = yetki.MutabakatMailYetki;
+            canSendMail = yetki.Mutabakatlar == YetkiSeviyesi.TamYetki || yetki.MutabakatMailYetki;
         }
 
         if (!canView)
@@ -534,13 +534,13 @@ else
             .ToList();
 
         periodOptions = mutabakatlar
-            .Select(x => new { Month = x.MutabakatTarihi.Month, Year = x.MutabakatTarihi.Year })
+            .Select(x => x.MutabakatTarihi.Date)
             .Distinct()
-            .OrderByDescending(a => new DateTime(a.Year, a.Month, 1))
-            .Select(a => new FilterOption<string>
+            .OrderByDescending(x => x)
+            .Select(x => new FilterOption<string>
             {
-                Value = $"{a.Month:00}.{a.Year}",
-                Text = $"{a.Month:00}.{a.Year}"
+                Value = x.ToString("dd.MM.yyyy"),
+                Text = x.ToString("dd.MM.yyyy")
             })
             .ToList();
 
@@ -602,6 +602,13 @@ else
     {
         return selectedStatus == (int)Mutabakat.MutabakatStatus.Kaydedildi ||
                selectedStatus == (int)Mutabakat.MutabakatStatus.Hatirlatma;
+    }
+
+    private bool CanBulkDeleteFiltered()
+    {
+        return canDelete &&
+               IsSelectableStatusFilter() &&
+               !string.IsNullOrWhiteSpace(selectedPeriod);
     }
 
     private bool CanSelectMutabakat(Mutabakat item)
@@ -1011,9 +1018,12 @@ else
 
     private async Task DeleteAllMutabakatlar()
     {
+        if (!CanBulkDeleteFiltered())
+            return;
+
         var confirmed = await DialogService.Confirm(
-            "Tüm mutabakat kayıtları silinecek. Onaylıyor musunuz?",
-            "Toplu Silme Onayı",
+            "Seçili filtreye uyan mutabakat kayıtları silinecek. Onaylıyor musunuz?",
+            "Filtreli Toplu Silme Onayı",
             new ConfirmOptions
             {
                 OkButtonText = "Evet",
@@ -1028,12 +1038,26 @@ else
 
         try
         {
-            var deletedCount = await MutabakatService.DeleteAllAsync();
+            var keys = filteredMutabakatlar
+                .Select(x => (x.MutabakatId, x.FirmaId))
+                .Distinct()
+                .ToList();
+
+            if (!keys.Any())
+            {
+                NotificationService.Notify(
+                    NotificationSeverity.Warning,
+                    "Uyarı",
+                    "Silinecek mutabakat bulunamadı.");
+                return;
+            }
+
+            var deletedCount = await MutabakatService.DeleteFilteredAsync(keys);
 
             NotificationService.Notify(
                 NotificationSeverity.Success,
                 "Başarılı",
-                $"{deletedCount} adet mutabakat silindi.");
+                $"Filtreye uyan {deletedCount} adet mutabakat silindi.");
 
             await LoadMutabakatlarAsync();
             selectedMutabakatlar.Clear();

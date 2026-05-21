@@ -99,7 +99,8 @@ else
                                     ValueProperty="TCMB"
                                     @bind-Value="mutabakat.MutabakatDovizKodu"
                                     Name="MutabakatDovizKodu"
-                                    Style="width:100%" />
+                                    Style="width:100%" 
+                                    Disabled/>
                     <ValidationMessage For="@(() => mutabakat.MutabakatDovizKodu)" />
                 </RadzenColumn>
 
@@ -197,7 +198,7 @@ else
             var isSeed = await KullaniciService.IsCurrentUserSeedAsync();
 
             canEdit = isSeed || (yetki != null && yetki.Mutabakatlar >= YetkiSeviyesi.GirisDuzeltme);
-            canSendMail = isSeed || (yetki?.MutabakatMailYetki ?? false);
+            canSendMail = isSeed || (yetki?.Mutabakatlar == YetkiSeviyesi.TamYetki || yetki?.MutabakatMailYetki == true);
 
             if (!canEdit)
                 return;

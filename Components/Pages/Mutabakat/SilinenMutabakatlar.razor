@@ -130,7 +130,7 @@ else
             var yetki = await KullaniciYetkiService.GetCurrentUserYetkiAsync();
             var isSeed = await KullaniciYetkiService.IsCurrentUserSeedAsync();
 
-            canView = isSeed || (yetki != null && (yetki.MutabakatSilYetki));
+            canView = isSeed || (yetki != null && (yetki.Mutabakatlar == YetkiSeviyesi.TamYetki || yetki.MutabakatSilYetki));
             canDelete = canView;
 
             if (!canView)

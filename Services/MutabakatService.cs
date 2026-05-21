@@ -405,7 +405,7 @@ namespace EMutabakat.Services
             var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
             var currentUserYetki = await GetCurrentUserYetkiAsync(context);
 
-            if (currentUserYetki == null || !currentUserYetki.MutabakatSilYetki)
+            if (currentUserYetki == null || (!currentUserYetki.MutabakatSilYetki && currentUserYetki.Mutabakatlar != YetkiSeviyesi.TamYetki))
                 throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
 
             var mutabakat = await context.Mutabakatlar
@@ -442,7 +442,7 @@ namespace EMutabakat.Services
             await using var context = await _contextFactory.CreateDbContextAsync();
 
             var currentUserYetki = await GetCurrentUserYetkiAsync(context);
-            if (currentUserYetki != null && !currentUserYetki.MutabakatSilYetki && currentUserYetki.Mutabakatlar != YetkiSeviyesi.TamYetki)
+            if (currentUserYetki == null || (!currentUserYetki.MutabakatSilYetki && currentUserYetki.Mutabakatlar != YetkiSeviyesi.TamYetki))
                 throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
 
             var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
@@ -480,6 +480,66 @@ namespace EMutabakat.Services
             );
 
             return items.Count;
+        }
+
+        public async Task<int> DeleteFilteredAsync(List<(string MutabakatId, int FirmaId)> mutabakatKeys)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var currentUserYetki = await GetCurrentUserYetkiAsync(context);
+            if (currentUserYetki == null || !currentUserYetki.MutabakatSilYetki)
+                throw new Exception("Mutabakat silme yetkiniz bulunmamaktadır.");
+
+            if (mutabakatKeys == null || mutabakatKeys.Count == 0)
+                return 0;
+
+            var allowedFirmaIds = await GetAllowedFirmaIdsAsync(context);
+            var itemsQuery = context.Mutabakatlar
+                .Include(x => x.Cari)
+                .Include(x => x.Firma)
+                .AsQueryable();
+
+            if (allowedFirmaIds != null)
+            {
+                if (allowedFirmaIds.Count == 0)
+                    return 0;
+
+                itemsQuery = itemsQuery.Where(x => allowedFirmaIds.Contains(x.FirmaId));
+            }
+
+            var normalizedKeys = mutabakatKeys
+                .Where(x => !string.IsNullOrWhiteSpace(x.MutabakatId))
+                .Select(x => (MutabakatId: x.MutabakatId.Trim(), x.FirmaId))
+                .Distinct()
+                .ToHashSet();
+
+            if (normalizedKeys.Count == 0)
+                return 0;
+
+            var items = await itemsQuery.ToListAsync();
+            var itemsToDelete = items
+                .Where(x => normalizedKeys.Contains((x.MutabakatId, x.FirmaId)))
+                .ToList();
+
+            if (itemsToDelete.Count == 0)
+                return 0;
+
+            foreach (var item in itemsToDelete)
+            {
+                await ArchiveDeletedReconciliationAsync(context, item);
+            }
+
+            context.Mutabakatlar.RemoveRange(itemsToDelete);
+            await context.SaveChangesAsync();
+
+            await _logService.AddAsync(
+                "Uyarı",
+                "Mutabakat",
+                $"Filtreye uyan mutabakatlar silindi. Kayıt sayısı: {itemsToDelete.Count}",
+                GetUserEmail()
+            );
+
+            return itemsToDelete.Count;
         }
 
         public async Task<List<SilinenMutabakat>> GetAllDeletedAsync()
@@ -609,7 +669,7 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return false;
 
-            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.MutabakatMailYetki ?? false))
+            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.Mutabakatlar == YetkiSeviyesi.TamYetki || kullanici.Yetkileri?.MutabakatMailYetki == true))
                 return false;
 
             var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
@@ -695,7 +755,7 @@ namespace EMutabakat.Services
             if (kullanici == null)
                 return false;
 
-            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.MutabakatMailYetki ?? false))
+            if (!kullanici.IsSeedUser && !(kullanici.Yetkileri?.Mutabakatlar == YetkiSeviyesi.TamYetki || kullanici.Yetkileri?.MutabakatMailYetki == true))
                 return false;
 
             var firma = kullanici.Firmalar.FirstOrDefault(f => f.FirmaId == mutabakat.FirmaId)
