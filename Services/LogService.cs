@@ -327,6 +327,11 @@ namespace EMutabakat.Services
 
         public Task<byte[]> ExportToExcelAsync(List<AppLog> logs)
         {
+            var orderedLogs = logs
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id)
+                .ToList();
+
             IWorkbook workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("Loglar");
             var wrapStyle = workbook.CreateCellStyle();
@@ -358,9 +363,9 @@ namespace EMutabakat.Services
 
             var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            for (int i = 0; i < logs.Count; i++)
+            for (int i = 0; i < orderedLogs.Count; i++)
             {
-                var log = logs[i];
+                var log = orderedLogs[i];
                 var row = sheet.CreateRow(i + 1);
 
                 var c0 = row.CreateCell(0); c0.SetCellValue(log.Id);                                                              c0.CellStyle = idStyle;

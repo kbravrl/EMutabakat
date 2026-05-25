@@ -361,12 +361,28 @@ namespace EMutabakat.Services
             return int.TryParse(s, out var v) ? v : 0;
         }
 
+        private static int GetNaturalSortKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return int.MaxValue;
+
+            var match = Regex.Match(value, @"\d+");
+            return match.Success && int.TryParse(match.Value, out var number)
+                ? number
+                : int.MaxValue;
+        }
+
         public async Task<byte[]> ExportToExcelAsync(List<CariGrup> cariGruplar)
         {
+            var orderedCariGruplar = cariGruplar
+                .OrderBy(x => GetNaturalSortKey(x.CariGrupId))
+                .ThenBy(x => x.CariGrupId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             await _logService.AddAsync(
                 "Bilgi",
                 "CariGrup",
-                $"Cari Grup Excel export başladı. Kayıt sayısı: {cariGruplar.Count}",
+                $"Cari Grup Excel export başladı. Kayıt sayısı: {orderedCariGruplar.Count}",
                 GetUserEmail()
             );
 
@@ -387,9 +403,9 @@ namespace EMutabakat.Services
                 headerRow.CreateCell(i).SetCellValue(headers[i]);
             }
 
-            for (int i = 0; i < cariGruplar.Count; i++)
+            for (int i = 0; i < orderedCariGruplar.Count; i++)
             {
-                var item = cariGruplar[i];
+                var item = orderedCariGruplar[i];
                 var row = sheet.CreateRow(i + 1);
 
                 row.CreateCell(0).SetCellValue(item.CariGrupId);
@@ -408,7 +424,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "CariGrup",
-                $"Cari Grup Excel export tamamlandı. Kayıt sayısı: {cariGruplar.Count}",
+                $"Cari Grup Excel export tamamlandı. Kayıt sayısı: {orderedCariGruplar.Count}",
                 GetUserEmail()
             );
 

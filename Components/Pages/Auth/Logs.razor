@@ -45,12 +45,52 @@ else
         </RadzenRow>
 
         <RadzenCard>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; margin-bottom:1rem;">
+                <RadzenDatePicker TValue="DateTime?"
+                                  Style="width:200px;"
+                                  Placeholder="Tarih seç"
+                                  DateFormat="dd.MM.yyyy"
+                                  @bind-Value="selectedDate"
+                                  Change="@(_ => this.ApplyFilters())" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:180px;"
+                                Placeholder="Seviye seç"
+                                Data="@levelOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedLevel"
+                                AllowClear="true"
+                                Change="@(_ => this.ApplyFilters())" />
+
+                <RadzenDropDown TValue="string"
+                                Style="width:220px;"
+                                Placeholder="Kaynak seç"
+                                Data="@sourceOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="selectedSource"
+                                AllowClear="true"
+                                Change="@(_ => this.ApplyFilters())" />
+
+                <RadzenTextBox Style="width:260px;"
+                               Placeholder="Kullanıcı ara"
+                               @bind-Value="userEmailFilter"
+                               Change="@(_ => this.ApplyFilters())" />
+
+                <RadzenButton Text="Temizle"
+                              Icon="filter_alt_off"
+                              ButtonStyle="ButtonStyle.Light"
+                              Style="height:36px; white-space:nowrap; font-size:15px;"
+                              Click="@ClearFilters" />
+            </div>
+
             <RadzenDataGrid @ref="grid"
-                            Data="@logs"
+                            Data="@filteredLogs"
                             TItem="AppLog"
                             AllowPaging="true"
                             AllowSorting="true"
-                            AllowFiltering="true"
+                            AllowFiltering="false"
                             PageSize="20"
                             EmptyText="Kayıt bulunamadı"
                             ExpandMode="DataGridExpandMode.Single"
@@ -114,16 +154,13 @@ else
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Id"
                                           Title="ID"
-                                          Width="100px" />
+                                          Width="100px"
+                                          Filterable="false" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="CreatedAt"
                                           Title="Tarih"
-                                          Width="155px">
-                        <Template Context="item">
-                            @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")
-                        </Template>
-                    </RadzenDataGridColumn>
+                                          Width="155px" />
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Level"
@@ -159,7 +196,8 @@ else
 
                     <RadzenDataGridColumn TItem="AppLog"
                                           Property="Message"
-                                          Title="Mesaj" >
+                                          Title="Mesaj"
+                                          Filterable="false">
                         <Template Context="item">
                             <span style="white-space:normal; word-break:break-word;">@item.Message</span>
                         </Template>
@@ -173,6 +211,13 @@ else
 
 @code {
     private List<AppLog> logs = new();
+    private List<AppLog> filteredLogs = new();
+    private List<FilterOption> levelOptions = new();
+    private List<FilterOption> sourceOptions = new();
+    private DateTime? selectedDate;
+    private string? selectedLevel;
+    private string? selectedSource;
+    private string? userEmailFilter;
     private bool canView;
     private bool canClear;
     private bool canExport;
@@ -213,6 +258,60 @@ else
     private async Task LoadLogs()
     {
         logs = await LogService.GetRecentAsync(500);
+        levelOptions = logs
+            .Select(x => x.Level)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .Select(x => new FilterOption { Text = x!, Value = x! })
+            .ToList();
+
+        sourceOptions = logs
+            .Select(x => x.Source)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .Select(x => new FilterOption { Text = x!, Value = x! })
+            .ToList();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<AppLog> query = logs;
+
+        if (selectedDate.HasValue)
+        {
+            var date = selectedDate.Value.Date;
+            query = query.Where(x => x.CreatedAt.ToLocalTime().Date == date);
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedLevel))
+        {
+            query = query.Where(x => (x.Level ?? string.Empty).Equals(selectedLevel, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedSource))
+        {
+            query = query.Where(x => (x.Source ?? string.Empty).Equals(selectedSource, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(userEmailFilter))
+        {
+            query = query.Where(x => (x.UserEmail ?? string.Empty).Contains(userEmailFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredLogs = query.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        selectedDate = null;
+        selectedLevel = null;
+        selectedSource = null;
+        userEmailFilter = null;
+        ApplyFilters();
     }
 
     private List<FieldChangeDisplay>? ParseDetails(string? json)
@@ -258,6 +357,12 @@ else
         public string Field { get; set; } = string.Empty;
         public string? OldValue { get; set; }
         public string? NewValue { get; set; }
+    }
+
+    private class FilterOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 
     private async Task ExportToExcel()

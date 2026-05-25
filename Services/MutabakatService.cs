@@ -1111,6 +1111,17 @@ namespace EMutabakat.Services
             return cell?.ToString();
         }
 
+        private static int GetNaturalSortKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return int.MaxValue;
+
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"\d+");
+            return match.Success && int.TryParse(match.Value, out var number)
+                ? number
+                : int.MaxValue;
+        }
+
         public async Task<byte[]> ExportToExcelAsync()
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -1123,7 +1134,6 @@ namespace EMutabakat.Services
                 .Include(x => x.Cari)
                     .ThenInclude(x => x.CariGrup)
                 .Include(x => x.DovizKodu)
-                .OrderByDescending(x => x.MutabakatTarihi)
                 .AsQueryable();
 
             if (allowedFirmaIds != null)
@@ -1135,6 +1145,10 @@ namespace EMutabakat.Services
             }
 
             var data = await query.ToListAsync();
+            data = data
+                .OrderBy(x => GetNaturalSortKey(x.MutabakatId))
+                .ThenBy(x => x.MutabakatId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             IWorkbook workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("Mutabakatlar");
@@ -1166,7 +1180,7 @@ namespace EMutabakat.Services
                 row.CreateCell(3).SetCellValue(item.MutabakatDovizKodu);
                 row.CreateCell(4).SetCellValue(Convert.ToDouble(item.MutabakatBakiye));
                 row.CreateCell(5).SetCellValue(item.MutabakatBakiyeTipi);
-                row.CreateCell(6).SetCellValue(item.MutabakatTarihi.ToString("yyyy-MM-dd"));
+                row.CreateCell(6).SetCellValue(item.MutabakatTarihi.ToString("dd.MM.yyyy"));
 
             }
 

@@ -337,7 +337,7 @@ else
     {
         try
         {
-            var bytes = await CariGrupService.ExportToExcelAsync(filteredCariGruplar);
+            var bytes = await CariGrupService.ExportToExcelAsync(cariGruplar);
             var base64 = Convert.ToBase64String(bytes);
 
             var fileName = "Cari_Gruplar_Listesi.xlsx";

@@ -417,6 +417,17 @@ namespace EMutabakat.Services
             return cell?.ToString()?.Trim();
         }
 
+        private static int GetNaturalSortKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return int.MaxValue;
+
+            var match = Regex.Match(value, @"\d+");
+            return match.Success && int.TryParse(match.Value, out var number)
+                ? number
+                : int.MaxValue;
+        }
+
         private static int ParseIntCell(IRow row, int idx)
         {
             var cell = row.GetCell(idx);
@@ -431,8 +442,9 @@ namespace EMutabakat.Services
         public async Task<byte[]> ExportToExcelAsync(List<Cari> cariler)
         {
             var orderedCariler = cariler
-                .OrderBy(x => x.CariAdi ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(x => x.CariId)
+                .OrderBy(x => GetNaturalSortKey(x.CariId))
+                .ThenBy(x => x.CariId, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(x => x.CariAdi ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
 
             await _logService.AddAsync(

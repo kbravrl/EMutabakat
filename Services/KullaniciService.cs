@@ -511,10 +511,14 @@ namespace EMutabakat.Services
 
         public async Task<byte[]> ExportToExcelAsync(List<Kullanici> kullanicilar)
         {
+            var orderedKullanicilar = kullanicilar
+                .OrderBy(x => x.KullaniciId)
+                .ToList();
+
             await _logService.AddAsync(
                 "Bilgi",
                 "Kullanıcı",
-                $"Kullanıcı Excel export başladı. Kayıt sayısı: {kullanicilar.Count}",
+                $"Kullanıcı Excel export başladı. Kayıt sayısı: {orderedKullanicilar.Count}",
                 GetUserEmail()
             );
 
@@ -523,6 +527,7 @@ namespace EMutabakat.Services
 
             var headers = new[]
             {
+               "KullaniciId",
                "KullaniciAdi",
                "KullaniciSoyadi",
                "KullaniciMail",
@@ -538,17 +543,18 @@ namespace EMutabakat.Services
                 headerRow.CreateCell(i).SetCellValue(headers[i]);
             }
 
-            for (int i = 0; i < kullanicilar.Count; i++)
+            for (int i = 0; i < orderedKullanicilar.Count; i++)
             {
-                var kullanici = kullanicilar[i];
+                var kullanici = orderedKullanicilar[i];
                 var row = sheet.CreateRow(i + 1);
 
-                row.CreateCell(0).SetCellValue(kullanici.KullaniciAdi ?? "");
-                row.CreateCell(1).SetCellValue(kullanici.KullaniciSoyadi ?? "");
-                row.CreateCell(2).SetCellValue(kullanici.KullaniciMail ?? "");
-                row.CreateCell(3).SetCellValue(kullanici.KullaniciGsm ?? "");
-                row.CreateCell(4).SetCellValue(kullanici.KullaniciAktifPasif);
-                row.CreateCell(5).SetCellValue("");
+                row.CreateCell(0).SetCellValue(kullanici.KullaniciId);
+                row.CreateCell(1).SetCellValue(kullanici.KullaniciAdi ?? "");
+                row.CreateCell(2).SetCellValue(kullanici.KullaniciSoyadi ?? "");
+                row.CreateCell(3).SetCellValue(kullanici.KullaniciMail ?? "");
+                row.CreateCell(4).SetCellValue(kullanici.KullaniciGsm ?? "");
+                row.CreateCell(5).SetCellValue(kullanici.KullaniciAktifPasif);
+                row.CreateCell(6).SetCellValue("");
             }
 
             for (int i = 0; i < headers.Length; i++)
@@ -562,7 +568,7 @@ namespace EMutabakat.Services
             await _logService.AddAsync(
                 "Bilgi",
                 "Kullanıcı",
-                $"Kullanıcı Excel export tamamlandı. Kayıt sayısı: {kullanicilar.Count}",
+                $"Kullanıcı Excel export tamamlandı. Kayıt sayısı: {orderedKullanicilar.Count}",
                 GetUserEmail()
             );
 
